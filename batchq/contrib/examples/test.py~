@@ -1,7 +1,0 @@
-class A:
-    x = 2
-
-class B(A):
-    q = 2
-
-print B().x
