@@ -15,8 +15,8 @@ should therefore work out of the box.
 Please note that at the present moment BatchQ has only been tested with
 Python 2.7 on Mac OS X 10.6 and with Python 2.6.5 on Ubuntu 10.10.
 
-Installation
-------------
+Installation (not working yet)
+------------------------------
 There are currently two ways of installing BatchQ. Either you use setup
 tools in which case you write
 
