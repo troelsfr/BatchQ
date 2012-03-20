@@ -1,0 +1,216 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Remote Jobs using Django</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="index.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Tutorial: LSF Remote Submission" href="tutorial_bsub.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api.html" title="API Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorial_bsub.html" title="Tutorial: LSF Remote Submission"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Remote Jobs 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body">
+            
+  <div class="section" id="remote-jobs-using-django">
+<h1>Remote Jobs using Django</h1>
+<p>The following briefly explains how to put up a local Django webinterface
+and how to synchronise it with jobs submitted to a server. No particular
+knowledge of Django is required, except if you wish to setup a permanent
+web server for keeping track of jobs states.</p>
+<div class="section" id="dependencies-and-preliminary-notes">
+<h2>Dependencies and preliminary notes</h2>
+<p>The web interface depends on Django 1.3 (or newer) which can be
+obtained using easy_install as follows</p>
+<div class="highlight-bash"><div class="highlight"><pre>easy_install django
+</pre></div>
+</div>
+<p>The web interface can be located in any directory. We will in the following
+assume that it is located in ~/remoteweb/.</p>
+</div>
+<div class="section" id="starting-a-local-server">
+<h2>Starting a local server</h2>
+<p>Open bash and execute following commands:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> ~/remoteweb/
+python manage.py syncdb
+python manage.py runserver
+</pre></div>
+</div>
+<p>This will start the local web server which can be accessed
+on the address <a class="reference external" href="http://localhost:8000/">http://localhost:8000/</a>. In order to synchronise the jobs
+from a given server simply type</p>
+<div class="highlight-bash"><div class="highlight"><pre>python mange.py update_database <span class="o">[</span>appName <span class="o">[</span>server<span class="o">[</span>:port<span class="o">]]]</span>
+</pre></div>
+</div>
+<p>where [appName] is &#8216;remoteJobs-vistrails&#8217; if you are using VisTrails with
+the standard settings and [server] is the name of the server. If no
+server is supplied the script will assume that you wish to work on the
+local machine. If a server name is supplied the script will prompt for
+username and password. After entering these the database is updated with
+the jobs which has previously been submitted to the server.</p>
+</div>
+<div class="section" id="webinterface">
+<h2>Webinterface</h2>
+<p>In order to access the web interface go to <a class="reference external" href="http://localhost:8000/">http://localhost:8000/</a> in
+your favorite browser. A list of should now appear</p>
+<p>which has been optimised for running on mobile units. From the
+webinterface you can see the status of your jobs, cancel or
+resubmit them. The changes take effect whenever</p>
+<div class="highlight-bash"><div class="highlight"><pre>python mange.py update_database <span class="o">[</span>appName <span class="o">[</span>server<span class="o">[</span>:port<span class="o">]]]</span>
+</pre></div>
+</div>
+<p>has been executed.</p>
+</div>
+</div>
+<div class="section" id="remote-jobs-with-custom-database">
+<h1>Remote Jobs with custom database</h1>
+<p>We will in the following assume that you have a access to a database
+with predefined tables and columns. In this part of the document we will
+describe how to poll the information from the server and add it to a
+database.</p>
+<div class="section" id="pulling-settings-entries">
+<h2>Pulling settings entries</h2>
+<p>Pulling the submitted jobs from a server is done using the
+RemoteJobSubmitter module.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">remotejobs</span> <span class="kn">import</span> <span class="n">RemoteJobSubmitter</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+
+<span class="k">class</span> <span class="nc">Database</span><span class="p">:</span>
+   <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">   This object will represent our database.</span>
+<span class="sd">   &quot;&quot;&quot;</span>
+   <span class="k">def</span> <span class="nf">get_record</span><span class="p">(</span><span class="n">primary_key</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">       This methods returns a record as a dictionary</span>
+<span class="sd">       if it is found in the database and None else.</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+       <span class="k">pass</span>
+
+   <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">primary_key</span><span class="p">,</span> <span class="n">record_dict</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">       This method updates the record with the primary key as</span>
+<span class="sd">       primary_key by setting key = &#39;val&#39; for key, val in record_dict.</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+       <span class="k">pass</span>
+
+   <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="n">primary_key</span><span class="p">,</span> <span class="n">record_dict</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">       This method inserts a record with the primary key as</span>
+<span class="sd">       primary_key by setting key = &#39;val&#39; for key, val in record_dict.</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+       <span class="k">pass</span>
+
+<span class="n">server</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">port</span> <span class="o">=</span> <span class="mi">22</span>
+<span class="n">username</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">()</span>
+<span class="n">password</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">()</span>
+
+<span class="c"># We will update to columns in the database: &quot;last_updated&quot; and &quot;id&quot;.</span>
+<span class="c"># The following dictionary will be used to map the settings entries</span>
+<span class="c"># into the database column names.</span>
+<span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;updated&#39;</span><span class="p">:</span> <span class="s">&#39;last_updated&#39;</span><span class="p">,</span> <span class="s">&#39;jobid&#39;</span><span class="p">:</span> <span class="s">&#39;id&#39;</span><span class="p">}</span>
+
+<span class="n">job_submitter</span> <span class="o">=</span> <span class="n">RemoteJobSubmitter</span><span class="p">(</span><span class="n">appName</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+<span class="n">jobs</span> <span class="o">=</span> <span class="n">job_submitter</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">list_keys</span><span class="p">()</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">Database</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">jobid</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+    <span class="nb">hash</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">jobid</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&quot;_&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span> <span class="c"># In case the directory contains non-valid settings files</span>
+      <span class="k">continue</span>
+
+    <span class="c"># Remark it is important to put clean (third argument) to False here</span>
+    <span class="c"># If this is not set to False any finished job will be deleted.</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">job_submitter</span><span class="o">.</span><span class="n">check_state</span><span class="p">(</span><span class="nb">hash</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+    <span class="n">setting_entries</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">,</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">records</span><span class="p">])</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">setting_entries</span><span class="p">]</span>
+    <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">record</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">setting_entries</span><span class="p">]</span>
+    <span class="n">record_dict</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">db</span><span class="o">.</span><span class="n">get_record</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+       <span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">jobid</span><span class="p">,</span> <span class="n">record_dict</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+       <span class="n">db</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">jobid</span><span class="p">,</span> <span class="n">record_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This code serves as an example and is not recommended to deploy for
+pulling the jobs without further optimisations.
+The above example will run slowly due to two
+reasons:</p>
+<p>1. There is made no check whether the database record is up-to-date
+meaning that we update records that are all up-to-date every time we
+check the status of the jobs.</p>
+<p>2. As more an more jobs gets submitted to the server the list of key
+entries becomes very large. It can therefore be beneficial to clean the
+settings module for any keys that has been marked as cleaned. In order
+to so add the following to your</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">TODO</span>
+</pre></div>
+</div>
+<p>cron script.</p>
+<p>Be aware that the last optimisation will cause problems if several
+databases are updated as a finished job may be deleted before it is pull
+into all databases.</p>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api.html" title="API Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorial_bsub.html" title="Tutorial: LSF Remote Submission"
+             >previous</a> |</li>
+        <li><a href="index.html">Remote Jobs 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,798 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Developer: Getting started &mdash; Remote Jobs 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="index.html" />
+    <link rel="next" title="Tutorial: nohup Remote Submission" href="tutorial_nhup.html" />
+    <link rel="prev" title="Users Guide" href="user/intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorial_nhup.html" title="Tutorial: nohup Remote Submission"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="user/intro.html" title="Users Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Remote Jobs 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="developer-getting-started">
+<h1>Developer: Getting started<a class="headerlink" href="#developer-getting-started" title="Permalink to this headline">¶</a></h1>
+<p>The following section is meant as an instructive example of how BatchQ
+can be used to automate simple tasks such as logging on to a server and
+creating a configuration file. This first section is somewhat basic
+stuff, but important, nevertheless, since BatchQ is designed to be
+different from your normal Python programs in its structure. All the key
+classes are shortly described here.</p>
+<p>Imagine that you want to open Bash, go to  Documents in your home folder
+and create a text file. With Bash commands for this would be</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> ~/Documents
+<span class="nb">echo </span>Hello world &gt; hello.txt
+</pre></div>
+</div>
+<p>In this tutorial we will automate this task. If you are eager to use
+BatchQ and do not really care about the
+underlying functionality you probably should skip right away to one of
+the examples of job automation:</p>
+<ol class="arabic simple">
+<li><a class="reference internal" href="#example-createfile1"><em>Example: CreateFile</em></a></li>
+<li><a class="reference internal" href="#example-createfile2"><em>Example: CreateFileAndDirectory</em></a></li>
+<li><a class="reference internal" href="#example-createfile3"><em>Example: CreateFileSSH</em></a></li>
+</ol>
+<p>However, it is strongly recommended that you go through all the examples
+to get a basic understanding of the structure of BacthQ, how it works
+and what you can do with it.</p>
+<div class="section" id="processes-and-pipes">
+<h2>Processes and Pipes<a class="headerlink" href="#processes-and-pipes" title="Permalink to this headline">¶</a></h2>
+<p>While it is not necessary to understand the concepts of Processes and
+Pipes in order to use BatchQ, it surely is useful in order to get a
+picture of the whole structure of this package.
+If you are familiar with <cite>Pexpect &lt;http://www.noah.org/wiki/pexpect&gt;</cite>
+you are already familiar with some of the key concepts of BatchQ. BatchQ
+provides a classes which have some similarities with Pexpect, yet
+differs in a number of ways, the most significant being that BatchQ
+communication with the terminal and expect functionality has been
+seperated into two classes: Process and BasePipe. The Process class
+provides methods for communicating directly with a process with no
+intepretation of the output, whereas BasePipe implements output
+interpretation and expect functionality.</p>
+<p>Unlike Pexpect, Process does not apply which on the command passed as
+the constructor argument and this command must be applied manually. In
+the following example we open a instance of Bash writes &#8220;echo Hello
+world&#8221; and read the output:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core.process</span> <span class="kn">import</span> <span class="n">Process</span>
+<span class="kn">from</span> <span class="nn">batchq.core.utils</span> <span class="kn">import</span> <span class="n">which</span>
+
+<span class="k">print</span> <span class="s">&quot;Starting bash found at&quot;</span><span class="p">,</span> <span class="n">which</span><span class="p">(</span><span class="s">&quot;bash&quot;</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">which</span><span class="p">(</span><span class="s">&quot;bash&quot;</span><span class="p">))</span>
+
+<span class="c"># Waits until we have the prompt</span>
+<span class="k">while</span> <span class="n">x</span><span class="o">.</span><span class="n">getchar</span><span class="p">()</span> <span class="o">!=</span> <span class="s">&quot;$&quot;</span><span class="p">:</span> <span class="k">pass</span>
+
+<span class="c"># Sends a command to the terminal</span>
+<span class="n">x</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;echo Hello world</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+
+<span class="c"># And read the response</span>
+<span class="k">print</span> <span class="s">&quot;&quot;</span>
+<span class="k">print</span> <span class="s">&quot;The response is:&quot;</span>
+<span class="k">print</span> <span class="n">x</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&quot;&quot;</span>
+<span class="k">print</span> <span class="s">&quot;The full buffer is:&quot;</span>
+<span class="k">print</span> <span class="n">x</span><span class="o">.</span><span class="n">buffer</span>
+<span class="n">x</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This code produces following output</p>
+<div class="highlight-python"><pre>Starting bash found at /bin/bash
+
+The response is:
+ echo Hello world
+Hello world
+bash-3.2$ 
+
+The full buffer is:
+[?1034hbash-3.2$ echo Hello world
+Hello world
+bash-3.2$ 
+</pre>
+</div>
+<p>Here we are essentially communicating with the process at the most basic
+level and we have to interpret every character returned. Especially, it
+should be noted that escape characters are not interpreted in any way
+and also that the response from x.read() contains the echo of the
+command. Both of these features are somewhat inconvenient when ones to
+communicate with a process.</p>
+<p>The BasePipe class overcome the inconvenience of the Process class by
+implementing expect</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core.process</span> <span class="kn">import</span> <span class="n">Process</span>
+<span class="kn">from</span> <span class="nn">batchq.core.communication</span> <span class="kn">import</span> <span class="n">BasePipe</span>
+<span class="kn">from</span> <span class="nn">batchq.core.utils</span> <span class="kn">import</span> <span class="n">which</span>
+
+<span class="k">class</span> <span class="nc">BashTerminal</span><span class="p">(</span><span class="n">BasePipe</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">pipe</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">which</span><span class="p">(</span><span class="s">&quot;bash&quot;</span><span class="p">),</span> <span class="n">terminal_required</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="n">expect_token</span> <span class="o">=</span><span class="s">&quot;#--&gt;&quot;</span>
+        <span class="n">submit_token</span> <span class="o">=</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="n">initiate_pipe</span><span class="o">=</span><span class="bp">True</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BashTerminal</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">expect_token</span><span class="p">,</span> <span class="n">submit_token</span><span class="p">,</span> <span class="n">initiate_pipe</span><span class="p">)</span>        
+
+
+    <span class="k">def</span> <span class="nf">initiate_pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;export PS1=</span><span class="se">\&quot;</span><span class="si">%s</span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_token</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume_output</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_submit_token</span><span class="p">)</span>  
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume_output</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">echo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;echo </span><span class="si">%s</span><span class="s">&quot;</span><span class="o">%</span><span class="n">msg</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">BashTerminal</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&quot;Response: &quot;</span>
+<span class="k">print</span> <span class="n">x</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s">&quot;Hello world&quot;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;&quot;</span>
+<span class="k">print</span> <span class="s">&quot;VT100 Buffer:&quot;</span>
+<span class="k">print</span> <span class="n">x</span><span class="o">.</span><span class="n">buffer</span>
+<span class="k">print</span> <span class="s">&quot;&quot;</span>
+<span class="k">print</span> <span class="s">&quot;Pipe Buffer:&quot;</span>
+<span class="k">print</span> <span class="n">x</span><span class="o">.</span><span class="n">pipe_buffer</span>
+</pre></div>
+</div>
+<p>which produces</p>
+<div class="highlight-python"><pre>Response: 
+Hello world
+
+
+VT100 Buffer:
+export PS1="#--&gt;"bash-3.2$ export PS1="#--&gt;"
+#--&gt;echo Hello world
+Hello world
+#--&gt;
+
+Pipe Buffer:
+export PS1="#--&gt;"[?1034hbash-3.2$ export PS1="#--&gt;"
+#--&gt;echo Hello world
+Hello world
+#--&gt;
+</pre>
+</div>
+<p>The properties pipe and pipe_buffer are references to the Process object
+and the Process.buffer, respectively. As with the first example we see
+that the process buffer contains VT100 characters. However, the BasePipe
+uses a VT100 interpreter to ensure that the output in BasePipe.buffer
+looks like what you would see if you where interacting with a terminal
+yourself. This is important as it eases the development process of
+pipelines.</p>
+<p>The separation of Process and BasePipe ensures that unsupported
+platforms in the future can be supported. In order to make BatchQ work
+on unsupported system (i.e. Windows at the moment) one has to write a
+new Process module for the platform. Once a Process class exists
+BasePipe implements all the features needed to efficiently communicate
+with an instance of a process.</p>
+<div class="section" id="pipelines">
+<h3>Pipelines<a class="headerlink" href="#pipelines" title="Permalink to this headline">¶</a></h3>
+<p>Pipelines are subclasses of BasePipe which are intended for a specific
+program like the example in the previous section. BatchQ is shipped with
+many different pipelines found in batchq.pipelines which among others
+contain BashTerminal, SSHTerminal and SFTPTerminal. The SSHTerminal
+subclasses BashTerminal and replaces the process instance with an SSH
+instance. This in term means that any program written for BashTerminal
+works with SSHTerminal which is handy as you might want to develop a
+program locally and once working, deploy it using SSH.</p>
+<p>We are going to give an example of how this is done in the following
+code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.pipelines.shell.bash</span> <span class="kn">import</span> <span class="n">BashTerminal</span>
+
+<span class="k">class</span> <span class="nc">CreateFileBash</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">directory</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">directory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="n">command</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span> <span class="o">=</span> <span class="n">BashTerminal</span><span class="p">()</span>        
+
+    <span class="k">def</span> <span class="nf">create_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">home</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span><span class="o">.</span><span class="n">home</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">home</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span><span class="bp">True</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">create_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_dir</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+<span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">instance</span> <span class="o">=</span> <span class="n">CreateFileBash</span><span class="p">(</span><span class="s">&quot;Documents/DEMO_Bash&quot;</span><span class="p">,</span> <span class="s">&quot;echo hello new directory &gt; hello.txt&quot;</span><span class="p">)</span>
+    <span class="n">instance</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="s">&quot;echo Hello Python world &gt; hello.txt&quot;</span>
+    <span class="n">instance</span><span class="o">.</span><span class="n">create_file</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>With this code we have solved the initial problem, and moreover, the
+code is easily extended to support SSH by subclasssing
+CreateFileBash and replacing the terminal:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.pipelines.shell.ssh</span> <span class="kn">import</span> <span class="n">SSHTerminal</span>
+
+<span class="k">class</span> <span class="nc">CreateFileSSH</span><span class="p">(</span><span class="n">CreateFileBash</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">directory</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">terminal</span> <span class="o">=</span> <span class="n">SSHTerminal</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>        
+        <span class="nb">super</span><span class="p">(</span><span class="n">CreateFileSSH</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">command</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">getpass</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&quot;Username:&quot;</span><span class="p">)</span>
+    <span class="n">pasw</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">()</span>
+    <span class="n">instance</span> <span class="o">=</span> <span class="n">CreateFileSSH</span><span class="p">(</span><span class="s">&quot;Documents/DEMO_SSH&quot;</span><span class="p">,</span> <span class="s">&quot;echo Hello SSH &gt; hello.txt&quot;</span><span class="p">,</span> <span class="s">&quot;localhost&quot;</span><span class="p">,</span><span class="n">user</span><span class="p">,</span><span class="n">pasw</span><span class="p">)</span>
+    <span class="n">instance</span><span class="o">.</span><span class="n">create_file</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This clearly demonstrates the power of using a standards for the various
+terminal implementations. The function calls used here would be also be
+possible to implement on a Windows machine, and thus, in this way we
+have a universal script that works independent of the system it is
+on.</p>
+</div>
+</div>
+<div class="section" id="batchq-basics">
+<h2>BatchQ Basics<a class="headerlink" href="#batchq-basics" title="Permalink to this headline">¶</a></h2>
+<p>Next to the pipelines and processes, the BatchQ module contains
+five other important classes: BatchQ, WildCard, Property, Controller and
+Function.
+BatchQ is the general model which your class should inherit. It provides
+the functionality for manging pipelines, properties, and function
+queues. In short, any BatchQ script is a class that subclasses BatchQ
+and have one or more of WildCard, Property, Controller and
+Function defined. The general structure of a BatchQ class is</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24</pre></div></td><td class="code"><div class="highlight"><pre><span class="k">class</span> <span class="nc">SubmissionModel</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">param1</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="s">&quot;default value 1&quot;</span><span class="p">)</span>
+    <span class="n">param2</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="s">&quot;default value 2&quot;</span><span class="p">)</span>
+    <span class="c"># ...</span>
+
+    <span class="n">terminal1</span> <span class="o">=</span> <span class="n">Controller</span><span class="p">(</span><span class="n">Class1</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+    
+    <span class="n">t1_fnc1</span> <span class="o">=</span> <span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">a</span><span class="p">()</span><span class="o">.</span><span class="n">b</span><span class="p">()</span>
+    <span class="n">t1_fnc2</span> <span class="o">=</span> <span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">c</span><span class="p">()</span><span class="o">.</span><span class="n">d</span><span class="p">()</span>
+    <span class="c"># ...</span>
+
+    <span class="n">terminal2</span> <span class="o">=</span> <span class="n">Controller</span><span class="p">(</span><span class="n">Class2</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+    <span class="n">t2_fnc1</span> <span class="o">=</span> <span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">e</span><span class="p">(</span><span class="n">param1</span><span class="p">)</span><span class="o">.</span><span class="n">f</span><span class="p">(</span><span class="n">param2</span><span class="p">)</span>
+    <span class="n">t2_fnc2</span> <span class="o">=</span> <span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">g</span><span class="p">()</span><span class="o">.</span><span class="n">h</span><span class="p">()</span>
+    <span class="c"># ...</span>
+
+    <span class="k">def</span> <span class="nf">userdef1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># ...</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">userdef2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># ...</span>
+        <span class="k">pass</span>
+</pre></div>
+</td></tr></table></div>
+<p>Properties are input parameters for the automation model you are
+creating, controllers are pipeline holders and functions are queues of
+function calls that will be invoked on the class through the
+controller. Thus, calling <tt class="docutils literal"><span class="pre">SubmissionModel().t1_fnc2()</span></tt> would result in
+two function calls: <tt class="docutils literal"><span class="pre">instance.a()</span></tt> and <tt class="docutils literal"><span class="pre">instance.b()</span></tt> with
+<tt class="docutils literal"><span class="pre">instance</span> <span class="pre">=</span> <span class="pre">Class1(arg1,</span> <span class="pre">arg2,</span> <span class="pre">...)</span></tt>. It is possible to use
+the parameters as function arguments as done in line 14. Upon
+realisation of the function calls <tt class="docutils literal"><span class="pre">param1</span></tt> and <tt class="docutils literal"><span class="pre">param2</span></tt> are
+fetched. They may be changed using the normal assignment operator before
+the function call to change their value. Get an idea how this works we
+will in the following go through some simple examples.</p>
+<div class="section" id="example-hello-world">
+<h3>Example: Hello world<a class="headerlink" href="#example-hello-world" title="Permalink to this headline">¶</a></h3>
+<p>In this example we demonstrate how a function queue is invoked on the
+pipeline:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+<span class="k">class</span> <span class="nc">Pipeline</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">hello_world</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;Hello world&quot;</span>
+
+    <span class="k">def</span> <span class="nf">hello_batchq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;Hello BatchQ&quot;</span>
+
+<span class="k">class</span> <span class="nc">HelloWorld</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">Pipeline</span><span class="p">)</span>
+    <span class="n">fnc</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">hello_world</span><span class="p">()</span><span class="o">.</span><span class="n">hello_batchq</span><span class="p">()</span>
+
+<span class="n">instance</span> <span class="o">=</span> <span class="n">HelloWorld</span><span class="p">()</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">fnc</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This code results in following output</p>
+<div class="highlight-python"><pre>Hello world
+Hello BatchQ
+</pre>
+</div>
+<p>What happens is:</p>
+<ol class="arabic simple">
+<li>A controller is defined which creates an instance <tt class="docutils literal"><span class="pre">pipe</span></tt> of the
+Pipeline class.</li>
+<li>Next a function <tt class="docutils literal"><span class="pre">fnc</span></tt> is defined as the sequence of function calls
+&#8221;.hello_world(), .hello_batchq()&#8221;</li>
+<li>When <tt class="docutils literal"><span class="pre">fnc</span></tt> is called two function calls, <tt class="docutils literal"><span class="pre">pipe.hello_world()</span></tt> and
+<tt class="docutils literal"><span class="pre">pipe.hello_batchq()</span></tt> are made.</li>
+</ol>
+<p>It is worth noting that the function queue is abstract, meaning that the
+queue accept any calls - errors will first occur when <tt class="docutils literal"><span class="pre">instance.fnc()</span></tt>
+is called.</p>
+</div>
+<div class="section" id="example-hello-parameter">
+<h3>Example: Hello parameter<a class="headerlink" href="#example-hello-parameter" title="Permalink to this headline">¶</a></h3>
+<p>Next we extend the previous program introducing a parameter</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+<span class="k">class</span> <span class="nc">Pipeline</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">who</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;Hello&quot;</span><span class="p">,</span><span class="n">who</span>
+
+
+<span class="k">class</span> <span class="nc">HelloParam</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="s">&quot;Parameter&quot;</span><span class="p">)</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">Pipeline</span><span class="p">)</span>
+    <span class="n">fnc</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">hello</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+<span class="n">HelloParam</span><span class="p">()</span><span class="o">.</span><span class="n">fnc</span><span class="p">()</span>
+<span class="n">ins1</span> <span class="o">=</span> <span class="n">HelloParam</span><span class="p">(</span><span class="s">&quot;Second Instance&quot;</span><span class="p">)</span>
+<span class="n">ins2</span> <span class="o">=</span> <span class="n">HelloParam</span><span class="p">()</span>
+<span class="n">ins2</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s">&quot;Property&quot;</span>
+<span class="n">ins2</span><span class="o">.</span><span class="n">fnc</span><span class="p">()</span>
+<span class="n">ins1</span><span class="o">.</span><span class="n">fnc</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Three lines of output are produces here:</p>
+<div class="highlight-python"><pre>Hello Parameter
+Hello Property
+Hello Second Instance
+</pre>
+</div>
+<p>each corresponding to a call to <tt class="docutils literal"><span class="pre">fnc()</span></tt>. This code shows how a
+parameter can be passed on to a function call. It is important to notice
+that the parameter can be changed even after creating an instance of an
+object and that properties are <em>not</em> static members of the class,
+i.e. different instances may have different values. Finally, it is worth
+noticing that properties becomes constructor arguments of the BatchQ
+subclass.</p>
+</div>
+<div class="section" id="example-hello-error-i">
+<h3>Example: Hello error I<a class="headerlink" href="#example-hello-error-i" title="Permalink to this headline">¶</a></h3>
+<p>The default of BatchQ is that all errors raised are suppressed by the
+Function queue. You can, however, force BatchQ to raise errors by
+setting the parameter <tt class="docutils literal"><span class="pre">verbose</span></tt> of the function object:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+<span class="k">class</span> <span class="nc">ErrorTest</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    <span class="n">fnc1</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">hello_world</span><span class="p">(</span><span class="s">&quot;Hello error&quot;</span><span class="p">)</span>
+    <span class="n">fnc2</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span><span class="o">.</span><span class="n">hello_world</span><span class="p">(</span><span class="s">&quot;Hello error&quot;</span><span class="p">)</span>
+
+<span class="n">instance</span> <span class="o">=</span> <span class="n">ErrorTest</span><span class="p">()</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">instance</span><span class="o">.</span><span class="n">fnc1</span><span class="p">()</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;An error occured in fnc1&quot;</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">instance</span><span class="o">.</span><span class="n">fnc2</span><span class="p">()</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;An error occured in fnc2&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-hello-error-ii">
+<h3>Example: Hello error II<a class="headerlink" href="#example-hello-error-ii" title="Permalink to this headline">¶</a></h3>
+<p>The BatchQ function also is given the possibility to raise errors. It is
+done in the following way:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    <span class="n">fnc1</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">Qthrow</span><span class="p">(</span><span class="n">exception</span> <span class="o">=</span> <span class="ne">StandardError</span><span class="p">(</span><span class="s">&quot;Custom error class&quot;</span><span class="p">))</span>
+    <span class="n">fnc2</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">Qthrow</span><span class="p">(</span><span class="s">&quot;Standard error&quot;</span><span class="p">)</span>
+
+<span class="n">Model</span><span class="p">()</span><span class="o">.</span><span class="n">fnc1</span><span class="p">()</span>
+<span class="n">Model</span><span class="p">()</span><span class="o">.</span><span class="n">fnc2</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">throw</span></tt> function ignores the <tt class="docutils literal"><span class="pre">verbose</span></tt> option on the <tt class="docutils literal"><span class="pre">Function</span></tt>
+object and is always thrown.</p>
+</div>
+<div class="section" id="example-function-inheritance">
+<h3>Example: Function Inheritance<a class="headerlink" href="#example-function-inheritance" title="Permalink to this headline">¶</a></h3>
+<p>Common jobs such as changing into a working directory is often done in
+several procedures when making a batch script. For this reason BatchQ
+allows you to inherit earlier defined functions</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+
+<span class="k">class</span> <span class="nc">Pipe</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">print</span> <span class="n">msg</span>
+
+<span class="k">class</span> <span class="nc">Inherits</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">Pipe</span><span class="p">)</span>
+    <span class="n">fnc1</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Hello world&quot;</span><span class="p">)</span>
+    <span class="n">fnc2</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">fnc1</span><span class="p">)</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Hello world II&quot;</span><span class="p">)</span>
+
+<span class="n">Inherits</span><span class="p">()</span><span class="o">.</span><span class="n">fnc2</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Upon inheritance the entire queue from <tt class="docutils literal"><span class="pre">fnc1</span></tt> is copied meaning that
+the result stack of <tt class="docutils literal"><span class="pre">fnc1</span></tt> is not populated as it would have been with
+a function call.</p>
+</div>
+<div class="section" id="example-function-calls">
+<h3>Example: Function Calls<a class="headerlink" href="#example-function-calls" title="Permalink to this headline">¶</a></h3>
+<p>Often it is useful to divide jobs into subprocedures. For this purpose
+it can often be necessary to do function calls. Function calls are also
+allowed with  BatchQ</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+
+<span class="k">class</span> <span class="nc">Pipe</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">print</span> <span class="n">msg</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
+<span class="k">class</span> <span class="nc">CallIt1</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">Pipe</span><span class="p">)</span>
+    <span class="n">fnc1</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Hello world&quot;</span><span class="p">)</span>
+    <span class="n">fnc2</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Before call&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Qcall</span><span class="p">(</span><span class="n">fnc1</span><span class="p">)</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;After call&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qprint_stack</span><span class="p">()</span>
+
+<span class="n">CallIt1</span><span class="p">()</span><span class="o">.</span><span class="n">fnc2</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&quot;&quot;</span>
+
+<span class="k">class</span> <span class="nc">CallIt2</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">Pipe</span><span class="p">)</span>
+    <span class="n">fnc1</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Hello world&quot;</span><span class="p">)</span>
+    <span class="n">fnc2</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span><span class="o">.</span><span class="n">Qjoin</span><span class="p">(</span><span class="n">fnc1</span><span class="p">,</span> <span class="s">&quot; II&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+
+<span class="n">CallIt2</span><span class="p">()</span><span class="o">.</span><span class="n">fnc2</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>One important thing to note here is that it is the Function object that
+is passed on as argument and not Function(). The reason is that we are
+creating a reference model, the queue, and not performing an actual call
+during the construction of the class.</p>
+</div>
+<div class="section" id="wildcards">
+<h3>Wildcards<a class="headerlink" href="#wildcards" title="Permalink to this headline">¶</a></h3>
+<p>TODO: Explain the concept of a wildcard</p>
+<p>In the following example we define five different wild cards.
+The first wildcard _ pops the result stack and the second _r pops the
+result stack in reverse order - that is, if _, _ produces &#8220;a&#8221;, &#8220;b&#8221;, then
+_r, _r produces &#8220;b&#8221;,&#8221;a&#8221;.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+
+<span class="k">class</span> <span class="nc">TestPipe4</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">fnc1</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="s">&quot;Function 1&quot;</span>
+    <span class="n">fnc2</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="s">&quot;Function 2&quot;</span>
+    <span class="n">fnc3</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="s">&quot;Function 3&quot;</span>
+    <span class="n">fnc4</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="s">&quot;Function 4&quot;</span>
+    <span class="n">fnc5</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="s">&quot;Function 5&quot;</span>
+
+    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;1: &quot;</span><span class="p">,</span> <span class="n">msg</span>
+        <span class="k">return</span> <span class="s">&quot;Display function I&quot;</span>
+
+    <span class="k">def</span> <span class="nf">display2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg1</span><span class="p">,</span> <span class="n">msg2</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;2: &quot;</span><span class="p">,</span> <span class="n">msg1</span><span class="p">,</span> <span class="n">msg2</span>
+        <span class="k">return</span> <span class="s">&quot;Display Function II&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">Q6</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+    <span class="n">_r</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">(</span><span class="n">reverse</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="n">_l</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">(</span><span class="n">lifo</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">_lr</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">(</span><span class="n">lifo</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">reverse</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="n">_3</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">(</span><span class="n">select</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">TestPipe4</span><span class="p">)</span>
+
+    <span class="n">call_fnc</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span> \
+        <span class="o">.</span><span class="n">fnc1</span><span class="p">()</span><span class="o">.</span><span class="n">fnc2</span><span class="p">()</span><span class="o">.</span><span class="n">fnc3</span><span class="p">()</span> \
+        <span class="o">.</span><span class="n">fnc4</span><span class="p">()</span><span class="o">.</span><span class="n">fnc5</span><span class="p">()</span> 
+
+    <span class="n">test1</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">call_fnc</span><span class="p">)</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+    <span class="n">test2</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">call_fnc</span><span class="p">)</span><span class="o">.</span><span class="n">display2</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">)</span>
+    <span class="n">test3</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">call_fnc</span><span class="p">)</span><span class="o">.</span><span class="n">display2</span><span class="p">(</span><span class="n">_r</span><span class="p">,</span><span class="n">_r</span><span class="p">)</span>
+    <span class="n">test4</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">call_fnc</span><span class="p">)</span><span class="o">.</span><span class="n">display2</span><span class="p">(</span><span class="n">_l</span><span class="p">,</span><span class="n">_l</span><span class="p">)</span>
+    <span class="n">test5</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">call_fnc</span><span class="p">)</span><span class="o">.</span><span class="n">display2</span><span class="p">(</span><span class="n">_lr</span><span class="p">,</span><span class="n">_lr</span><span class="p">)</span>
+    <span class="n">test6</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">call_fnc</span><span class="p">)</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">_3</span><span class="p">)</span>
+
+
+<span class="n">instance</span> <span class="o">=</span> <span class="n">Q6</span><span class="p">()</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">test1</span><span class="p">()</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">test2</span><span class="p">()</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">test3</span><span class="p">()</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">test4</span><span class="p">()</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">test5</span><span class="p">()</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">test6</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-createfile">
+<span id="example-createfile1"></span><h3>Example: CreateFile<a class="headerlink" href="#example-createfile" title="Permalink to this headline">¶</a></h3>
+<p>At this point we have significantly insight into the structure of BatchQ
+to write a realisation of the initial problem: creating a script that
+creates a directory:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.bash</span> <span class="kn">import</span> <span class="n">BashTerminal</span>
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.ssh</span> <span class="kn">import</span> <span class="n">SSHTerminal</span>
+
+<span class="k">class</span> <span class="nc">CreateFile1</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+  <span class="n">_</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+
+  <span class="n">directory</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+  <span class="n">command</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+
+  <span class="n">terminal</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">BashTerminal</span><span class="p">)</span>
+
+  <span class="n">create_file</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span> \
+      <span class="o">.</span><span class="n">home</span><span class="p">()</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> \
+      <span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+
+  <span class="n">instance</span> <span class="o">=</span> <span class="n">CreateFile1</span><span class="p">(</span><span class="s">&quot;Documents&quot;</span><span class="p">,</span> <span class="s">&quot;echo hello world &gt; hello.txt&quot;</span><span class="p">)</span>
+  <span class="n">instance</span><span class="o">.</span><span class="n">create_file</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>While this code is short and very easy to read, it obviously have shortcomings:
+The code will fail if the directory does not already exist. In order to
+resolve this issue we need to use some built-in functions to do simple
+if statements.</p>
+</div>
+<div class="section" id="built-in-do-function">
+<h3>Built-in Do-function<a class="headerlink" href="#built-in-do-function" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="example-createfileanddirectory">
+<span id="example-createfile2"></span><h3>Example: CreateFileAndDirectory<a class="headerlink" href="#example-createfileanddirectory" title="Permalink to this headline">¶</a></h3>
+<p>With the <tt class="docutils literal"><span class="pre">do</span></tt> we can now extend our previous script and ensure that
+the directory is created if it does not exist:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.bash</span> <span class="kn">import</span> <span class="n">BashTerminal</span>
+
+<span class="k">class</span> <span class="nc">CreateFileAndDirectory</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+    <span class="n">directory</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+
+    <span class="n">terminal</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">BashTerminal</span><span class="p">)</span>
+
+    <span class="n">create_dir</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">()</span> \
+        <span class="o">.</span><span class="n">home</span><span class="p">()</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">Qdon</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+    
+    <span class="n">create_file</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_dir</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-short-version">
+<h3>Example: Short version<a class="headerlink" href="#example-short-version" title="Permalink to this headline">¶</a></h3>
+<p>While the previous code is pretty taking into consideration what it
+does it can still be made shorter. One of the neat features of function
+queues are that you can predefine certain patterns - as for instance
+creating a directory in your home directory:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.bash</span> <span class="kn">import</span> <span class="n">BashTerminal</span>
+<span class="kn">from</span> <span class="nn">batchq.shortcuts.shell</span> <span class="kn">import</span> <span class="n">home_create_dir</span><span class="p">,</span> <span class="n">send_command</span>
+
+<span class="k">class</span> <span class="nc">CreateFileShort</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+    <span class="n">directory</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+
+    <span class="n">terminal</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">BashTerminal</span><span class="p">)</span>
+
+    <span class="n">create_dir</span> <span class="o">=</span> <span class="n">home_create_dir</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span><span class="n">_</span><span class="p">)</span>
+    <span class="n">create_file</span> <span class="o">=</span> <span class="n">send_command</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">inherits</span> <span class="o">=</span> <span class="n">create_dir</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="overwriting-controllers">
+<h3>Overwriting Controllers<a class="headerlink" href="#overwriting-controllers" title="Permalink to this headline">¶</a></h3>
+<p>A key feature of BatchQ is that you can overwrite controllers from your
+previous models. This means that once you have made a model for one
+pipeline you can use it on another one by simply overwriting the
+controller. In the following we overwrite the controller for one
+pipeline with a new controller for another pipeline:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+
+<span class="k">class</span> <span class="nc">Pipe</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">print</span> <span class="n">msg</span>
+
+<span class="k">class</span> <span class="nc">Model1</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">Pipe</span><span class="p">)</span>
+    <span class="n">fnc</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">hello</span><span class="p">(</span><span class="s">&quot;Hello from FNC&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">ReplacementPipe</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>       
+        <span class="k">print</span> <span class="n">msg</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">Model2</span><span class="p">(</span><span class="n">Model1</span><span class="p">):</span>
+    <span class="n">ctrl</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">ReplacementPipe</span><span class="p">)</span>
+
+<span class="n">Model1</span><span class="p">()</span><span class="o">.</span><span class="n">fnc</span><span class="p">()</span>
+<span class="n">Model2</span><span class="p">()</span><span class="o">.</span><span class="n">fnc</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The replacement pipeline reverses the string and the code produces the
+following output</p>
+<div class="highlight-python"><pre>Hello from FNC
+CNF morf olleH
+</pre>
+</div>
+</div>
+<div class="section" id="example-createfilessh">
+<span id="example-createfile3"></span><h3>Example: CreateFileSSH<a class="headerlink" href="#example-createfilessh" title="Permalink to this headline">¶</a></h3>
+<p>Clearly, the previous example comes in handy when we want to extent our
+script to support SSH:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">batchq.pipelines.shell.ssh</span> <span class="kn">import</span> <span class="n">SSHTerminal</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+
+<span class="k">class</span> <span class="nc">CreateFileSSH</span><span class="p">(</span><span class="n">CreateFileShort</span><span class="p">):</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+    <span class="n">username</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">()</span>
+    <span class="n">terminal</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">SSHTerminal</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+
+<span class="n">user</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&quot;Username:&quot;</span><span class="p">)</span>
+<span class="n">pasw</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">()</span>
+<span class="n">instance</span> <span class="o">=</span> <span class="n">CreateFileSSH</span><span class="p">(</span><span class="s">&quot;Documents/DEMO_SSH&quot;</span><span class="p">,</span> <span class="s">&quot;echo Hello SSH &gt; hello.txt&quot;</span><span class="p">,</span> <span class="s">&quot;localhost&quot;</span><span class="p">,</span><span class="n">user</span><span class="p">,</span><span class="n">pasw</span><span class="p">)</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">create_file</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The three new properties are appended to the constructor arguments.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Developer: Getting started</a><ul>
+<li><a class="reference internal" href="#processes-and-pipes">Processes and Pipes</a><ul>
+<li><a class="reference internal" href="#pipelines">Pipelines</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#batchq-basics">BatchQ Basics</a><ul>
+<li><a class="reference internal" href="#example-hello-world">Example: Hello world</a></li>
+<li><a class="reference internal" href="#example-hello-parameter">Example: Hello parameter</a></li>
+<li><a class="reference internal" href="#example-hello-error-i">Example: Hello error I</a></li>
+<li><a class="reference internal" href="#example-hello-error-ii">Example: Hello error II</a></li>
+<li><a class="reference internal" href="#example-function-inheritance">Example: Function Inheritance</a></li>
+<li><a class="reference internal" href="#example-function-calls">Example: Function Calls</a></li>
+<li><a class="reference internal" href="#wildcards">Wildcards</a></li>
+<li><a class="reference internal" href="#example-createfile">Example: CreateFile</a></li>
+<li><a class="reference internal" href="#built-in-do-function">Built-in Do-function</a></li>
+<li><a class="reference internal" href="#example-createfileanddirectory">Example: CreateFileAndDirectory</a></li>
+<li><a class="reference internal" href="#example-short-version">Example: Short version</a></li>
+<li><a class="reference internal" href="#overwriting-controllers">Overwriting Controllers</a></li>
+<li><a class="reference internal" href="#example-createfilessh">Example: CreateFileSSH</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="user/intro.html"
+                        title="previous chapter">Users Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tutorial_nhup.html"
+                        title="next chapter">Tutorial: nohup Remote Submission</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorial_nhup.html" title="Tutorial: nohup Remote Submission"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="user/intro.html" title="Users Guide"
+             >previous</a> |</li>
+        <li><a href="index.html">Remote Jobs 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+from batchq.core import batch
+class TestPipe(object):
+    def hello_world(self):
+        print "Hello world"
+
+class Q1(batch.BatchQ):
+    pipe = batch.Controller(TestPipe1)
+    fnc = batch.Function().hello_world()
+
+instance = Q1()
+print ""
+print "Calling fnc"
+instance.fnc()

@@ -1,0 +1,290 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>batchq.queues.nohup</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body">
+            
+  <h1>Source code for batchq.queues.nohup</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">batchq.core</span> <span class="kn">import</span> <span class="n">batch</span>
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.bash</span> <span class="kn">import</span> <span class="n">BashTerminal</span>
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.ssh</span> <span class="kn">import</span> <span class="n">SSHTerminal</span>
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.utils</span> <span class="kn">import</span> <span class="n">FileCommander</span>
+<span class="kn">from</span> <span class="nn">batchq.shortcuts.shell</span> <span class="kn">import</span> <span class="n">home_create_dir</span><span class="p">,</span> <span class="n">send_command</span>
+
+<span class="k">class</span> <span class="nc">NoHUP</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">BatchQ</span><span class="p">):</span>
+    <span class="n">_r</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">(</span><span class="n">reverse</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+
+    <span class="n">command</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="n">display</span><span class="o">=</span><span class="s">&quot;Command to execute: &quot;</span><span class="p">)</span>
+    <span class="n">working_directory</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="n">display</span><span class="o">=</span><span class="s">&quot;Specify a working directory: &quot;</span><span class="p">)</span>
+    <span class="n">input_directory</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="s">&quot;Specify an input directory: &quot;</span><span class="p">)</span>
+
+
+    <span class="n">terminal</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">BashTerminal</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">create_workdir</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">home</span><span class="p">()</span><span class="o">.</span><span class="n">Qstore</span><span class="p">(</span><span class="s">&quot;pwd&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">working_directory</span><span class="p">)</span><span class="o">.</span><span class="n">Qdon</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">working_directory</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">working_directory</span><span class="p">)</span><span class="o">.</span><span class="n">pwd</span><span class="p">()</span><span class="o">.</span><span class="n">Qstore</span><span class="p">(</span><span class="s">&quot;workdir&quot;</span><span class="p">)</span>
+
+
+    <span class="c">### TESTED AND WORKING</span>
+    <span class="n">prepare_incopy</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_workdir</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qget</span><span class="p">(</span><span class="s">&quot;pwd&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Qpjoin</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">input_directory</span><span class="p">)</span><span class="o">.</span><span class="n">Qstore</span><span class="p">(</span><span class="s">&quot;indir&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qpjoin</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="s">&quot;*&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Qget</span><span class="p">(</span><span class="s">&quot;workdir&quot;</span><span class="p">)</span>
+
+    <span class="c">### TESTED AND WORKING</span>
+    <span class="n">prepare_outcopy</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_workdir</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qget</span><span class="p">(</span><span class="s">&quot;pwd&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Qpjoin</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">input_directory</span><span class="p">)</span><span class="o">.</span><span class="n">Qstore</span><span class="p">(</span><span class="s">&quot;indir&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qget</span><span class="p">(</span><span class="s">&quot;workdir&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Qpjoin</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="s">&quot;*&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Qget</span><span class="p">(</span><span class="s">&quot;indir&quot;</span><span class="p">)</span>
+
+
+    <span class="c">### TESTED AND WORKING</span>
+    <span class="n">send</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">prepare_incopy</span> <span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">cp</span><span class="p">(</span><span class="n">_r</span><span class="p">,</span> <span class="n">_r</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">Qdon</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">Qthrow</span><span class="p">(</span><span class="s">&quot;Failed to transfer files.&quot;</span><span class="p">)</span>
+
+    <span class="c">### TESTED AND WORKING</span>
+    <span class="n">recv</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">prepare_outcopy</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">cp</span><span class="p">(</span><span class="n">_r</span><span class="p">,</span> <span class="n">_r</span><span class="p">)</span><span class="o">.</span><span class="n">Qdon</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">Qthrow</span><span class="p">(</span><span class="s">&quot;Failed to transfer files.&quot;</span><span class="p">)</span>
+
+    <span class="c">### TESTED AND WORKING</span>
+    <span class="n">pid</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_workdir</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&quot;.batchq.pid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Qdon</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">Qthrow</span><span class="p">(</span><span class="s">&quot;No process was started in the specified directory.&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="s">&quot;.batchq.pid&quot;</span><span class="p">)</span>
+
+    <span class="c">### TESTED AND WORKING</span>
+    <span class="n">running</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">isrunning</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">wasstarted</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_workdir</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&quot;.batchq.output&quot;</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">startjob</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_workdir</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qjoin</span><span class="p">(</span><span class="s">&quot;(&quot;</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="s">&quot; &gt; .batchq.output &amp; echo $! &gt; .batchq.pid )&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">_</span><span class="p">)</span><span class="o">.</span><span class="n">Qcall</span><span class="p">(</span><span class="n">running</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">submit</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qcall</span><span class="p">(</span><span class="n">startjob</span><span class="p">)</span>
+
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">wasstarted</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qdo</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="s">&quot;.batchq.output&quot;</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">clean</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_workdir</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qdo</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">rm</span><span class="p">(</span><span class="s">&quot;.batchq*&quot;</span><span class="p">,</span> <span class="n">force</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">delete</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">create_workdir</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qdo</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">Qget</span><span class="p">(</span><span class="s">&quot;workdir&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rm</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">force</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">recursively</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+
+
+
+<span class="k">class</span> <span class="nc">NoHUPSSH</span><span class="p">(</span><span class="n">NoHUP</span><span class="p">):</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+    <span class="n">_r</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="n">username</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="n">display</span><span class="o">=</span><span class="s">&quot;Username: &quot;</span><span class="p">)</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="n">password</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="s">&quot;Password: &quot;</span><span class="p">)</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="s">&quot;Server: &quot;</span><span class="p">)</span>
+    <span class="n">port</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="s">&quot;Port: &quot;</span><span class="p">)</span>
+
+    <span class="n">filecommander</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">FileCommander</span><span class="p">,</span><span class="n">server</span><span class="p">,</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+    <span class="n">local_terminal</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">BashTerminal</span><span class="p">,</span><span class="n">q_instance</span> <span class="o">=</span> <span class="n">filecommander</span><span class="o">.</span><span class="n">local</span><span class="p">)</span>
+    <span class="n">terminal</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Controller</span><span class="p">(</span><span class="n">BashTerminal</span><span class="p">,</span><span class="n">q_instance</span> <span class="o">=</span> <span class="n">filecommander</span><span class="o">.</span><span class="n">remote</span><span class="p">)</span>
+
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">prepare_incopy</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">NoHUP</span><span class="o">.</span><span class="n">create_workdir</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qcontroller</span><span class="p">(</span><span class="s">&quot;local_terminal&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">pwd</span><span class="p">()</span><span class="o">.</span><span class="n">Qpjoin</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">NoHUP</span><span class="o">.</span><span class="n">input_directory</span><span class="p">)</span><span class="o">.</span><span class="n">Qstore</span><span class="p">(</span><span class="s">&quot;indir&quot;</span><span class="p">)</span>  \
+        <span class="o">.</span><span class="n">Qget</span><span class="p">(</span><span class="s">&quot;workdir&quot;</span><span class="p">)</span>
+
+    <span class="n">prepare_outcopy</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">prepare_incopy</span><span class="p">)</span> 
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">send</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">prepare_incopy</span> <span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qcontroller</span><span class="p">(</span><span class="s">&quot;filecommander&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">sync</span><span class="p">(</span><span class="n">_r</span><span class="p">,</span><span class="n">_r</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="n">FileCommander</span><span class="o">.</span><span class="n">MODE_LOCAL_REMOTE</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">recv</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">prepare_incopy</span> <span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qcontroller</span><span class="p">(</span><span class="s">&quot;filecommander&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">sync</span><span class="p">(</span><span class="n">_r</span><span class="p">,</span><span class="n">_r</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="n">FileCommander</span><span class="o">.</span><span class="n">MODE_REMOTE_LOCAL</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">LSFBSub</span><span class="p">(</span><span class="n">NoHUPSSH</span><span class="p">):</span>
+    <span class="n">_1</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+    <span class="n">_2</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">WildCard</span><span class="p">()</span>
+
+    <span class="n">options</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="s">&quot;LFS options: &quot;</span><span class="p">)</span>    
+    <span class="n">prior</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Property</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="s">&quot;Command to issue prior submission: &quot;</span><span class="p">)</span>    
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">running</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">NoHUP</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qjoin</span><span class="p">(</span><span class="s">&quot;bjobs &quot;</span><span class="p">,</span><span class="n">_1</span><span class="p">,</span><span class="s">&quot; | awk &#39;{ if($1 == &quot;</span><span class="p">,</span><span class="n">_2</span><span class="p">,</span><span class="s">&quot;) {printf $3}}&#39;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qstrip</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span><span class="o">.</span><span class="n">Qlower</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span><span class="o">.</span><span class="n">Qequal</span><span class="p">(</span><span class="n">_1</span><span class="p">,</span><span class="s">&quot;run&quot;</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">startjob</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">NoHUP</span><span class="o">.</span><span class="n">create_workdir</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qjoin</span><span class="p">(</span><span class="s">&quot;(touch .batchq.output &amp;&amp; bsub &quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span><span class="s">&quot; </span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">NoHUP</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="s">&quot; &gt; .batchq.output </span><span class="se">\&quot;</span><span class="s"> |  awk &#39;{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }&#39; &gt; .batchq.pid )&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING   </span>
+    <span class="n">finished</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">NoHUP</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">Qcontroller</span><span class="p">(</span><span class="s">&quot;terminal&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qjoin</span><span class="p">(</span><span class="s">&quot;bjobs &quot;</span><span class="p">,</span><span class="n">_1</span><span class="p">,</span><span class="s">&quot; | awk &#39;{ if($1 == &quot;</span><span class="p">,</span><span class="n">_2</span><span class="p">,</span><span class="s">&quot;) {printf $3}}&#39; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qstrip</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span><span class="o">.</span><span class="n">Qlower</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span><span class="o">.</span><span class="n">Qequal</span><span class="p">(</span><span class="n">_1</span><span class="p">,</span><span class="s">&quot;done&quot;</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">pending</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">NoHUP</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">Qcontroller</span><span class="p">(</span><span class="s">&quot;terminal&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qjoin</span><span class="p">(</span><span class="s">&quot;bjobs &quot;</span><span class="p">,</span><span class="n">_1</span><span class="p">,</span><span class="s">&quot; | awk &#39;{ if($1 == &quot;</span><span class="p">,</span><span class="n">_2</span><span class="p">,</span><span class="s">&quot;) {printf $3}}&#39; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qstrip</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span><span class="o">.</span><span class="n">Qlower</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span><span class="o">.</span><span class="n">Qequal</span><span class="p">(</span><span class="n">_1</span><span class="p">,</span><span class="s">&quot;pend&quot;</span><span class="p">)</span>
+
+    <span class="c">## TESTED AND WORKING</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="n">NoHUP</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">Qcontroller</span><span class="p">(</span><span class="s">&quot;terminal&quot;</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">Qjoin</span><span class="p">(</span><span class="s">&quot;bjobs &quot;</span><span class="p">,</span><span class="n">_1</span><span class="p">,</span><span class="s">&quot; | awk &#39;{ if($1 == &quot;</span><span class="p">,</span><span class="n">_2</span><span class="p">,</span><span class="s">&quot;) {printf $3}}&#39; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="n">_1</span><span class="p">)</span> 
+
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="k">def</span> <span class="nf">create_configuration</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">switches</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">switches</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="kn">from</span> <span class="nn">batchq.core.library</span> <span class="kn">import</span> <span class="n">Library</span>
+<span class="k">def</span> <span class="nf">list_modules</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">print</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Library</span><span class="p">,</span><span class="n">task</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;Available </span><span class="si">%s</span><span class="s">:&quot;</span> <span class="o">%</span><span class="n">task</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">Library</span><span class="p">,</span><span class="n">task</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">dict</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Module class &#39;</span><span class="si">%s</span><span class="s">&#39; not found.&quot;</span> <span class="o">%</span> <span class="n">task</span>
+        <span class="k">print</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Available functions:&quot;</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">dict</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()])</span>
+        <span class="k">print</span>
+        <span class="k">print</span> <span class="s">&quot;Available queues:&quot;</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">queues</span><span class="o">.</span><span class="n">dict</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()])</span>
+        <span class="k">print</span>
+        <span class="k">print</span> <span class="s">&quot;Available pipelines:&quot;</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">pipelines</span><span class="o">.</span><span class="n">dict</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()])</span>
+        <span class="k">print</span>
+        <span class="k">print</span> <span class="s">&quot;Available templates:&quot;</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">dict</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()])</span>
+        <span class="k">print</span>
+
+
+<span class="kn">import</span> <span class="nn">inspect</span>
+<div class="viewcode-block" id="help_modules"><a class="viewcode-back" href="../../../user/intro.html#batchq.queues.nohup.help_modules">[docs]</a><span class="k">def</span> <span class="nf">help_modules</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The help function provides information, if available, about how a</span>
+<span class="sd">    module is used. The help function is invoked by writing</span>
+
+<span class="sd">    $ q help [module name]</span>
+
+<span class="sd">    Writing </span>
+
+<span class="sd">    $ q help help</span>
+<span class="sd">    </span>
+<span class="sd">    gives information about the help module (i.e. the information you</span>
+<span class="sd">    are reading now).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">docs</span> <span class="o">=</span> <span class="s">&quot;No help information present.&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">dict</span><span class="p">:</span>
+        <span class="k">print</span>
+        <span class="k">print</span> <span class="s">&quot;Function&quot;</span>
+        <span class="k">print</span>
+        <span class="n">_docs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getdoc</span><span class="p">(</span><span class="n">Library</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">_docs</span> <span class="ow">and</span> <span class="n">_docs</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">:</span> <span class="n">docs</span> <span class="o">=</span> <span class="n">_docs</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">docs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">))</span>
+        <span class="k">print</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">queues</span><span class="o">.</span><span class="n">dict</span><span class="p">:</span>
+        <span class="k">print</span>
+        <span class="k">print</span> <span class="s">&quot;Queue&quot;</span>
+        <span class="k">print</span>
+        <span class="n">_docs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getdoc</span><span class="p">(</span><span class="n">Library</span><span class="o">.</span><span class="n">queues</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">_docs</span> <span class="ow">and</span> <span class="n">_docs</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">:</span> <span class="n">docs</span> <span class="o">=</span> <span class="n">_docs</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">docs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">))</span>
+        <span class="k">print</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">dict</span><span class="p">:</span>
+        <span class="k">print</span>
+        <span class="n">_docs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getdoc</span><span class="p">(</span><span class="n">Library</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">_docs</span> <span class="ow">and</span> <span class="n">_docs</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">:</span> <span class="n">docs</span> <span class="o">=</span> <span class="n">_docs</span>
+        <span class="k">print</span> <span class="s">&quot;Template&quot;</span>
+        <span class="k">print</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">docs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">))</span>
+        <span class="k">print</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">Library</span><span class="o">.</span><span class="n">pipelines</span><span class="o">.</span><span class="n">dict</span><span class="p">:</span>
+        <span class="k">print</span>
+        <span class="n">_docs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getdoc</span><span class="p">(</span><span class="n">Library</span><span class="o">.</span><span class="n">pipelines</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">_docs</span> <span class="ow">and</span> <span class="n">_docs</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">:</span> <span class="n">docs</span> <span class="o">=</span> <span class="n">_docs</span>
+        <span class="k">print</span> <span class="s">&quot;Pipeline&quot;</span>
+        <span class="k">print</span>
+        <span class="k">print</span> <span class="s">&quot;  &quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">docs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">))</span>
+        <span class="k">print</span>
+</pre></div></div>
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

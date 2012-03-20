@@ -1,0 +1,117 @@
+Users Guide
+===========
+
+
+Using the command line tool
+---------------------------
+
+Available modules
++++++++++++++++++
+The modules available to BatchQ will vary from system to system
+depending on whether custom modules have been installed. Modules are
+divided into four categories: functions, queues, pipelines and
+templates.
+The general syntax of the Q command is:
+
+.. code-block:: bash
+
+   $ q [function/queue/template] [arguments]
+
+The following functions are available through the console interface and
+using Python and are standard modules included in BatchQ which provides
+information about other modules
+
+.. autofunction:: batchq.queues.nohup.list
+
+.. autofunction:: batchq.queues.nohup.help
+
+
+
+Submitting jobs
++++++++++++++++
+The BatchQ command line interface provides you with two predefined
+submission modules: nohup and lsf. Nohup is available on every 
+
+
+Creating configuration files
+++++++++++++++++++++++++++++
+Once you have automated the submission process you want to store the
+configuration parameters in a file in order to shorten the commands need
+to operate on your submissions. Using the example from before, this can
+be done as
+
+.. code-block:: bash
+
+   q configuration brutus -i --username=user --working_directory="Submission" --command="./script" --input_directory="." --port=22 --server="server.address.com"
+
+The above code creates a configuration named "brutus" which contains the instructions for submitting your job on "server.address.com".
+Having created a configuration file you can now submit jobs and check status with 
+
+.. code-block:: bash
+   
+   $ q lsf submit@brutus
+   True
+   $ q lsf pid@brutus
+   12452
+
+This keeps things short and simple. You will need to create a
+configuration file for each server you want to submit your job. If for
+one or another reason you temporarily want to change parameters of your
+configuration, say the ``working_directory``, this can be done by adding
+a long parameter:
+
+.. code-block:: bash
+   
+   $ q lsf submit@brutus --working_directory="Submission2"
+   True
+
+Retrieving results
+++++++++++++++++++
+
+
+Example: Submitting ALPS jobs using nohup
++++++++++++++++++++++++++++++++++++++++++
+
+
+Example: Submitting ALPS jobs using LSF
++++++++++++++++++++++++++++++++++++++++
+
+
+
+Using Python
+------------
+
+
+Submitting jobs
++++++++++++++++
+
+Retrieving results
+++++++++++++++++++
+
+
+Example: Submitting ALPS jobs using nohup
++++++++++++++++++++++++++++++++++++++++++
+
+
+Example: Submitting ALPS jobs using LSF
++++++++++++++++++++++++++++++++++++++++
+
+
+Using VisTrails
+---------------
+
+
+Submitting jobs
++++++++++++++++
+
+Retrieving results
+++++++++++++++++++
+
+
+Example: Submitting ALPS jobs using nohup
++++++++++++++++++++++++++++++++++++++++++
+
+
+Example: Submitting ALPS jobs using LSF
++++++++++++++++++++++++++++++++++++++++
+

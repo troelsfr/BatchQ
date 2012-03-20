@@ -1,0 +1,437 @@
+from batchq.core import batch
+from batchq.pipelines.shell.bash import BashTerminal
+from batchq.pipelines.shell.ssh import SSHTerminal
+from batchq.pipelines.shell.utils import FileCommander
+from batchq.shortcuts.shell import home_create_dir, send_command
+
+class NoHUP(batch.BatchQ):
+    _r = batch.WildCard(reverse = True)
+    _ = batch.WildCard()
+
+    command = batch.Property(display="Command to execute: ")
+    working_directory = batch.Property(display="Specify a working directory: ")
+    input_directory = batch.Property(".", display="Specify an input directory: ")
+    output_directory = batch.Property(".", display="Specify an output directory: ")
+
+    prior = batch.Property("", verbose = False)    
+    post = batch.Property("", verbose = False)    
+
+    nodes = batch.Property(1, display="Nodes: ")    
+    cores = batch.Property(1, display="Max cores pr. node: ")    
+    memory = batch.Property(128000, display="Memory: ")    
+    wall = batch.Property(1, display="Wall time: ")    
+
+
+    overwrite_nodename_with = batch.Property("", verbose = False)
+    overwrite_submission_id = batch.Property("", verbose = False)
+
+    terminal = batch.Controller(BashTerminal)
+
+    #### STUFF FOR SYSTEM IDENTIFICATION
+    whoami = batch.Function() \
+        .whoami()
+
+    overwrite_nodename = batch.Function(verbose=True)\
+        .overwrite_nodename(overwrite_nodename_with)
+
+    nodename = batch.Function(verbose=True)\
+        .nodename()
+
+    nodeid = batch.Function(verbose=True) \
+        .nodename().Qslugify(_)
+
+    system_info = batch.Function(verbose=True) \
+        .system_info()
+
+    system_string = batch.Function(verbose=True) \
+        .system_string()
+
+
+
+    ## TESTED AND WORKING
+    goto_workdir = batch.Function(verbose=True)\
+        .home().chdir(_).chdir(working_directory)
+
+    ## TESTED AND WORKING
+    create_workdir = batch.Function(verbose=True) \
+        .entrance().chdir(_) \
+        .exists(working_directory).Qdon(1).mkdir(working_directory, True) \
+        .chdir(working_directory).pwd().Qstore("workdir")
+
+    ## TODO: TEST
+    hash_work = batch.Function(verbose=True) \
+        .entrance().chdir(_).directory_hash(output_directory,True,True) \
+        .nodename().Qslugify(command).Qjoin(_,"-",_,"-",_)
+
+    ## TESTED AND WORKING
+    hash_input = batch.Function(verbose=True) \
+        .entrance().chdir(_).directory_hash(input_directory,True,True) \
+        .nodename().Qslugify(command).Qjoin(_,"-",_,"-",_)
+
+    ## TESTED AND WORKING
+    hash_output = batch.Function(verbose=True) \
+        .entrance().chdir(_).directory_hash(output_directory,True,True) \
+        .Qdo(3).nodename().Qslugify(command).Qjoin(_,"-",_,"-",_)
+
+
+    ## TESTED AND WORKING
+    identifier_filename = batch.Function() \
+        .Qslugify(command).Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
+        .Qstr(overwrite_submission_id).Qequal("",_).Qdo(3).Qprint("hash").Qcall(hash_input).Qstore("id") \
+        .Qget("id").Qjoin(".batchq_",_)
+
+
+    ### TESTED AND WORKING
+    prepare_incopy = batch.Function(create_workdir, verbose=True) \
+        .entrance().Qpjoin(_,input_directory).Qstore("indir") \
+        .Qpjoin(_,"*").Qget("workdir")
+
+    ### TESTED AND WORKING
+    prepare_outcopy = batch.Function(create_workdir, verbose=True) \
+        .entrance().Qpjoin(_,output_directory).Qstore("outdir") \
+        .Qget("workdir").Qpjoin(_,"*").Qget("outdir").Qprint_stack()
+
+
+    ### TESTED AND WORKING
+    send = batch.Function(prepare_incopy , verbose=True, enduser=True) \
+        .cp(_r, _r, True).Qdon(1).Qthrow("Failed to transfer files.")
+
+    ### TESTED AND WORKING
+    recv = batch.Function(prepare_outcopy, verbose=True, enduser=True) \
+        .cp(_r, _r).Qdon(1).Qthrow("Failed to transfer files.")
+
+    ### TESTED AND WORKING
+    pid = batch.Function(create_workdir,verbose=True, enduser=True) \
+        .exists(".batchq.pid").Qdon(2).Qstr("-1").Qreturn() \
+        .cat(".batchq.pid")
+
+
+    ### TESTED AND WORKING
+    running = batch.Function(pid,verbose=True, enduser=True) \
+        .Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
+        .Qget("pid").isrunning(_)
+
+    ### TESTED AND WORKING
+    pending = batch.Function(verbose=True, enduser=True) \
+        .Qbool(False)
+
+    ## TODO: THIS SHOULD BE IMPLEMENTED BY TESTING THE EXIT CODE
+    failed = batch.Function(verbose=True, enduser=True) \
+        .Qbool(False)
+
+    ## TESTED AND WORKING
+    ## TODO: Rename to started
+    wasstarted = batch.Function(create_workdir,verbose=True, enduser=True) \
+        .Qcall(identifier_filename).exists(_).Qdo(1).Qreturn() \
+        .Qcall(running).Qdo(1).Qreturn() \
+        .Qcall(pending).Qdo(1).Qreturn() 
+
+    ### TESTED AND WORKING
+    finished = batch.Function(running,verbose=True, enduser=True) \
+        .Qnot(_).Qstore("not_running").Qcall(wasstarted) \
+        .Qget("not_running").Qand(_,_)
+
+    ## TODO: TEST
+    cancel = batch.Function(pid, verbose=True, enduser=True).kill(_)
+
+    status = batch.Function(verbose=True, enduser=True) \
+        .Qcall(running).Qdo(2).Qstr("running").Qreturn() \
+        .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
+        .Qcall(pending).Qdo(2).Qstr("pending").Qreturn() \
+        .Qcall(wasstarted).Qdon(2).Qstr("was not started").Qreturn() \
+        .Qstr("unknown status")
+
+
+    ## TESTED AND WORKING
+    startjob = batch.Function(create_workdir,verbose=True) \
+        .send_command(prior) \
+        .Qcall(identifier_filename) \
+        .Qjoin("(", command, " > ",_," & echo $! > .batchq.pid )") \
+        .send_command(_).Qcall(running)
+
+    ## TESTED AND WORKING
+    submit = batch.Function(send, verbose=True, enduser=True) \
+        .Qcall(startjob)
+
+
+    ## TESTED AND WORKING
+    log = batch.Function(wasstarted,verbose=True, enduser=True) \
+        .Qdo(2).Qcall(identifier_filename).cat(_)
+
+    ## TESTED AND WORKING
+    clean = batch.Function(create_workdir,verbose=True, enduser=True) \
+        .Qdo(1).rm(".batchq*", force = True)
+
+    ## TESTED AND WORKING
+    delete = batch.Function(create_workdir,verbose=True, enduser=True) \
+        .Qdo(2).Qget("workdir").rm(_, force = True, recursively = True)
+
+
+
+
+
+class NoHUPSSH(NoHUP):
+    _ = batch.WildCard()
+    _r = batch.WildCard(reverse=True)
+
+    username = batch.Property(display="Username: ")
+    password = batch.Property(password = True, display="Password: ")
+    server = batch.Property("localhost", display="Server: ")
+    port = batch.Property(22, display="Port: ")
+
+    filecommander = batch.Controller(FileCommander,server,username, password, port)
+    local_terminal = batch.Controller(BashTerminal,q_instance = filecommander.local)
+    terminal = batch.Controller(BashTerminal,q_instance = filecommander.remote)
+
+    hash_input_directory = batch.Function(verbose=True) \
+        .Qcontroller("local_terminal") \
+        .entrance().chdir(_).directory_hash(NoHUP.input_directory,True,True)
+
+    ## TESTED AND WORKING
+    hash_input = batch.Function(verbose=True) \
+        .nodename().Qstore("remotenodename") \
+        .Qcontroller("local_terminal") \
+        .entrance().chdir(_).directory_hash(NoHUP.input_directory,True,True) \
+        .Qdo(4).nodename().Qget("remotenodename").Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
+
+    ## TESTED AND WORKING
+    hash_output = batch.Function(verbose=True) \
+        .nodename().Qstore("remotenodename") \
+        .Qcontroller("local_terminal") \
+        .entrance().chdir(_).directory_hash(NoHUP.output_directory,True,True) \
+        .Qdo(4).Qget("remotenodename").nodename().Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
+
+    ## TESTED AND WORKING
+    prepare_incopy = batch.Function(NoHUP.create_workdir) \
+        .Qcontroller("local_terminal") \
+        .pwd().Qpjoin(_,NoHUP.input_directory).Qstore("indir")  \
+        .Qget("workdir")
+
+    ## TESTED AND WORKING
+    prepare_outcopy = batch.Function(NoHUP.create_workdir).Qcontroller("local_terminal") \
+        .push_entrance().exists(NoHUP.output_directory).Qdon(1).mkdir(NoHUP.output_directory, True).popd() \
+        .entrance().Qpjoin(_,NoHUP.output_directory).Qstore("outdir") \
+        .entrance().Qpjoin(_,NoHUP.input_directory).Qstore("indir")  \
+        .Qget("outdir").Qget("workdir").Qget("indir")
+
+    ## TESTED AND WORKING
+    send = batch.Function(prepare_incopy , verbose=True) \
+        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_LOCAL_REMOTE)
+
+    ## TESTED AND WORKING
+    recv = batch.Function(prepare_outcopy , verbose=True) \
+        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_REMOTE_LOCAL, diff_local_dir =_r)
+
+
+    ## TODO: write this function
+    cancel = batch.Function().Qstr("TODO: This function needs to be implemented")
+
+
+class LSFBSub(NoHUPSSH):
+    _1 = batch.WildCard()
+    _2 = batch.WildCard()
+
+    options = batch.Property("", verbose = False)    
+
+
+    ## TESTED AND WORKING
+    running = batch.Function(NoHUP.pid,verbose=True) \
+        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}'").send_command(_1) \
+        .Qstrip(_1).Qlower(_1).Qequal(_1,"run")
+
+    ## TESTED AND WORKING
+    startjob = batch.Function(NoHUP.create_workdir,verbose=True) \
+        .send_command(NoHUP.prior) \
+        .Qcall(NoHUP.identifier_filename) \
+        .Qjoin("(touch ",_1, " && bsub ", options," \"", NoHUP.command, " > ",_2," \" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > .batchq.pid )") \
+        .send_command(_1)
+
+    ## TESTED AND WORKING   
+    finished = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \
+        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
+        .Qstrip(_1).Qlower(_1).Qequal(_1,"done")
+
+    
+    failed = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \
+        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
+        .Qstrip(_1).Qlower(_1).Qequal(_1,"exit")
+
+    ## TESTED AND WORKING
+    pending = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \
+        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
+        .Qstrip(_1).Qlower(_1).Qequal(_1,"pend")
+
+    ## TESTED AND WORKING
+    status = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \
+        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) 
+
+    ## TODO: write this function
+    cancel = batch.Function().Qstr("TODO: This function needs to be implemented")
+
+
+import json
+def create_configuration(filename, args, kwargs, switches):
+    """
+    
+
+    If invoked from Python, this function takes four arguments
+    ``filename``, ``args``, ``kwargs`` and ``switches``.
+    """
+    f = open(filename, "w")
+    f.write(json.dumps( (args, kwargs, switches) ) )
+    f.close()
+
+
+from batchq.core.library import Library
+def list(module, *args, **kwargs):
+    """
+    To list the available modules type:
+
+    .. code-block:: bash
+
+       $ q list [argument]
+
+    The optional list argument should be either of module classes (in
+    plural): functions, queues, pipelines or templates, i.e.,
+
+    .. code-block:: bash
+
+       $ q list functions
+
+       Available functions:
+         configuration
+         list
+         help
+
+    The list command can also be used without argument in which case it
+    produces a list of all available modules. 
+
+    Note this function is not intended for Python use. Insted import
+    ``batchq.core.library.Library`` and access the members
+    ``functions``, ``queues``, ``templates`` and ``pipelines``.
+    """
+    print
+    if not module is None:
+        module = module.lower()
+        if hasattr(Library,module):
+            print "Available %s:" %module
+            x = getattr(Library,module)
+            print "  "+"\n  ".join([a for a in x.dict.iterkeys()])
+        else:
+            print "Module class '%s' not found." % module
+        print
+    else:
+        print "Available functions:"
+        print "  "+"\n  ".join([a for a in Library.functions.dict.iterkeys()])
+        print
+        print "Available queues:"
+        print "  "+"\n  ".join([a for a in Library.queues.dict.iterkeys()])
+        print
+        print "Available pipelines:"
+        print "  "+"\n  ".join([a for a in Library.pipelines.dict.iterkeys()])
+        print
+        print "Available templates:"
+        print "  "+"\n  ".join([a for a in Library.templates.dict.iterkeys()])
+        print
+
+
+import inspect
+def help(name, *args, **kwargs):
+    """
+    The help function provides information, if available, about how a
+    module is used. The help function is invoked by writing
+
+    .. code-block:: bash
+
+       $ q help [module name]
+
+    Writing 
+
+    .. code-block:: bash
+
+       $ q help help
+    
+    gives information about the help module (i.e. the information you
+    are reading now).
+    """
+    docs = "No help information present."
+    if name in Library.functions.dict:
+        print
+        print "Function"
+        print
+        _docs = inspect.getdoc(Library.functions.dict[name])
+
+        if _docs and _docs.strip() != "": docs = _docs
+        print "  "+"\n  ".join(docs.split("\n"))
+        print
+    if name in Library.queues.dict:
+        print
+        print "Queue"
+        print
+        _docs = inspect.getdoc(Library.queues.dict[name])
+        if _docs and _docs.strip() != "": docs = _docs
+        print "  "+"\n  ".join(docs.split("\n"))
+        print
+    if name in Library.templates.dict:
+        print
+        _docs = inspect.getdoc(Library.templates.dict[name])
+        if _docs and _docs.strip() != "": docs = _docs
+        print "Template"
+        print
+        print "  "+"\n  ".join(docs.split("\n"))
+        print
+    if name in Library.pipelines.dict:
+        print
+        _docs = inspect.getdoc(Library.pipelines.dict[name])
+        if _docs and _docs.strip() != "": docs = _docs
+        print "Pipeline"
+        print
+        print "  "+"\n  ".join(docs.split("\n"))
+        print
+
+
+import SocketServer
+import socket
+import sys
+
+def server(pipeline,  args, kwargs, switches):
+    print pipeline
+    port =  args[0]
+    pipeline = Library.pipelines.dict[pipeline]()
+    
+    class PipelineServer(SocketServer.BaseRequestHandler):
+        _pipeline = pipeline
+        def handle(self):
+            data = self.request[0].strip()
+            socket = self.request[1]
+            print "Got input from {}:".format(self.client_address[0])
+            print data
+            response = self._pipeline.send_command(data)
+            print self._pipeline.buffer
+            socket.sendto(response, self.client_address)
+
+
+    HOST, PORT = "localhost", int(port)
+    server = SocketServer.UDPServer((HOST, PORT), PipelineServer)
+    server.serve_forever() 
+
+
+def client(cmd, args, kwargs, switches):
+    HOST, PORT = "localhost", 12345
+    
+
+    if cmd is None:
+        if not "infile" in kwargs:
+            raise BaseException("You must either specify a file or a command.")
+        f = open( kwargs['infile'], "r" )
+        cmd = f.read()
+        f.close()
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    sock.sendto(cmd , (HOST, PORT))
+    # TODO: Fix to arbitrary bytes
+    received = sock.recv(1024)
+    print received
+
+    sock.close()

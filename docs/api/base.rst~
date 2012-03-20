@@ -1,0 +1,18 @@
+Core module
+===========
+Below you find a description of the core modules
+
+.. automodule:: batchq.core.communication
+
+.. autoclass:: batchq.core.communication.BasePipe
+   :members:
+
+.. automodule:: batchq.core.process
+
+.. autoclass:: batchq.core.process.Process
+   :members:
+
+.. automodule:: batchq.core.terminal
+
+.. autoclass:: batchq.core.terminal.VT100Interpreter
+   :members:

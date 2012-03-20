@@ -1,0 +1,569 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Shell Pipelines &mdash; Remote Jobs 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="../index.html" />
+    <link rel="up" title="API Reference" href="../api.html" />
+    <link rel="next" title="Math Terminals" href="math_terminals.html" />
+    <link rel="prev" title="Core Pipeline Classes" href="terminal.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="math_terminals.html" title="Math Terminals"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="terminal.html" title="Core Pipeline Classes"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" accesskey="U">API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="shell-pipelines">
+<h1>Shell Pipelines<a class="headerlink" href="#shell-pipelines" title="Permalink to this headline">¶</a></h1>
+<p>BatchQ comes with a number of predefined pipelines. Included in these
+are three shells, <tt class="docutils literal"><span class="pre">BashTerminal</span></tt>, <tt class="docutils literal"><span class="pre">SSHTerminal</span></tt> and
+<tt class="docutils literal"><span class="pre">SFTPTerminal</span></tt>, and one shell based class <tt class="docutils literal"><span class="pre">FileCommander</span></tt>.</p>
+<div class="section" id="module-batchq.pipelines.shell.bash">
+<span id="bash-terminal"></span><h2>Bash terminal<a class="headerlink" href="#module-batchq.pipelines.shell.bash" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="batchq.pipelines.shell.bash.BashTerminal">
+<em class="property">class </em><tt class="descclassname">batchq.pipelines.shell.bash.</tt><tt class="descname">BashTerminal</tt><big>(</big><em>pipe=None</em>, <em>expect_token='#--&gt;'</em>, <em>submit_token='n'</em>, <em>path_module=None</em>, <em>initiate_pipe=True</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unless another pipe is supplied this constructor opens bash and
+sets the path module along with the expectation token and the
+submit token. The expectation token is the prompt characters and should be
+chosen such that one would not expect it to appear in any output
+of any of the executed programs. The token is set in
+<tt class="docutils literal"><span class="pre">BashTerminal.initiate_pipe()</span></tt> which is called if <tt class="docutils literal"><span class="pre">initiate_pipe</span>
+<span class="pre">=</span> <span class="pre">True</span></tt> (default). The submit token is the token that will be send
+to the pipe after the command has been sent and the command echo has been
+consumed. For a normal bash terminal this is simply <tt class="docutils literal"><span class="pre">\n</span></tt>.</p>
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.cat">
+<tt class="descname">cat</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.cat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.cat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the contents of a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.chdir">
+<tt class="descname">chdir</tt><big>(</big><em>dir</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.chdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.chdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the current working directory into dir.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.command_exists">
+<tt class="descname">command_exists</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.command_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.command_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether a commmand exists in the environment path or not.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.cp">
+<tt class="descname">cp</tt><big>(</big><em>source</em>, <em>dest</em>, <em>recursively=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.cp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.cp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies source to dest. If recursive is set to True directories
+are recursively copied.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.directory_hash">
+<tt class="descname">directory_hash</tt><big>(</big><em>dir</em>, <em>ignore_hidden=False</em>, <em>silent=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.directory_hash"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.directory_hash" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.dirname">
+<tt class="descname">dirname</tt><big>(</big><em>object</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.dirname"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.dirname" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function tries to retrieve the directory name of object and
+resolve all symlinks.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.echo">
+<tt class="descname">echo</tt><big>(</big><em>msg</em>, <em>output=None</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.echo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.echo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Echo a message to output. If output is None, then echo is undirected.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.entrance">
+<tt class="descname">entrance</tt><big>(</big><big>)</big><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.entrance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.exists">
+<tt class="descname">exists</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <tt class="docutils literal"><span class="pre">True</span></tt> if <tt class="docutils literal"><span class="pre">path</span></tt> is either a directory or a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.file_hash">
+<tt class="descname">file_hash</tt><big>(</big><em>filename</em>, <em>check_file=True</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.file_hash"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.file_hash" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.hash">
+<tt class="descname">hash</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.hash"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.hash" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.hasher">
+<tt class="descname">hasher</tt><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.hasher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.hasher" title="Permalink to this definition">¶</a></dt>
+<dd><p>This property returns a tuple containing the bash command for
+doing a hash, the corresponding Python routine (as string) and a
+regex pattern that matches the hash.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.home">
+<tt class="descname">home</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.home"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.home" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.initiate_pipe">
+<tt class="descname">initiate_pipe</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.initiate_pipe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.initiate_pipe" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function evaluates the commands that will be unique for our
+bash session. This functions changes the promt such that it will
+be the same independently of the user.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.isdir">
+<tt class="descname">isdir</tt><big>(</big><em>dir</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.isdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.isdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <tt class="docutils literal"><span class="pre">True</span></tt> if <tt class="docutils literal"><span class="pre">dir</span></tt> is a directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.isfile">
+<tt class="descname">isfile</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.isfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.isfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <tt class="docutils literal"><span class="pre">True</span></tt> if <tt class="docutils literal"><span class="pre">filename</span></tt> is a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.isrunning">
+<tt class="descname">isrunning</tt><big>(</big><em>pid</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.isrunning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.isrunning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <tt class="docutils literal"><span class="pre">True</span></tt> if the <tt class="docutils literal"><span class="pre">pid</span></tt> is found in the systems process list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.last_exitcode">
+<tt class="descname">last_exitcode</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.last_exitcode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.last_exitcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the exit code of the last started proccess. If this is
+not possible <tt class="docutils literal"><span class="pre">None</span></tt> is returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.last_modified">
+<tt class="descname">last_modified</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.last_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.last_modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns the last modification time of the given
+directory or file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.last_pid">
+<tt class="descname">last_pid</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.last_pid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.last_pid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the pid of the last started proccess. If this is
+not possible 0 is returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.list">
+<tt class="descname">list</tt><big>(</big><em>dir='.'</em>, <em>recursively=True</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>List files in directory.</p>
+<p>Warning! If recursively is True, all subdirectories are included
+(also hidden ones, i.e. staring with &#8216;.&#8217;). Consequently, this
+command will execute extremely slowly if many levels of
+recursion occur.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.mkdir">
+<tt class="descname">mkdir</tt><big>(</big><em>dir</em>, <em>create_intermediate=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.mkdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.mkdir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.nodename">
+<tt class="descname">nodename</tt><big>(</big><big>)</big><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.nodename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the node name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.overwrite_nodename">
+<tt class="descname">overwrite_nodename</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.overwrite_nodename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.path">
+<tt class="descname">path</tt><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns the path object for the system on which
+the terminal runs. This function is
+implemented as a matter of convience as different terminals may
+be based on different standards. You can for instance not rely on
+os.path when controlling SSH from a Windows machine.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.popd">
+<tt class="descname">popd</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.popd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.popd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.push_entrance">
+<tt class="descname">push_entrance</tt><big>(</big><big>)</big><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.push_entrance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.pushd">
+<tt class="descname">pushd</tt><big>(</big><em>dir</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.pushd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.pushd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the current working directory into dir.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.pwd">
+<tt class="descname">pwd</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.pwd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.pwd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.rm">
+<tt class="descname">rm</tt><big>(</big><em>path</em>, <em>force=False</em>, <em>recursively=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.rm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.rm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the path on the file system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.set_permission">
+<tt class="descname">set_permission</tt><big>(</big><em>file</em>, <em>permissions</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.set_permission"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.set_permission" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.system_info">
+<tt class="descname">system_info</tt><big>(</big><big>)</big><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.system_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns hardware information for the system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.system_string">
+<tt class="descname">system_string</tt><big>(</big><big>)</big><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.system_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an indetification string for the system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.bash.BashTerminal.whoami">
+<tt class="descname">whoami</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/bash.html#BashTerminal.whoami"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.bash.BashTerminal.whoami" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invokes <tt class="docutils literal"><span class="pre">whoami</span></tt> in the terminal and returns the /result.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="batchq.pipelines.shell.bash.format_path">
+<tt class="descclassname">batchq.pipelines.shell.bash.</tt><tt class="descname">format_path</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#batchq.pipelines.shell.bash.format_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-batchq.pipelines.shell.ssh">
+<span id="ssh-terminal"></span><h2>SSH terminal<a class="headerlink" href="#module-batchq.pipelines.shell.ssh" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="batchq.pipelines.shell.ssh.BaseSecureTerminal">
+<em class="property">class </em><tt class="descclassname">batchq.pipelines.shell.ssh.</tt><tt class="descname">BaseSecureTerminal</tt><big>(</big><em>server</em>, <em>username</em>, <em>password</em>, <em>port=22</em>, <em>accept_figerprint=False</em>, <em>command='ssh'</em>, <em>port_option='-p %d'</em>, <em>expect_token='#--&gt;'</em>, <em>submit_token='n'</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/ssh.html#BaseSecureTerminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.ssh.BaseSecureTerminal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="exception">
+<dt id="batchq.pipelines.shell.ssh.BaseSecureTerminalLoginError">
+<em class="property">exception </em><tt class="descclassname">batchq.pipelines.shell.ssh.</tt><tt class="descname">BaseSecureTerminalLoginError</tt><a class="reference internal" href="../_modules/batchq/pipelines/shell/ssh.html#BaseSecureTerminalLoginError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.ssh.BaseSecureTerminalLoginError" title="Permalink to this definition">¶</a></dt>
+<dd><p>This exception is thrown by secure terminals whenever login attempts
+has failed or when acceptence of fingerprints is required but not
+allowed.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="batchq.pipelines.shell.ssh.SSHTerminal">
+<em class="property">class </em><tt class="descclassname">batchq.pipelines.shell.ssh.</tt><tt class="descname">SSHTerminal</tt><big>(</big><em>server</em>, <em>username</em>, <em>password</em>, <em>port=22</em>, <em>accept_figerprint=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/ssh.html#SSHTerminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.ssh.SSHTerminal" title="Permalink to this definition">¶</a></dt>
+<dd><p>The object will be initiated as first as a BaseSecureTerminal and
+secondly as a BashTerminal. The order of the inheritance is important
+as the constructor which is called first will open the pipe
+(i.e. either SSH or Bash). Moreover, the SSHTerminal inherits
+all the functionality of the bash terminal (which makes sense as it
+just is a remote bash terminal after successful login).</p>
+<p>Following code gives an example of how the SSH Terminal may be used
+to pull out a list of files and directories:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">getpass</span>
+<span class="n">server</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&quot;Server:&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">server</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span> <span class="n">server</span> <span class="o">=</span> <span class="s">&quot;localhost&quot;</span>
+<span class="n">username</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+<span class="k">while</span> <span class="n">username</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span>  <span class="n">username</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&quot;Username:&quot;</span><span class="p">)</span>
+<span class="n">pas</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">()</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">SSHTerminal</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">pas</span><span class="p">)</span>
+
+<span class="n">files</span><span class="p">,</span> <span class="n">dirs</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">recursively</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+<span class="n">pwd</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">pwd</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="s">&quot;On&quot;</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="s">&quot;is following files &quot;</span>
+<span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+   <span class="k">print</span> <span class="s">&quot;     -&quot;</span><span class="p">,</span> <span class="nb">file</span>
+
+<span class="k">print</span> <span class="s">&quot;and following directories&quot;</span>
+<span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dirs</span><span class="p">:</span>
+   <span class="k">print</span> <span class="s">&quot;     -&quot;</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span><span class="s">&quot;.&quot;</span>
+
+<span class="k">print</span> <span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">pwd</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-batchq.pipelines.shell.sftp">
+<span id="sftp-terminal"></span><h2>SFTP terminal<a class="headerlink" href="#module-batchq.pipelines.shell.sftp" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal">
+<em class="property">class </em><tt class="descclassname">batchq.pipelines.shell.sftp.</tt><tt class="descname">SFTPTerminal</tt><big>(</big><em>server</em>, <em>username</em>, <em>password</em>, <em>port=22</em>, <em>accept_figerprint=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal.chdir">
+<tt class="descname">chdir</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal.chdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal.chdir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal.getfile">
+<tt class="descname">getfile</tt><big>(</big><em>local_file</em>, <em>remote_file</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal.getfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal.getfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal.initiate_pipe">
+<tt class="descname">initiate_pipe</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal.initiate_pipe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal.initiate_pipe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal.local_chdir">
+<tt class="descname">local_chdir</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal.local_chdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal.local_chdir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal.local_pwd">
+<tt class="descname">local_pwd</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal.local_pwd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal.local_pwd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal.pwd">
+<tt class="descname">pwd</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal.pwd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal.pwd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.sftp.SFTPTerminal.sendfile">
+<tt class="descname">sendfile</tt><big>(</big><em>local_file</em>, <em>remote_file</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/sftp.html#SFTPTerminal.sendfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.sftp.SFTPTerminal.sendfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-batchq.pipelines.shell.utils">
+<span id="filecommander"></span><h2>FileCommander<a class="headerlink" href="#module-batchq.pipelines.shell.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="batchq.pipelines.shell.utils.FileCommander">
+<em class="property">class </em><tt class="descclassname">batchq.pipelines.shell.utils.</tt><tt class="descname">FileCommander</tt><big>(</big><em>server=None</em>, <em>username=''</em>, <em>password=''</em>, <em>port=22</em>, <em>accept_figerprint=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileCommander"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileCommander" title="Permalink to this definition">¶</a></dt>
+<dd><p>FileCommander provides an easy-to-use interface for transfering 
+files as well as access both the local and the remote file system. It 
+performs common operations such compare directories in the local and
+remote views as well as syncronising them.</p>
+<p>The local and remote terminals can be access through the property
+FileCommander.local and FileCommander.remote, respectively, which
+are both instances of the BashTerminal.</p>
+<dl class="attribute">
+<dt id="batchq.pipelines.shell.utils.FileCommander.MODE_LOCAL_REMOTE">
+<tt class="descname">MODE_LOCAL_REMOTE</tt><em class="property"> = 1</em><a class="headerlink" href="#batchq.pipelines.shell.utils.FileCommander.MODE_LOCAL_REMOTE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.pipelines.shell.utils.FileCommander.MODE_REMOTE_LOCAL">
+<tt class="descname">MODE_REMOTE_LOCAL</tt><em class="property"> = 2</em><a class="headerlink" href="#batchq.pipelines.shell.utils.FileCommander.MODE_REMOTE_LOCAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileCommander.diff">
+<tt class="descname">diff</tt><big>(</big><em>local_dir='.'</em>, <em>remote_dir='.'</em>, <em>recursive=True</em>, <em>mode=3</em>, <em>absolute_path=False</em>, <em>ignore_hidden=True</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileCommander.diff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileCommander.diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare local and remote directories, recursively <tt class="docutils literal"><span class="pre">recursive</span> <span class="pre">=</span>
+<span class="pre">True</span></tt> (default),  by computing a hash of each file.  
+Depending on wether <tt class="docutils literal"><span class="pre">mode</span></tt> is set to
+<tt class="docutils literal"><span class="pre">FileCommander.MODE_LOCAL_REMOTE</span></tt> or <tt class="docutils literal"><span class="pre">FileCommander.MODE_REMOTE_LOCAL</span></tt>  
+two lists are returned with files and directories that are
+out-of-date, or missing. As standard, hidden files are
+ignored. To include hidden files  set <tt class="docutils literal"><span class="pre">ignore_hidden</span> <span class="pre">=</span>
+<span class="pre">False</span></tt>. By default, paths returned are relative, but if
+<tt class="docutils literal"><span class="pre">absolute_path</span> <span class="pre">=</span> <span class="pre">True</span></tt> they are converted into absolute paths.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.pipelines.shell.utils.FileCommander.local">
+<tt class="descname">local</tt><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileCommander.local"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileCommander.local" title="Permalink to this definition">¶</a></dt>
+<dd><p>This property returns an instance of <tt class="docutils literal"><span class="pre">BashTerminal</span></tt>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.pipelines.shell.utils.FileCommander.remote">
+<tt class="descname">remote</tt><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileCommander.remote"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileCommander.remote" title="Permalink to this definition">¶</a></dt>
+<dd><p>This property returns an instance of <tt class="docutils literal"><span class="pre">SSHTerminal</span></tt> connected
+to the remote machine if server was different than <tt class="docutils literal"><span class="pre">None</span></tt> in
+the constructor. Otherwise, an instance of <tt class="docutils literal"><span class="pre">BashTerminal</span></tt> is returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileCommander.sync">
+<tt class="descname">sync</tt><big>(</big><em>local_dir='.'</em>, <em>remote_dir='.'</em>, <em>recursive=True</em>, <em>mode=3</em>, <em>ignore_hidden=True</em>, <em>diff_local_dir=None</em>, <em>diff_remote_dir=None</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileCommander.sync"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileCommander.sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function compares a local and a remote directory and
+transfer missing files in one direction depending on the mode
+(which can either be <tt class="docutils literal"><span class="pre">FileCommander.MODE_LOCAL_REMOTE</span></tt> or
+<tt class="docutils literal"><span class="pre">FileCommander.MODE_REMOTE_LOCAL</span></tt>). Note this function ignores the
+creation/modification date of the file or directory.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal">
+<em class="property">class </em><tt class="descclassname">batchq.pipelines.shell.utils.</tt><tt class="descname">FileTransferTerminal</tt><big>(</big><em>server=None</em>, <em>username=''</em>, <em>password=''</em>, <em>port=22</em>, <em>accept_figerprint=False</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal" title="Permalink to this definition">¶</a></dt>
+<dd><p>This object is similar to SFTPTerminal if server, username and
+password are passed to the constructor. If server=None, this class
+implements the SFTPTerminal operations for the for local file
+system. Wether a FileTransferTerminal class is working on the local
+filesystem or not can be checked with FileTransferTerminal.islocal().</p>
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal.chdir">
+<tt class="descname">chdir</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal.chdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal.chdir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal.getfile">
+<tt class="descname">getfile</tt><big>(</big><em>local_file</em>, <em>remote_file</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal.getfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal.getfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal.islocal">
+<tt class="descname">islocal</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal.islocal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal.islocal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal.local_chdir">
+<tt class="descname">local_chdir</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal.local_chdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal.local_chdir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal.local_pwd">
+<tt class="descname">local_pwd</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal.local_pwd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal.local_pwd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal.pwd">
+<tt class="descname">pwd</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal.pwd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal.pwd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.pipelines.shell.utils.FileTransferTerminal.sendfile">
+<tt class="descname">sendfile</tt><big>(</big><em>local_file</em>, <em>remote_file</em><big>)</big><a class="reference internal" href="../_modules/batchq/pipelines/shell/utils.html#FileTransferTerminal.sendfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.pipelines.shell.utils.FileTransferTerminal.sendfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Shell Pipelines</a><ul>
+<li><a class="reference internal" href="#module-batchq.pipelines.shell.bash">Bash terminal</a></li>
+<li><a class="reference internal" href="#module-batchq.pipelines.shell.ssh">SSH terminal</a></li>
+<li><a class="reference internal" href="#module-batchq.pipelines.shell.sftp">SFTP terminal</a></li>
+<li><a class="reference internal" href="#module-batchq.pipelines.shell.utils">FileCommander</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="terminal.html"
+                        title="previous chapter">Core Pipeline Classes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="math_terminals.html"
+                        title="next chapter">Math Terminals</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/shell_terminals.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="math_terminals.html" title="Math Terminals"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="terminal.html" title="Core Pipeline Classes"
+             >previous</a> |</li>
+        <li><a href="../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" >API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

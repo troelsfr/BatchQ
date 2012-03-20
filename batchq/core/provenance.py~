@@ -1,0 +1,384 @@
+"""
+This module implements classes that enables easy reproduction of 
+
+"""
+import json
+import copy
+
+class BlockCache:
+    _cache_dict = {}
+    
+    @staticmethod
+    def set_cache(cacheid, blocks):
+        BlockCache._cache_dict[cacheid] = blocks
+        return blocks
+
+    @staticmethod
+    def get_cache(cacheid):
+        return BlockCache._cache_dict[cacheid]
+
+class ProvenanceField(object):
+    """
+    The ``ProvenanceField`` provides the basic functionality of all
+    workflow fields. Most importantly it ensures that fields are
+    executed in the order they are defined and that dependencies are
+    respected.
+    """
+
+    __object_counter = 0
+    def __init__(self, *args, **kwargs):
+        self.__counter__ = ProvenanceField.__object_counter
+        ProvenanceField.__object_counter+=1 
+        self._value = None
+        self._computed = False
+        self._dependencies = []
+        for a in args:
+            if isinstance(a,ProvenanceField):
+                self._dependencies.append(a)
+
+        for a in kwargs.itervalues():
+            if isinstance(a,ProvenanceField):
+                self._dependencies.append(a)
+
+        self._cache_id = None
+        self._reporter = None
+        self._name = None
+        self._blocks = None
+        self._msg = None
+        self._name = "noname"
+        self._queue = None
+
+    def __call__(self,*args,**kwargs):
+        if not  self._queue is None:
+            return self.execute(self._queue, *args,**kwargs)
+            
+        raise BaseException("Please set a queue before requesting a task")
+
+    def get_name(self):
+        return self._name
+    def set_name(self, name):
+        self._name = name
+    name = property(get_name, set_name)
+
+    def get_queue(self):
+        return self._queue
+    def set_queue(self, q):
+        self._queue = q
+    queue = property(get_queue, set_queue)
+
+
+    def reset(self):
+        self._computed = False
+    
+    @property
+    def dependencies(self):
+        return self._dependencies
+
+    def execute_dependencies(self):
+        """
+        """
+        ret = True
+        for d in self._dependencies:
+            ret = ret and d.execute()
+        return ret 
+
+    def execute(self, queue, *args, **kwargs):
+        """
+        The ``execute`` function in the ``ProvenanceField`` is a virtual
+        function inteded to be overwritten. Essentially, the overwritten
+        function implement how a given task is performed using a given
+        ``queue``. 
+        """
+        if self._computed: return self._computed
+        self.execute_dependencies()
+
+        return True
+
+    def cacheid(self, id=None):
+        """
+        This function generates a unique cache id for a given
+        task. If it returns ``None`` the object will not be
+        cachable. By default, no caching is enabled. The cache id can be
+        set with this function setting the first argument ``id``.
+        """
+        if id is None:
+            return self._cache_id
+
+        self._cache_id = id
+
+        # TODO: Lookup cache
+
+        return self._cache_id
+
+    def blocks(self):
+        """
+        Returns the log blocks generated in the execute function. These
+        blocks are eventually passed on to the ``Reporter`` object(s)
+        and  cached if ``cacheid`` is different from ``None``.
+        """
+        return self._blocks
+
+    def cache(self):
+        """
+        This function generates a cache of the blocks
+        """
+
+    def value(self):
+        """
+        This function 
+        """
+        if not self._computed:
+            return None
+        return self._value
+
+    def register_reporter(self, name, instance):
+        self._name = name
+        self._reporter = instance
+
+    def log(self, msg=None):
+        if not msg is None:
+            self._msg = msg
+        return self._msg
+
+class Submission(ProvenanceField):
+    def __init__(self, directory, command, *args, **kwargs):
+        self._directory = directory
+        self._command = command
+        super(Submission, self).__init__(*args, **kwargs)
+
+    def execute(self, queue, *args, **kwargs): 
+        if self._computed: return self._computed
+        self.execute_dependencies()
+
+        queue.input_directory = self._directory
+        queue.command = self._command
+
+        ### TODO: consider moving this to the NoHUP module as "cached_submit"
+        hash = queue.hash_input()
+        hashfile = path.join(self._directory,".cache_%s" % hash)
+
+        file = open(hashfile,"w")
+        cache = json.loads(file.read())
+        file.close()
+        
+        if 'output' in cache:
+            # TODO: check output directory hash against cache['output_hash']
+            self._value = cache['output']
+            self._computed = True
+            return True
+
+        if True: ### TODO: for testing purposes
+            self._computed = queue.submit()
+            return self._computed
+       
+        
+
+        queue.submit()
+        pid = int(queue.pid())
+        input_settings = {'directory': self._directory, 'command':self._command, 'hash':indirhash, 'pid': pid}
+        
+        self._computed = queue.finished()
+
+        if not self._computed:
+            self.log("Warning: computation '%s' with id '%s' has not finished yet." % (self.name, hash))
+        else:
+            self.log("Execuion '%s' finished." % (self.name))
+
+        file = open(hashfile,"w")
+        file.write(json.dumps(input_settings))
+        file.close()
+
+
+        return self._computed
+
+    def finished(self, queue):
+        return queue.finished()
+
+class RawData(ProvenanceField):
+    def __init__(self,output_directory, *args, **kwargs):
+        super(RawData, self).__init__(*args, **kwargs)
+
+        if 'all' in kwargs:
+            self._all = kwargs['all']
+
+        deps = self.dependencies
+        if len(deps) != 1:
+            raise BaseException("RawData can only depend on one Submission .")
+
+        if not isinstance(deps[0], Submission):
+            raise BaseException("RawData can only depend on Submission and not %s." %dep[0].__class__.__name__)
+
+        self._output = output_directory
+
+    def execute(self, queue, *args, **kwargs):
+        if self._computed: return self._computed
+        self.execute_dependencies()
+
+        obj = self.dependencies[0]
+
+
+        finished = obj.finished(queue)
+        if not finished:
+            self._value = None
+            self._computed = False
+            self.log("Warning: could not create '%s' as computation '%s' has not finished yet." % (self.name, obj.name))
+            return self._computed
+
+        hash = queue.hash_input()
+        cache_file = ".cache_%s" % hash
+        onserver = True
+
+        t = queue.pipeline("filecommander")
+        cache = None
+        if not queue.goto_workdir():
+            onserver = False
+        else:
+            if t.remote.exists(cache_file):
+                j = t.remote.send_command("cat %s"% cache_file)
+                cache = json.loads(j)
+            else:
+                onserver = False
+
+        if not onserver:
+            raise BaseError("Computation has finished, but data was not found anywhere")
+
+        files, dirs = [], []
+        if not t.local.push_entrance(): raise BaseError("Unable to revert to entrance directory on local machine.")
+
+
+        if all:
+            if not t.local.pushd(self._output): raise BaseError("Unable to enter output directory: %s" % self._output)
+        else:
+            if not t.local.pushd(queue.input_directory.get()): raise BaseError("Unable to enter input directory: %s" % queue.input_directory)
+
+        files, dirs = t.diff(mode=FileCommander.MODE_REMOTE_LOCAL)
+
+        t.local.popd()
+        if not t.local.pushd(self._output): raise BaseError("Unable to enter output directory: %s" % self._output)
+
+        # Syncronising directories
+        for dir in sorted(dirs):
+            if dir.strip() == "":
+                raise BaseException("Error recieved an empty directory.")
+            if not t.local.mkdir(dir):
+                raise BaseException("Could not create: %s" % dir)
+
+        # Syncronising files
+        for file in sorted(files):
+            if file.strip() == "":
+                raise BaseException("Error recieved an empty directory")
+            if not t.getfile(file,file):
+                raise BaseException("Could not copy: %s" % file)
+
+
+        t.local.popd()
+        t.local.popd()
+
+        return self._computed
+
+class Treatment(ProvenanceField):
+    def __init__(self, *args, **kwargs):
+        super(Treatment, self).__init__(*args, **kwargs)
+
+    def execute(self, queue, *args, **kwargs):
+        self.execute_dependencies()
+
+class Dependency(ProvenanceField):
+    def __init__(self, name, *args, **kwargs):
+        super(Dependency, self).__init__(*args, **kwargs)
+        
+
+    def execute(self, queue, *args, **kwargs):
+        self.execute_dependencies()
+
+        term = queue.pipeline("terminal")
+        term.push_entrance()
+        
+        term.popd()
+
+class Reporter(ProvenanceField):
+    def __init__(self, *args, **kwargs):
+        super(Formatter, self).__init__(*args, **kwargs)
+
+    def execute(self, queue, *args, **kwargs):
+        self.execute_dependencies()
+
+
+class MetaWorkflow(type):
+    def __new__(cls, name, bases, dct):
+        fields = []
+
+        # Inherithed fields
+        for b in bases:
+            if hasattr(b, "__new_fields__"):
+                fields += [(x,y,) for x,y in b.__new_fields__.iteritems()]
+        fields = dict(fields)
+
+        # Finding new fields
+        newfields = [(a,dct[a]) for a in dct.iterkeys() if isinstance(dct[a], ProvenanceField)]
+        fields.update(newfields)
+
+        # TODO: Currently there is no mechanism for handling overwritten fields
+                
+        dct['__new_fields__'] = fields
+
+        return type.__new__(cls, name, bases, dct)
+ 
+
+class Workflow(object):
+    __metaclass__ = MetaWorkflow
+    
+    def __init__(self, queue, *args,**kwargs):
+        self.fields = copy.deepcopy(self.__class__.__new_fields__)        
+        self._dependencies = []
+
+        items = [(a,b) for a,b in self.fields.iteritems()]
+        items.sort(lambda (a,x),(b,y): cmp(x.__counter__, y.__counter__))
+        self._queue = queue
+
+        for name, attr in items:
+            setattr(self, name, attr)
+            attr.queue = queue
+
+        
+
+
+
+if __name__ == "__main__":
+    from batchq.core import batch
+    class Pipe(object):
+        
+        def submit(self, a,b):
+            print "Submitting from '%s' to '%s' " % (a,b)
+            return False
+
+        def finished(self):
+            return True
+
+    class SomeQueue(batch.BatchQ):
+        ctrl = batch.Controller(Pipe)
+
+        input_directory = batch.Property("default_in")
+        working_directory = batch.Property("default_work")
+
+        submit = batch.Function().submit(input_directory,working_directory)
+        finished = batch.Function().finished()
+
+
+    class Test(Workflow):
+#        html_formatter = Reporter("<div class=\"${identifier}\">${contents}</div>")
+
+#        def system(self, q):
+#            return q.default_controller.whoami()
+
+        sub = Submission("/Users/tfr/TestInDirectory", "./script")
+#        first = RawResults("/Users/tfr/TestResults/second/${system}/", create_data, system = system) 
+#        cpp = Dependency("C++","gcc", executable=True, version="--version")
+
+
+#    from batchq.queues import NoHUP
+#    queue = NoHUP(q_interact=True)
+    queue = SomeQueue()
+    workflow = Test(queue)
+    print "Calling ", workflow.sub
+    workflow.sub()

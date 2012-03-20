@@ -1,0 +1,126 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>batchq.pipelines.shell.sftp</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body">
+            
+  <h1>Source code for batchq.pipelines.shell.sftp</h1><div class="highlight"><pre>
+<span class="c">####################################################################################</span>
+<span class="c"># Copyright (C) 2011-2012</span>
+<span class="c"># Troels F. Roennow, ETH Zurich</span>
+<span class="c">#</span>
+<span class="c"># Permission is hereby granted, free of charge, to any person obtaining a copy of</span>
+<span class="c"># this software and associated documentation files (the &quot;Software&quot;), to deal in</span>
+<span class="c"># the Software without restriction, including without limitation the rights to</span>
+<span class="c"># use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies</span>
+<span class="c"># of the Software, and to permit persons to whom the Software is furnished to do</span>
+<span class="c"># so, subject to the following conditions:</span>
+<span class="c"># </span>
+<span class="c"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c"># copies or substantial portions of the Software.</span>
+<span class="c"># </span>
+<span class="c"># THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</span>
+<span class="c"># IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span>
+<span class="c"># FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span>
+<span class="c"># AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span>
+<span class="c"># LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span>
+<span class="c"># OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</span>
+<span class="c"># SOFTWARE.</span>
+<span class="c">####################################################################################</span>
+
+<span class="kn">from</span> <span class="nn">batchq.pipelines.shell.ssh</span> <span class="kn">import</span> <span class="n">BaseSecureTerminal</span>
+
+<div class="viewcode-block" id="SFTPTerminal"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal">[docs]</a><span class="k">class</span> <span class="nc">SFTPTerminal</span><span class="p">(</span><span class="n">BaseSecureTerminal</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="mi">22</span><span class="p">,</span> <span class="n">accept_figerprint</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SFTPTerminal</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">accept_figerprint</span><span class="p">,</span> <span class="s">&quot;sftp&quot;</span><span class="p">,</span> <span class="s">&quot;-oPort=</span><span class="si">%d</span><span class="s">&quot;</span><span class="p">,</span> <span class="s">&quot;sftp&gt;&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SFTPTerminal.initiate_pipe"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal.initiate_pipe">[docs]</a>    <span class="k">def</span> <span class="nf">initiate_pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="SFTPTerminal.chdir"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal.chdir">[docs]</a>    <span class="k">def</span> <span class="nf">chdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;cd &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span> 
+<span class="c">#        print &quot;GOT: &quot;, res, res.strip() == &quot;&quot;</span>
+        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s">&quot;&quot;</span>
+
+</div>
+<div class="viewcode-block" id="SFTPTerminal.local_chdir"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal.local_chdir">[docs]</a>    <span class="k">def</span> <span class="nf">local_chdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;lcd &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+<span class="c">#        print &quot;GOT: &quot;, res, res.strip() == &quot;&quot;</span>
+        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s">&quot;&quot;</span>
+</div>
+<div class="viewcode-block" id="SFTPTerminal.pwd"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal.pwd">[docs]</a>    <span class="k">def</span> <span class="nf">pwd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;pwd&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;: &quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="SFTPTerminal.local_pwd"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal.local_pwd">[docs]</a>    <span class="k">def</span> <span class="nf">local_pwd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;lpwd&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;: &quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="SFTPTerminal.sendfile"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal.sendfile">[docs]</a>    <span class="k">def</span> <span class="nf">sendfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_file</span><span class="p">,</span> <span class="n">remote_file</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;put &#39;</span><span class="si">%s</span><span class="s">&#39; &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">local_file</span><span class="p">,</span> <span class="n">remote_file</span><span class="p">))</span>        
+        <span class="k">if</span> <span class="s">&quot;No such file or directory&quot;</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="SFTPTerminal.getfile"><a class="viewcode-back" href="../../../../api/shell_terminals.html#batchq.pipelines.shell.sftp.SFTPTerminal.getfile">[docs]</a>    <span class="k">def</span> <span class="nf">getfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_file</span><span class="p">,</span> <span class="n">remote_file</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;get &#39;</span><span class="si">%s</span><span class="s">&#39; &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">remote_file</span><span class="p">,</span> <span class="n">local_file</span><span class="p">))</span>        
+        <span class="k">if</span> <span class="s">&quot;No such file or directory&quot;</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+</pre></div></div></div>
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

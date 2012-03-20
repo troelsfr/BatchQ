@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Developer introduction &mdash; Remote Jobs 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="index.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Console Interface" href="console.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api.html" title="API Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="console.html" title="Console Interface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Remote Jobs 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="developer-introduction">
+<h1>Developer introduction<a class="headerlink" href="#developer-introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="remote-job-submitter">
+<h2>Remote Job Submitter<a class="headerlink" href="#remote-job-submitter" title="Permalink to this headline">¶</a></h2>
+<p>This section explains the some of the high-level classes of the Remote
+Job package and is intended for people who wish to have a basic
+understanding of how to use the</p>
+<div class="section" id="submitting-a-job">
+<h3>Submitting a job<a class="headerlink" href="#submitting-a-job" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">remotejobs</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c"># Creating a new job submitter which will store the job</span>
+<span class="c"># settings in ~/.remoteJobs</span>
+<span class="n">jobs</span> <span class="o">=</span> <span class="n">RemoteJobSubmitter</span><span class="p">(</span><span class="s">&quot;remoteJobs&quot;</span><span class="p">)</span>
+
+<span class="c"># Finding the local and remote directories we are working in</span>
+<span class="n">lbash</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">file_commander</span><span class="o">.</span><span class="n">local</span>
+<span class="n">rbash</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">file_commander</span><span class="o">.</span><span class="n">remote</span>
+<span class="n">local_path</span> <span class="o">=</span> <span class="n">rbash</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lbash</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="s">&quot;workingdir&quot;</span><span class="p">,</span> <span class="s">&quot;local&quot;</span><span class="p">)</span>
+<span class="n">remote_path</span> <span class="o">=</span> <span class="n">rbash</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rbash</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="s">&quot;workingdir&quot;</span><span class="p">,</span> <span class="s">&quot;remote&quot;</span><span class="p">)</span>
+
+<span class="c"># Submitting the job</span>
+<span class="n">settings</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">create_settings</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">,</span> <span class="s">&#39;testscript&#39;</span><span class="p">,</span> <span class="p">[],</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="nb">hash</span><span class="p">,</span> <span class="n">submission</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">generate_id</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+<span class="n">settings</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">submission</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="s">&quot;A job have been submitted with id=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">hash</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="nb">hash</span><span class="p">,</span> <span class="n">submission</span><span class="p">,</span> <span class="n">first_submission</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">generate_id</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">first_submission</span><span class="p">:</span>
+   <span class="k">print</span> <span class="s">&quot;This is the first submission. Our submission number is </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">submission</span>
+<span class="k">else</span><span class="p">:</span>
+   <span class="k">print</span> <span class="s">&quot;The last submission had submission number </span><span class="si">%d</span><span class="s">. The new submission number is </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">submission</span><span class="p">,</span> <span class="n">submission</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="checking-the-status-of-a-job">
+<h3>Checking the status of a job<a class="headerlink" href="#checking-the-status-of-a-job" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">cleanup</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">settings</span> <span class="o">=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">check_state</span><span class="p">(</span><span class="nb">hash</span><span class="p">,</span> <span class="n">submission</span><span class="p">,</span> <span class="n">cleanup</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">jobs</span><span class="o">.</span><span class="n">STATUS_FINISHED</span><span class="p">:</span>
+   <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s">&#39;cleaned&#39;</span><span class="p">]:</span>
+      <span class="k">print</span> <span class="s">&quot;The job has finished and we have deleted the remote submission directory.&quot;</span>
+   <span class="k">else</span><span class="p">:</span>
+      <span class="k">print</span> <span class="s">&quot;The job has finished but we did _NOT_ delete remote submission directory.&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="export-job-records-to-database">
+<h3>Export job records to database<a class="headerlink" href="#export-job-records-to-database" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="the-foundation">
+<h2>The foundation<a class="headerlink" href="#the-foundation" title="Permalink to this headline">¶</a></h2>
+<p>This section is mainly intended for people who are interested in the
+basic structure of the module and who wishes to use in other ways than
+the high level class allow or who wishes to contribute with bug fixes
+and/or improvements.</p>
+<p>Basically the foundation of this module allows you to automate a wide
+variety of tasks as long as they can be performed from a normal bash
+shell. Fortunately many things can.</p>
+<div class="section" id="bash">
+<h3>Bash<a class="headerlink" href="#bash" title="Permalink to this headline">¶</a></h3>
+<p>The BashTerminal is a class which enables many features basic to an
+operating system such as copying files, deleting files, changing
+directory, evaluates of script commands etc. The main difference between
+BashTerminal and the os module provided with Python is that the
+BashTerminal performs all commands through the bash program. This gives
+a number of advantages such as use environment variables, or performing
+a task using several steps, not to mention evaluation of interactive programs.
+Consider the following code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">remotejobs.base</span> <span class="kn">import</span> <span class="n">BashTerminal</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">BashTerminal</span><span class="p">()</span>
+<span class="n">homedir</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">home</span><span class="p">()</span>
+<span class="n">workdir</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">homedir</span><span class="p">,</span> <span class="s">&quot;workdir&quot;</span><span class="p">)</span>
+<span class="n">x</span><span class="o">.</span><span class="n">pushd</span><span class="p">(</span><span class="n">workdir</span><span class="p">)</span>
+<span class="n">paths</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">send_commnad</span><span class="p">(</span><span class="s">&quot;ls -F -m&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+<span class="n">x</span><span class="o">.</span><span class="n">popd</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The above example corresponds to opening a bash terminal and evaluating
+the code:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">pushd</span> ~/workdir
+ls -F -m
+<span class="nb">popd</span>
+</pre></div>
+</div>
+<p>As an example of interactive programs that may be started
+one could open Python within bash to test some code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">remotejobs.base</span> <span class="kn">import</span> <span class="n">BashTerminal</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">BashTerminal</span><span class="p">()</span>
+
+<span class="c"># Preparing for the new expectation token</span>
+<span class="n">x</span><span class="o">.</span><span class="n">push_expect</span><span class="p">(</span><span class="s">&quot;&gt;&gt;&gt; &quot;</span><span class="p">)</span>
+<span class="n">x</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;python&quot;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Pythons says 2 * 2 =&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;2*2&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+<span class="c"># Go back and expect a bash prompt again</span>
+<span class="n">x</span><span class="o">.</span><span class="n">pop_expect</span><span class="p">()</span>
+<span class="n">x</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;exit()&quot;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Bash says&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s">&quot;echo Hello world&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&quot;Bye!&quot;</span>
+</pre></div>
+</div>
+<p>While this is an illustrative example the applications go further as you
+with this construction easily can automate many trivial tasks using this
+module. For instance one could take the administrative task of creating
+a new user on several computers which do not share their user system,
+but which all have SSH access. Instead of performing such a task
+manually one can now write a script which takes a username and password
+as input, logs on to the individual machines and creates the users.</p>
+</div>
+<div class="section" id="ssh">
+<h3>SSH<a class="headerlink" href="#ssh" title="Permalink to this headline">¶</a></h3>
+<p>To simplify the task of accessing a computer via SSH this packages
+provides an SSHTerminal, which is inherits the properties and methods of
+the BashTerminal. The only difference between the BashTerminal and
+SSHTerminal is the that the SSHTerminal constructor takes additional
+arguments in the constructor: server, username and password. For full
+documentation of the SSHTerminal constructor see the TODO:API documentation.</p>
+</div>
+<div class="section" id="sftp">
+<h3>SFTP<a class="headerlink" href="#sftp" title="Permalink to this headline">¶</a></h3>
+<p>SFTPTerminal is a SFTP pipe which in analog with SSHTerminal opens
+sftp. It provides the most basic features such as chdir(path) and
+local_chdir(path) as well as sendfile(local_path, remote_path) and
+getfile(local_path, remote_path)</p>
+</div>
+<div class="section" id="filetransfer">
+<h3>FileTransfer<a class="headerlink" href="#filetransfer" title="Permalink to this headline">¶</a></h3>
+<p>This class inherits the SFTPTErminal. The only difference between
+FileTransferTerminal and SFTPTerminal is that FileTransferTerminal
+allows server to be None in the constructor in which case all methods
+are implemented for the local machine.</p>
+</div>
+<div class="section" id="filecommander">
+<h3>FileCommander<a class="headerlink" href="#filecommander" title="Permalink to this headline">¶</a></h3>
+<p>The FileCommander inherits the properties and methods of the
+FileTransferTerminal. Moreover the FileCommander has two associate Bash
+instances associated of which one may or may not be an instance of
+SSHTerminal found as FileCommander.local and FileCommander.remote,
+respectively. The FileCommander implements basic functionality for
+synchronising directories on two distinct machines through
+FileCommander.diff and FileCommander.sync.</p>
+<p>The FileCommander class is the main class file for transfers and
+evaluation of remote commands. The remote job submitter in the next
+section will be based on this class.</p>
+</div>
+</div>
+<div class="section" id="further-documentation">
+<h2>Further documentation<a class="headerlink" href="#further-documentation" title="Permalink to this headline">¶</a></h2>
+<p>If you are still eager to read more documentation please consult the API
+reference manual (TODO: link).</p>
+</div>
+<div class="section" id="future-perspectives">
+<h2>Future perspectives<a class="headerlink" href="#future-perspectives" title="Permalink to this headline">¶</a></h2>
+<p>As of version 0.1 this module only supports POSIX platforms. Preferably
+extensions should be made such that it would also support Windows and/or
+Java platforms. However, the main</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Developer introduction</a><ul>
+<li><a class="reference internal" href="#remote-job-submitter">Remote Job Submitter</a><ul>
+<li><a class="reference internal" href="#submitting-a-job">Submitting a job</a></li>
+<li><a class="reference internal" href="#checking-the-status-of-a-job">Checking the status of a job</a></li>
+<li><a class="reference internal" href="#export-job-records-to-database">Export job records to database</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-foundation">The foundation</a><ul>
+<li><a class="reference internal" href="#bash">Bash</a></li>
+<li><a class="reference internal" href="#ssh">SSH</a></li>
+<li><a class="reference internal" href="#sftp">SFTP</a></li>
+<li><a class="reference internal" href="#filetransfer">FileTransfer</a></li>
+<li><a class="reference internal" href="#filecommander">FileCommander</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#further-documentation">Further documentation</a></li>
+<li><a class="reference internal" href="#future-perspectives">Future perspectives</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="console.html"
+                        title="previous chapter">Console Interface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="api.html"
+                        title="next chapter">API Reference</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/developer_intro.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api.html" title="API Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="console.html" title="Console Interface"
+             >previous</a> |</li>
+        <li><a href="index.html">Remote Jobs 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

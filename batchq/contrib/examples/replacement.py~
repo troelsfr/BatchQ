@@ -1,0 +1,3 @@
+class Pipe(object):
+    def hello(self):
+        print "Hello world"

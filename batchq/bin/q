@@ -1,0 +1,10 @@
+#!/bin/bash
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+DIRNP1="$( pwd )"
+DIRNP2="$( cd $DIR && cd ../.. && pwd )"
+export PYTHONPATH=$DIRNP1:$DIRNP2:$PYTHONPATH
+
+python $DIR/q.py "$@" 

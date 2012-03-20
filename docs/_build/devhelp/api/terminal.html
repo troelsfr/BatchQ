@@ -1,0 +1,486 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Core Pipeline Classes</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="../index.html" />
+    <link rel="up" title="API Reference" href="../api.html" />
+    <link rel="next" title="Shell Pipelines" href="shell_terminals.html" />
+    <link rel="prev" title="API Reference" href="../api.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="shell_terminals.html" title="Shell Pipelines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../api.html" title="API Reference"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" accesskey="U">API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body">
+            
+  <div class="section" id="core-pipeline-classes">
+<h1>Core Pipeline Classes</h1>
+<div class="section" id="module-batchq.core.communication">
+<span id="basepipe"></span><h2>BasePipe</h2>
+<p>This is some sort of docs??</p>
+<dl class="class">
+<dt id="batchq.core.communication.BasePipe">
+<em class="property">class </em><tt class="descclassname">batchq.core.communication.</tt><tt class="descname">BasePipe</tt><big>(</big><em>pipe</em>, <em>expect_token</em>, <em>submit_token</em>, <em>mem_scale=1000.0</em>, <em>vt100=None</em>, <em>initiate_pipe=True</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe"><span class="viewcode-link">[source]</span></a></dt>
+<dd><dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.buffer">
+<tt class="descname">buffer</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.buffer"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Contains the VT100 interpreted buffer.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.child_memory_usage">
+<tt class="descname">child_memory_usage</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.child_memory_usage"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.consume_output">
+<tt class="descname">consume_output</tt><big>(</big><em>pipe=None</em>, <em>consume_until=None</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.consume_output"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This function consumes output of the pipe which is separated
+with no more than 10 ms and returns it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.cpu_usage">
+<tt class="descname">cpu_usage</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.cpu_usage"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.expect">
+<tt class="descname">expect</tt><big>(</big><em>val=None</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.expect"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.initiate_pipe">
+<tt class="descname">initiate_pipe</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.initiate_pipe"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This function is a virtual function which is called 
+at the end if the objects initiation. Its purpose is to initiate
+the pipe with a series of commands.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.kill">
+<tt class="descname">kill</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.kill"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.memory_usage">
+<tt class="descname">memory_usage</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.memory_usage"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.pid">
+<tt class="descname">pid</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.pid"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.pipe">
+<tt class="descname">pipe</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.pipe"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.pipe_buffer">
+<tt class="descname">pipe_buffer</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.pipe_buffer"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Contains the true pipe buffer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.pop_expect">
+<tt class="descname">pop_expect</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.pop_expect"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.pop_submit">
+<tt class="descname">pop_submit</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.pop_submit"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.push_expect">
+<tt class="descname">push_expect</tt><big>(</big><em>expect_token</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.push_expect"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.push_submit">
+<tt class="descname">push_submit</tt><big>(</big><em>submit_token</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.push_submit"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.remaining">
+<tt class="descname">remaining</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.remaining"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.send_command">
+<tt class="descname">send_command</tt><big>(</big><em>cmd</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.send_command"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This function sends a command to the pipe, wait for the prompt
+to appear and return the output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.set_timeout">
+<tt class="descname">set_timeout</tt><big>(</big><em>t</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.set_timeout"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.terminate">
+<tt class="descname">terminate</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.terminate"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.total_memory_usage">
+<tt class="descname">total_memory_usage</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.total_memory_usage"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.vt100interpreter">
+<tt class="descname">vt100interpreter</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.vt100interpreter"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This property holds an instance of a <tt class="docutils literal"><span class="pre">VT100Interpreter</span></tt>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-batchq.core.terminal">
+<span id="vt100-terminal-interpreter"></span><h2>VT100 Terminal Interpreter</h2>
+<dl class="class">
+<dt id="batchq.core.terminal.PatternRegister">
+<em class="property">class </em><tt class="descclassname">batchq.core.terminal.</tt><tt class="descname">PatternRegister</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#PatternRegister"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This objects is a register for mapping keystrokes into functions. A
+keystroke is added using the register method and the function is
+retrieved using get_function.</p>
+<dl class="method">
+<dt id="batchq.core.terminal.PatternRegister.get_function">
+<tt class="descname">get_function</tt><big>(</big><em>k</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#PatternRegister.get_function"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Given a keystroke combination k, this function returns the
+registered function. It returns None if no function is found.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.terminal.PatternRegister.re">
+<tt class="descname">re</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#PatternRegister.re"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This property holds a regex pattern for identifying
+keystrokes. The pattern is naive made, and thus, can easily be
+optimised. However, the function is provided to enable fast
+development.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.PatternRegister.register">
+<tt class="descname">register</tt><big>(</big><em>*kwds</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#PatternRegister.register"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Registers a new keystroke.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="batchq.core.terminal.VT100Interpreter">
+<em class="property">class </em><tt class="descclassname">batchq.core.terminal.</tt><tt class="descname">VT100Interpreter</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This object implements VT100 interpretation.</p>
+<dl class="attribute">
+<dt id="batchq.core.terminal.VT100Interpreter.buffer">
+<tt class="descname">buffer</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.buffer"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.clear_all_tabs">
+<tt class="descname">clear_all_tabs</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.clear_all_tabs"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.clear_tab">
+<tt class="descname">clear_tab</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.clear_tab"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.copy"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.copy_echo">
+<tt class="descname">copy_echo</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.copy_echo"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_back">
+<tt class="descname">cursor_back</tt><big>(</big><em>count=1</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_back"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_down">
+<tt class="descname">cursor_down</tt><big>(</big><em>count=1</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_down"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_force_position">
+<tt class="descname">cursor_force_position</tt><big>(</big><em>line</em>, <em>char</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_force_position"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_forward">
+<tt class="descname">cursor_forward</tt><big>(</big><em>count=1</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_forward"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_home">
+<tt class="descname">cursor_home</tt><big>(</big><em>line=1</em>, <em>char=1</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_home"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_restore_attrs">
+<tt class="descname">cursor_restore_attrs</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_restore_attrs"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_save_attrs">
+<tt class="descname">cursor_save_attrs</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_save_attrs"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.cursor_up">
+<tt class="descname">cursor_up</tt><big>(</big><em>count=1</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.cursor_up"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.delete">
+<tt class="descname">delete</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.delete"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.disable_line_wrap">
+<tt class="descname">disable_line_wrap</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.disable_line_wrap"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.terminal.VT100Interpreter.echo">
+<tt class="descname">echo</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.echo"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.enable_line_wrap">
+<tt class="descname">enable_line_wrap</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.enable_line_wrap"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.erase_down">
+<tt class="descname">erase_down</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.erase_down"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.erase_end_of_line">
+<tt class="descname">erase_end_of_line</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.erase_end_of_line"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.erase_line">
+<tt class="descname">erase_line</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.erase_line"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.erase_screen">
+<tt class="descname">erase_screen</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.erase_screen"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.erase_start_of_line">
+<tt class="descname">erase_start_of_line</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.erase_start_of_line"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.erase_up">
+<tt class="descname">erase_up</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.erase_up"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.terminal.VT100Interpreter.escape_mode">
+<tt class="descname">escape_mode</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.escape_mode"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.fix_buffer">
+<tt class="descname">fix_buffer</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.fix_buffer"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.terminal.VT100Interpreter.last_escape">
+<tt class="descname">last_escape</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.last_escape"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.linestart">
+<tt class="descname">linestart</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.linestart"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.terminal.VT100Interpreter.monitor">
+<tt class="descname">monitor</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.monitor"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.terminal.VT100Interpreter.monitor_echo">
+<tt class="descname">monitor_echo</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.monitor_echo"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.move_monitor_cursors">
+<tt class="descname">move_monitor_cursors</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.move_monitor_cursors"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.newline">
+<tt class="descname">newline</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.newline"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.put">
+<tt class="descname">put</tt><big>(</big><em>c</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.put"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.terminal.VT100Interpreter.readable_echo">
+<tt class="descname">readable_echo</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.readable_echo"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.reset_device">
+<tt class="descname">reset_device</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.reset_device"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.scroll_constrain">
+<tt class="descname">scroll_constrain</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.scroll_constrain"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.scroll_down">
+<tt class="descname">scroll_down</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.scroll_down"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.scroll_screen">
+<tt class="descname">scroll_screen</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.scroll_screen"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.scroll_screen_rows">
+<tt class="descname">scroll_screen_rows</tt><big>(</big><em>rs</em>, <em>re</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.scroll_screen_rows"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.scroll_up">
+<tt class="descname">scroll_up</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.scroll_up"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.set_alt_font">
+<tt class="descname">set_alt_font</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.set_alt_font"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.set_default_font">
+<tt class="descname">set_default_font</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.set_default_font"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.set_display_attr">
+<tt class="descname">set_display_attr</tt><big>(</big><em>attributes</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.set_display_attr"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.set_mark">
+<tt class="descname">set_mark</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.set_mark"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.set_mode">
+<tt class="descname">set_mode</tt><big>(</big><em>mode</em>, <em>property</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.set_mode"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.set_tab">
+<tt class="descname">set_tab</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.set_tab"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.unknown1">
+<tt class="descname">unknown1</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.unknown1"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.write">
+<tt class="descname">write</tt><big>(</big><em>str</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.write"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.terminal.VT100Interpreter.writeChar">
+<tt class="descname">writeChar</tt><big>(</big><em>c</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter.writeChar"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="batchq.core.terminal.convert_to_int">
+<tt class="descclassname">batchq.core.terminal.</tt><tt class="descname">convert_to_int</tt><big>(</big><em>x</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/terminal.html#convert_to_int"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="shell_terminals.html" title="Shell Pipelines"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../api.html" title="API Reference"
+             >previous</a> |</li>
+        <li><a href="../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" >API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

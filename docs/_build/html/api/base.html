@@ -1,0 +1,170 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Core module &mdash; Remote Jobs 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="../index.html" />
+    <link rel="up" title="API Reference" href="../api.html" />
+    <link rel="prev" title="Math Terminals" href="math_terminals.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="math_terminals.html" title="Math Terminals"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" accesskey="U">API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="core-module">
+<h1>Core module<a class="headerlink" href="#core-module" title="Permalink to this headline">¶</a></h1>
+<p>Below you find a description of the core modules</p>
+<span class="target" id="module-batchq.core.communication"></span><p>This is some sort of docs??</p>
+<dl class="class">
+<dt id="batchq.core.communication.BasePipe">
+<em class="property">class </em><tt class="descclassname">batchq.core.communication.</tt><tt class="descname">BasePipe</tt><big>(</big><em>pipe</em>, <em>expect_token</em>, <em>submit_token</em>, <em>mem_scale=1000.0</em>, <em>vt100=None</em>, <em>initiate_pipe=True</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.communication.BasePipe" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.buffer">
+<tt class="descname">buffer</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.buffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.communication.BasePipe.buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains the VT100 interpreted buffer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.consume_output">
+<tt class="descname">consume_output</tt><big>(</big><em>pipe=None</em>, <em>consume_until=None</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.consume_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.communication.BasePipe.consume_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function consumes output of the pipe which is separated
+with no more than 10 ms and returns it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.initiate_pipe">
+<tt class="descname">initiate_pipe</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.initiate_pipe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.communication.BasePipe.initiate_pipe" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is a virtual function which is called 
+at the end if the objects initiation. Its purpose is to initiate
+the pipe with a series of commands.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.pipe_buffer">
+<tt class="descname">pipe_buffer</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.pipe_buffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.communication.BasePipe.pipe_buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains the true pipe buffer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="batchq.core.communication.BasePipe.send_command">
+<tt class="descname">send_command</tt><big>(</big><em>cmd</em><big>)</big><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.send_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.communication.BasePipe.send_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function sends a command to the pipe, wait for the prompt
+to appear and return the output.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="batchq.core.communication.BasePipe.vt100interpreter">
+<tt class="descname">vt100interpreter</tt><a class="reference internal" href="../_modules/batchq/core/communication.html#BasePipe.vt100interpreter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.communication.BasePipe.vt100interpreter" title="Permalink to this definition">¶</a></dt>
+<dd><p>This property holds an instance of a VT100Interpreter.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-batchq.core.process"></span><dl class="attribute">
+<dt id="batchq.core.process.Process">
+<tt class="descclassname">batchq.core.process.</tt><tt class="descname">Process</tt><a class="reference internal" href="../_modules/batchq/core/process.html#Process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.process.Process" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">_LinuxProcess</span></tt></p>
+</dd></dl>
+
+<span class="target" id="module-batchq.core.terminal"></span><dl class="class">
+<dt id="batchq.core.terminal.VT100Interpreter">
+<em class="property">class </em><tt class="descclassname">batchq.core.terminal.</tt><tt class="descname">VT100Interpreter</tt><a class="reference internal" href="../_modules/batchq/core/terminal.html#VT100Interpreter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#batchq.core.terminal.VT100Interpreter" title="Permalink to this definition">¶</a></dt>
+<dd><p>This object implements VT100 interpretation.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="math_terminals.html"
+                        title="previous chapter">Math Terminals</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/base.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="math_terminals.html" title="Math Terminals"
+             >previous</a> |</li>
+        <li><a href="../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" >API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

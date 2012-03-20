@@ -1,0 +1,10 @@
+from batchq.core import batch
+
+class Pipe(object):
+    def display(self, msg):
+        print msg
+
+class CallIt1(batch.BatchQ):
+    ctrl = batch.Controller(Pipe)
+    fnc1 = batch.Function().display("Hello world")
+    fnc2 = batch.Function().display("Hello world II").

@@ -1,0 +1,11 @@
+API Reference
+=============
+
+.. toctree::
+   :maxdepth: 1
+
+   api/batch.rst
+   api/shell_terminals.rst
+   api/math_terminals.rst
+   api/base.rst
+

@@ -1,0 +1,187 @@
+Developer introduction
+======================
+
+
+
+Remote Job Submitter
+--------------------
+This section explains the some of the high-level classes of the Remote
+Job package and is intended for people who wish to have a basic
+understanding of how to use the 
+
+Submitting a job
+++++++++++++++++
+
+.. code-block:: python
+
+   from remotejobs import *
+   
+   # Creating a new job submitter which will store the job
+   # settings in ~/.remoteJobs
+   jobs = RemoteJobSubmitter("remoteJobs")
+   
+   # Finding the local and remote directories we are working in
+   lbash = jobs.file_commander.local
+   rbash = jobs.file_commander.remote
+   local_path = rbash.path.join(lbash.home(), "workingdir", "local")
+   remote_path = rbash.path.join(rbash.home(), "workingdir", "remote")
+
+   # Submitting the job
+   settings = jobs.create_settings(local_path, remote_path, 'testscript', [], '', '', {})
+   hash, submission, _ = jobs.generate_id(settings) 
+   settings = jobs.submit_job(settings, hash, submission)  
+
+   print "A job have been submitted with id=%s" % hash
+
+
+
+.. code-block:: python
+
+   hash, submission, first_submission = jobs.generate_id(settings)
+   if first_submission:
+      print "This is the first submission. Our submission number is %d" % submission
+   else:
+      print "The last submission had submission number %d. The new submission number is %d" % (submission, submission+1)
+
+
+Checking the status of a job
+++++++++++++++++++++++++++++
+
+.. code-block:: python
+
+   cleanup = True
+   settings = jobs.check_state(hash, submission, cleanup)
+   if settings['status'] == jobs.STATUS_FINISHED:
+      if settings['cleaned']:
+         print "The job has finished and we have deleted the remote submission directory."
+      else:
+         print "The job has finished but we did _NOT_ delete remote submission directory."
+
+
+Export job records to database
+++++++++++++++++++++++++++++++
+
+
+
+
+The foundation
+--------------
+This section is mainly intended for people who are interested in the
+basic structure of the module and who wishes to use in other ways than
+the high level class allow or who wishes to contribute with bug fixes
+and/or improvements. 
+
+Basically the foundation of this module allows you to automate a wide
+variety of tasks as long as they can be performed from a normal bash
+shell. Fortunately many things can.
+
+Bash
++++++
+The BashTerminal is a class which enables many features basic to an
+operating system such as copying files, deleting files, changing
+directory, evaluates of script commands etc. The main difference between
+BashTerminal and the os module provided with Python is that the
+BashTerminal performs all commands through the bash program. This gives
+a number of advantages such as use environment variables, or performing
+a task using several steps, not to mention evaluation of interactive programs.
+Consider the following code:
+
+.. code-block:: python
+
+   from remotejobs.base import BashTerminal
+
+   x = BashTerminal()
+   homedir = x.home()
+   workdir = x.path.join(homedir, "workdir")
+   x.pushd(workdir)
+   paths = x.send_commnad("ls -F -m").split(",")
+   x.popd()
+
+The above example corresponds to opening a bash terminal and evaluating
+the code:
+
+.. code-block:: bash 
+
+   pushd ~/workdir
+   ls -F -m
+   popd
+
+As an example of interactive programs that may be started 
+one could open Python within bash to test some code:
+
+.. code-block:: python
+
+   from remotejobs.base import BashTerminal
+
+   x = BashTerminal()             
+    
+   # Preparing for the new expectation token
+   x.push_expect(">>> ")
+   x.send_command("python")
+   print "Pythons says 2 * 2 =", x.send_command("2*2").strip()
+
+   # Go back and expect a bash prompt again
+   x.pop_expect()
+   x.send_command("exit()")
+   print "Bash says", x.send_command("echo Hello world").strip()
+   print "Bye!"
+
+While this is an illustrative example the applications go further as you
+with this construction easily can automate many trivial tasks using this
+module. For instance one could take the administrative task of creating
+a new user on several computers which do not share their user system,
+but which all have SSH access. Instead of performing such a task
+manually one can now write a script which takes a username and password
+as input, logs on to the individual machines and creates the users.
+
+
+SSH
++++
+To simplify the task of accessing a computer via SSH this packages
+provides an SSHTerminal, which is inherits the properties and methods of
+the BashTerminal. The only difference between the BashTerminal and
+SSHTerminal is the that the SSHTerminal constructor takes additional
+arguments in the constructor: server, username and password. For full
+documentation of the SSHTerminal constructor see the TODO:API documentation.
+
+SFTP
+++++
+SFTPTerminal is a SFTP pipe which in analog with SSHTerminal opens
+sftp. It provides the most basic features such as chdir(path) and
+local_chdir(path) as well as sendfile(local_path, remote_path) and
+getfile(local_path, remote_path)
+
+FileTransfer
+++++++++++++
+This class inherits the SFTPTErminal. The only difference between
+FileTransferTerminal and SFTPTerminal is that FileTransferTerminal
+allows server to be None in the constructor in which case all methods
+are implemented for the local machine.
+
+FileCommander
++++++++++++++
+The FileCommander inherits the properties and methods of the
+FileTransferTerminal. Moreover the FileCommander has two associate Bash
+instances associated of which one may or may not be an instance of
+SSHTerminal found as FileCommander.local and FileCommander.remote,
+respectively. The FileCommander implements basic functionality for
+synchronising directories on two distinct machines through
+FileCommander.diff and FileCommander.sync.
+
+
+The FileCommander class is the main class file for transfers and
+evaluation of remote commands. The remote job submitter in the next
+section will be based on this class.
+
+
+Further documentation
+---------------------
+If you are still eager to read more documentation please consult the API
+reference manual (TODO: link).
+
+
+Future perspectives
+-------------------
+As of version 0.1 this module only supports POSIX platforms. Preferably
+extensions should be made such that it would also support Windows and/or
+Java platforms. However, the main 

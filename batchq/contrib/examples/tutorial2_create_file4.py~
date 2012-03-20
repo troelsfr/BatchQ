@@ -1,0 +1,6 @@
+from batchq.pipelines.shell.ssh import SSHTerminal
+
+class CreateFileSSH(CreateFileShort):
+    server = batch.Property()
+    username = batch.Property()
+    password = batch.Property()

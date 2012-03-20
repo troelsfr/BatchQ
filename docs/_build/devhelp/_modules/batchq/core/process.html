@@ -1,0 +1,381 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>batchq.core.process</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="top" title="Remote Jobs 0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body">
+            
+  <h1>Source code for batchq.core.process</h1><div class="highlight"><pre>
+<span class="c">####################################################################################</span>
+<span class="c"># Copyright (C) 2011-2012</span>
+<span class="c"># Troels F. Roennow, ETH Zurich</span>
+<span class="c">#</span>
+<span class="c"># Permission is hereby granted, free of charge, to any person obtaining a copy of</span>
+<span class="c"># this software and associated documentation files (the &quot;Software&quot;), to deal in</span>
+<span class="c"># the Software without restriction, including without limitation the rights to</span>
+<span class="c"># use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies</span>
+<span class="c"># of the Software, and to permit persons to whom the Software is furnished to do</span>
+<span class="c"># so, subject to the following conditions:</span>
+<span class="c"># </span>
+<span class="c"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c"># copies or substantial portions of the Software.</span>
+<span class="c"># </span>
+<span class="c"># THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</span>
+<span class="c"># IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span>
+<span class="c"># FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span>
+<span class="c"># AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span>
+<span class="c"># LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span>
+<span class="c"># OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</span>
+<span class="c"># SOFTWARE.</span>
+<span class="c">####################################################################################</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">select</span>
+<span class="kn">import</span> <span class="nn">pty</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">batchq.core.errors</span> <span class="kn">import</span> <span class="n">CommunicationIOException</span><span class="p">,</span> <span class="n">CommunicationOSException</span><span class="p">,</span> <span class="n">CommunicationWarning</span>
+
+<div class="viewcode-block" id="Process"><a class="viewcode-back" href="../../../api/base.html#batchq.core.process.Process">[docs]</a><span class="k">class</span> <span class="nc">Process</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">environment</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">terminal_preferred</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">terminal_required</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">check_timeout</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_own_terminal</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_echo</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_maxread</span> <span class="o">=</span> <span class="mi">2000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canread_timeout</span> <span class="o">=</span> <span class="n">check_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canwrite_timeout</span> <span class="o">=</span> <span class="n">check_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_terminal_preferred</span> <span class="o">=</span> <span class="n">terminal_preferred</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_terminal_required</span> <span class="o">=</span> <span class="n">terminal_required</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">command</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span><span class="n">environment</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_terminal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_own_terminal</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This property holds the buffer of the session, i.e. a log over</span>
+<span class="sd">        all output from the terminal.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_updateBuffer</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span>
+
+    <span class="k">def</span> <span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Terminates the process.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Kills the process.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">isalive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks whether the process is alive or not.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">pid</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">:</span>  <span class="c"># TODO: Fix this part and test it properly</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">pid</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>    <span class="c"># TODO: either os.WNOHANG or 0</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="c"># No child processes</span>
+                <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">ECHILD</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ExceptionPexpect</span> <span class="p">(</span><span class="s">&#39;isalive() encountered condition where &quot;terminated&quot; is 0, but there was no child process. Did someone else call waitpid() on our process?&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+            <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">os</span><span class="o">.</span><span class="n">WIFEXITED</span> <span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">WIFSIGNALED</span> <span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="p">):</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+
+    <span class="k">def</span> <span class="nf">spawnTTY</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">environment</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>   
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is a placeholder for spawning a TTY. It should be</span>
+<span class="sd">        overridden for the different OS&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_thread</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">p</span><span class="p">):</span> 
+        <span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">spawn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">environment</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>  
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This functions spawns command with arguments args. Note that</span>
+<span class="sd">        command must be absolute or in the current directory. Commands</span>
+<span class="sd">        in the system PATH will fail. To include this commands use the</span>
+<span class="sd">        which function found in utils.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c"># First try to create process in new tty</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_terminal_preferred</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_terminal_required</span><span class="p">)</span> <span class="ow">and</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">spawnTTY</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">environment</span><span class="p">):</span>  
+            <span class="bp">self</span><span class="o">.</span><span class="n">_own_terminal</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_terminal_required</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CommunicationOSException</span><span class="p">(</span><span class="s">&quot;A pseudo-terminal is required for the communication, but no pseudo-terminal implementation of the communication module has been made for the present OS yet.&quot;</span><span class="p">)</span>
+
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;You are running your process outside of a terminal. Make sure that that process is unbuffered as it otherwise will not be possible to detect &#39;expect&#39; tokens.&quot;</span><span class="p">,</span> <span class="n">CommunicationWarning</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="n">command</span><span class="p">,]</span><span class="o">+</span><span class="n">args</span><span class="p">,</span> <span class="n">close_fds</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">stdin</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stdin_fd</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stdout_fd</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Flushes the standard input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">can_read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks wether we can read from the output stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">r</span><span class="p">,</span><span class="n">w</span><span class="p">,</span><span class="n">e</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">select</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_stdout_fd</span><span class="p">],[],[],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canread_timeout</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+<span class="c">#            print &quot;This was where it went wrong&quot;</span>
+<span class="c">#            return False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stdout_fd</span> <span class="ow">in</span> <span class="n">r</span>
+
+    <span class="k">def</span> <span class="nf">can_write</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks wether it is possible to write to the input stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">r</span><span class="p">,</span><span class="n">w</span><span class="p">,</span><span class="n">e</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">select</span><span class="p">([],[</span><span class="bp">self</span><span class="o">.</span><span class="n">_stdin_fd</span><span class="p">],[],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canwrite_timeout</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+<span class="c">#            print &quot;This was where it went wrong II&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stdin_fd</span> <span class="ow">in</span> <span class="n">w</span>
+            
+    <span class="k">def</span> <span class="nf">_updateBuffer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is an internal function which is used for updating the</span>
+<span class="sd">        buffer. The input is flushed when this functions is called.  </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="n">app</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_read</span><span class="p">():</span>
+            <span class="n">app</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stdout_fd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxread</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">app</span><span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">+=</span> <span class="n">app</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_read</span><span class="p">():</span>
+                <span class="n">app</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stdout_fd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxread</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function writes str to the pipe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CommunicationIOException</span><span class="p">(</span><span class="s">&quot;No proccess has been spawned yet or process dead.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_write</span><span class="p">():</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stdin_fd</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Error, could not write&quot;</span>
+
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reads as many chars as possible.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ready</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CommunicationIOException</span><span class="p">(</span><span class="s">&quot;No proccess has been spawned yet or process dead.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_updateBuffer</span><span class="p">()</span>
+        <span class="n">oldp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[</span><span class="n">oldp</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">getchar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the next char</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">)</span> 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span><span class="o">&gt;=</span><span class="n">n</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_updateBuffer</span><span class="p">()</span>
+
+        <span class="n">oldp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span> <span class="o">+=</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span><span class="o">&gt;</span><span class="n">n</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_seeker</span> <span class="o">=</span> <span class="n">n</span>
+            <span class="k">return</span> <span class="s">&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[</span><span class="n">oldp</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Holds the PID of the process.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">pid</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+</div>
+<span class="k">class</span> <span class="nc">_WindowsProcess</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_WindowsProcess</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spawnTTY</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">environment</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stdin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stdout</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">command</span><span class="p">,]</span><span class="o">+</span><span class="n">args</span><span class="p">),</span> <span class="n">env</span> <span class="o">=</span> <span class="n">environment</span><span class="p">,</span> <span class="n">startupinfo</span> <span class="o">=</span>  <span class="n">subprocess</span><span class="o">.</span><span class="n">CREATE_NEW_CONSOLE</span><span class="p">,</span> <span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stdin</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stdout</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+<span class="kn">import</span> <span class="nn">resource</span>
+<span class="k">class</span> <span class="nc">_LinuxProcess</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_LinuxProcess</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spawnTTY</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">environment</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_fd</span> <span class="o">=</span> <span class="n">pty</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+            <span class="c"># Returning from master thread with the file decorator</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stdout_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_fd</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stdin_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_child_fd</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CommunicationOSException</span><span class="p">(</span><span class="s">&quot;Unable to fork a PTY.&quot;</span><span class="p">)</span>
+
+
+        <span class="c"># Child thread in new pseudo-terminal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_child_fd</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+
+        <span class="c"># Closes files inherited from parent process</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">getrlimit</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">RLIMIT_NOFILE</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">close</span> <span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stdin_fd</span> <span class="o">=</span> <span class="n">fd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stdout_fd</span> <span class="o">=</span> <span class="n">fd</span>
+        <span class="c"># Spawning process</span>
+        <span class="k">if</span> <span class="n">environment</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">execv</span><span class="p">(</span><span class="n">command</span><span class="p">,[</span><span class="n">command</span><span class="p">,]</span> <span class="o">+</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">execvpe</span><span class="p">(</span><span class="n">command</span><span class="p">,[</span><span class="n">command</span><span class="p">,]</span> <span class="o">+</span> <span class="n">args</span><span class="p">,</span> <span class="n">environment</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">pid</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pid</span>
+
+
+
+<span class="c">#############################################################</span>
+<span class="c"># Finally, we define which process to use depending on the OS</span>
+
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="n">system</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&quot;linux&quot;</span> <span class="ow">or</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&quot;darwin&quot;</span><span class="p">:</span>
+    <span class="n">Process</span> <span class="o">=</span> <span class="n">_LinuxProcess</span>    
+<span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&quot;windows&quot;</span><span class="p">:</span>
+    <span class="n">Process</span> <span class="o">=</span> <span class="n">_WindowsProcess</span>    
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;The present OS may not be supported by this module. Limited functionality should be expected.&quot;</span><span class="p">,</span> <span class="n">CommunicationWarning</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Remote Jobs 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Troels F. Rønnow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

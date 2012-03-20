@@ -1,0 +1,6 @@
+
+if __name__ == "__main__":
+    import getargs
+    import sys
+    
+    print sys.args()
