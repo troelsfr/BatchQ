@@ -1,19 +1,43 @@
 Introduction
 ============
-BatchQ is a set of classes written in Python which aims towards
+BatchQ is a set of classes written in Python which aim toward
 automating all kinds of task. BatchQ was designed for interacting with
 terminal application including Bash, SSH, SFTP, Maple, Mathematica,
 Octave, Python and more. If for one or another reason your favorite
 application is not supported BatchQ is easily extended to support more
 programs. 
 
-Dependencies and Compatibility
+Dependencies and compatibility
 ------------------------------
 Currently BatchQ only depends on the libraries shipped with Python. It
 should therefore work out of the box.
 
 Please note that at the present moment BatchQ has only been tested with
 Python 2.7 on Mac OS X 10.6 and with Python 2.6.5 on Ubuntu 10.10.
+
+
+Manual installation from GitHub
+-------------------------------
+These notes are temporary and will be removed in the release version of
+BatchQ. They are intended for development purposes and testing. 
+
+.. code-block:: bash
+
+   export INSTALL_DIR=~/Documents       # Change if you want another install location 
+   cd $INSTALL_DIR
+   git checkout https://github.com/troelsfr/BatchQ.git
+   echo export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR/BatchQ/ >> ~/.profile
+   echo export PATH=$PATH:$INSTALL_DIR/BatchQ/batchq/bin >> ~/.profile
+
+Note that ``.profile`` may be named differently on your system,
+i.e. ``.bashrc`` or ``.profilerc``. Start a new session of bash and
+write 
+
+.. code-block:: bash
+   
+   q help
+
+If a help message occurs you have successfully install BatchQ.
 
 Installation (not working yet)
 ------------------------------
@@ -33,6 +57,10 @@ install using setup.py
    python setup.py install
 
 That's it.
+
+
+
+
 
 Note for Windows users
 ----------------------
