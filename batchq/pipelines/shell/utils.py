@@ -251,6 +251,7 @@ class FileCommander(FileTransferTerminal):
                 raise BaseException("Could not create: '%s'. Issued '%s' and got following output: '%s'" % (dir, bash.last_input,bash.last_output))
 
         # Syncronising files
+
         for file in sorted(files):
             if file.strip() == "":
                 raise "Error recieved an empty directory"

@@ -13,6 +13,7 @@ class NoHUP(batch.BatchQ):
     input_directory = batch.Property(".", display="Specify an input directory: ")
     output_directory = batch.Property(".", display="Specify an output directory: ")
 
+    subdirectory = batch.Property(".", verbose = False)
     prior = batch.Property("", verbose = False)    
     post = batch.Property("", verbose = False)    
 
@@ -48,36 +49,45 @@ class NoHUP(batch.BatchQ):
 
 
     ## TESTED AND WORKING
-    goto_workdir = batch.Function(verbose=True)\
-        .home().chdir(_).chdir(working_directory)
+    hash_input = batch.Function(verbose=True) \
+        .entrance().chdir(_).directory_hash(input_directory,True,True) \
+        .Qslugify(command).Qjoin(_,"-",_)
+
+    ## TESTED AND WORKING
+    identifier_filename = batch.Function() \
+        .Qslugify(command).Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
+        .Qstr(overwrite_submission_id).Qequal("",_).Qdo(2).Qcall(hash_input).Qstore("id") \
+        .Qget("id").Qjoin(".batchq_",_)
+
+
+    ## TESTED AND WORKING
+    get_subdirectory = batch.Function(verbose=True) \
+        .Qstr(subdirectory).Qstore("subdir") \
+        .Qequal(_,".").Qdo(3).Qcall(identifier_filename).Qget("id").Qstore("subdir") \
+        .Qget("subdir")
+
 
     ## TESTED AND WORKING
     create_workdir = batch.Function(verbose=True) \
         .entrance().chdir(_) \
         .exists(working_directory).Qdon(1).mkdir(working_directory, True) \
-        .chdir(working_directory).pwd().Qstore("workdir")
+        .chdir(working_directory) \
+        .Qcall(get_subdirectory) \
+        .exists(_).Qdon(2).Qget("subdir").mkdir(_, True) \
+        .Qget("subdir").chdir(_).pwd().Qstore("workdir")
 
     ## TODO: TEST
     hash_work = batch.Function(verbose=True) \
         .entrance().chdir(_).directory_hash(output_directory,True,True) \
-        .nodename().Qslugify(command).Qjoin(_,"-",_,"-",_)
+        .Qslugify(command).Qjoin(_,"-",_)
 
-    ## TESTED AND WORKING
-    hash_input = batch.Function(verbose=True) \
-        .entrance().chdir(_).directory_hash(input_directory,True,True) \
-        .nodename().Qslugify(command).Qjoin(_,"-",_,"-",_)
 
     ## TESTED AND WORKING
     hash_output = batch.Function(verbose=True) \
         .entrance().chdir(_).directory_hash(output_directory,True,True) \
-        .Qdo(3).nodename().Qslugify(command).Qjoin(_,"-",_,"-",_)
+        .Qdo(3).Qslugify(command).Qjoin(_,"-",_)
 
 
-    ## TESTED AND WORKING
-    identifier_filename = batch.Function() \
-        .Qslugify(command).Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
-        .Qstr(overwrite_submission_id).Qequal("",_).Qdo(3).Qprint("hash").Qcall(hash_input).Qstore("id") \
-        .Qget("id").Qjoin(".batchq_",_)
 
 
     ### TESTED AND WORKING
@@ -88,7 +98,7 @@ class NoHUP(batch.BatchQ):
     ### TESTED AND WORKING
     prepare_outcopy = batch.Function(create_workdir, verbose=True) \
         .entrance().Qpjoin(_,output_directory).Qstore("outdir") \
-        .Qget("workdir").Qpjoin(_,"*").Qget("outdir").Qprint_stack()
+        .Qget("workdir").Qpjoin(_,"*").Qget("outdir")
 
 
     ### TESTED AND WORKING
@@ -119,25 +129,21 @@ class NoHUP(batch.BatchQ):
         .Qbool(False)
 
     ## TESTED AND WORKING
-    ## TODO: Rename to started
-    wasstarted = batch.Function(create_workdir,verbose=True, enduser=True) \
-        .Qcall(identifier_filename).exists(_).Qdo(1).Qreturn() \
-        .Qcall(running).Qdo(1).Qreturn() \
-        .Qcall(pending).Qdo(1).Qreturn() 
+    submitted = batch.Function(create_workdir,verbose=True, enduser=True) \
+        .Qcall(identifier_filename).exists(_)
 
     ### TESTED AND WORKING
     finished = batch.Function(running,verbose=True, enduser=True) \
-        .Qnot(_).Qstore("not_running").Qcall(wasstarted) \
+        .Qnot(_).Qstore("not_running").Qcall(submitted) \
         .Qget("not_running").Qand(_,_)
 
-    ## TODO: TEST
-    cancel = batch.Function(pid, verbose=True, enduser=True).kill(_)
 
     status = batch.Function(verbose=True, enduser=True) \
         .Qcall(running).Qdo(2).Qstr("running").Qreturn() \
         .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
         .Qcall(pending).Qdo(2).Qstr("pending").Qreturn() \
-        .Qcall(wasstarted).Qdon(2).Qstr("was not started").Qreturn() \
+        .Qcall(submitted).Qdon(2).Qstr("was not submitted").Qreturn() \
+        .Qcall(failed).Qdo(2).Qstr("failed").Qreturn() \
         .Qstr("unknown status")
 
 
@@ -154,8 +160,16 @@ class NoHUP(batch.BatchQ):
 
 
     ## TESTED AND WORKING
-    log = batch.Function(wasstarted,verbose=True, enduser=True) \
+    stdout = batch.Function(submitted,verbose=True, enduser=True) \
         .Qdo(2).Qcall(identifier_filename).cat(_)
+
+    # TODO:
+    stderr = batch.Function(submitted,verbose=True, enduser=True) \
+        .Qprint("not implemented yet")
+
+    log = batch.Function(submitted,verbose=True, enduser=True) \
+        .Qprint("No log implemented for SSH. Use stderr and stdout")
+
 
     ## TESTED AND WORKING
     clean = batch.Function(create_workdir,verbose=True, enduser=True) \
@@ -165,8 +179,17 @@ class NoHUP(batch.BatchQ):
     delete = batch.Function(create_workdir,verbose=True, enduser=True) \
         .Qdo(2).Qget("workdir").rm(_, force = True, recursively = True)
 
+    ## TODO: TEST
+    cancel = batch.Function(pid, verbose=True, enduser=True).kill(_)
 
 
+    job = batch.Function(verbose=True, enduser=True)\
+        .Qcall(submitted).Qdon(5).Qprint("Uploading input directory.").Qcall(send).Qprint("Submitting job on ").Qcall(startjob).Qreturn() \
+        .Qcall(pending).Qdo(2).Qprint("Job is pending.").Qreturn() \
+        .Qcall(running).Qdo(2).Qprint("Job is running.").Qreturn() \
+        .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn() \
+        .Qcall(finished).Qdo(3).Qprint("Job has finished.\nRetrieving results.").Qcall(recv).Qreturn() \
+        .Qprint("Your job has an unknown status.")
 
 
 class NoHUPSSH(NoHUP):
@@ -182,23 +205,19 @@ class NoHUPSSH(NoHUP):
     local_terminal = batch.Controller(BashTerminal,q_instance = filecommander.local)
     terminal = batch.Controller(BashTerminal,q_instance = filecommander.remote)
 
-    hash_input_directory = batch.Function(verbose=True) \
-        .Qcontroller("local_terminal") \
-        .entrance().chdir(_).directory_hash(NoHUP.input_directory,True,True)
+#    hash_input_directory = batch.Function(verbose=True) \
+#        .Qcontroller("local_terminal") \
+#        .entrance().chdir(_).directory_hash(NoHUP.input_directory,True,True)
 
     ## TESTED AND WORKING
-    hash_input = batch.Function(verbose=True) \
-        .nodename().Qstore("remotenodename") \
-        .Qcontroller("local_terminal") \
+    hash_input = batch.Function(verbose=True).Qcontroller("local_terminal") \
         .entrance().chdir(_).directory_hash(NoHUP.input_directory,True,True) \
-        .Qdo(4).nodename().Qget("remotenodename").Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
+        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_)
 
     ## TESTED AND WORKING
-    hash_output = batch.Function(verbose=True) \
-        .nodename().Qstore("remotenodename") \
-        .Qcontroller("local_terminal") \
+    hash_output = batch.Function(verbose=True).Qcontroller("local_terminal") \
         .entrance().chdir(_).directory_hash(NoHUP.output_directory,True,True) \
-        .Qdo(4).Qget("remotenodename").nodename().Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
+        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
 
     ## TESTED AND WORKING
     prepare_incopy = batch.Function(NoHUP.create_workdir) \
@@ -221,7 +240,4 @@ class NoHUPSSH(NoHUP):
     recv = batch.Function(prepare_outcopy , verbose=True) \
         .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_REMOTE_LOCAL, diff_local_dir =_r)
 
-
-    ## TODO: write this function
-    cancel = batch.Function().Qstr("TODO: This function needs to be implemented")
-
+    

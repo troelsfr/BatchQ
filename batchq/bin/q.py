@@ -1,7 +1,9 @@
 from batchq.queues import *
+from batchq.core.batch import load_settings
 import sys
 import inspect
 import json
+import copy
 
 class Main(object):
     """
@@ -33,15 +35,14 @@ class Main(object):
 
         if not task is None and "@" in task:
             task, conffile = task.split("@")
-            file = open(conffile)
-            newargs, newkwargs, switches = json.load(file)
+
+            newargs,  newkwargs, switches = load_settings(conffile)
             u,t,i,q,f = switches
             if len(args)< len(newargs):
                 for n in range(0,len(args)):
                     newargs[n] = args[n]
                 args = tuple(newargs)
-                
-            file.close()
+
             newkwargs.update(kwargs)
             kwargs = newkwargs
 

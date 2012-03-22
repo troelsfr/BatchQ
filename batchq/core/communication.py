@@ -248,6 +248,7 @@ class BasePipe(object):
         """
         self._last_input = cmd
 
+
         self._pipe.write(cmd)
 
         # We first consume the echo
@@ -267,6 +268,7 @@ class BasePipe(object):
         # Then we wait for the output
         ret = self.consume_output(consume_until = self._expect_token)
         self._last_output = ret
+
 #        print "$", cmd
 #        print ret
 #        print "="*40

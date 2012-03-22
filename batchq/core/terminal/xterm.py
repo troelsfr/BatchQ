@@ -32,7 +32,9 @@ from batchq.core.terminal.base import BaseInterpreter
 
 XTermEscapeRegister = PatternRegister()
 XTermKeyRegister = PatternRegister()
+
 XTermRegister = ReductionRegister()
+import copy
 
 def convert_to_int(x):
     try:
@@ -42,7 +44,7 @@ def convert_to_int(x):
 
 class XTermInterpreter(BaseInterpreter):
     def __init__(self):
-        super(XTermInterpreter, self).__init__(XTermEscapeRegister, XTermKeyRegister,XTermRegister)
+        super(XTermInterpreter, self).__init__(XTermEscapeRegister, XTermKeyRegister,copy.deepcopy(XTermRegister))
 
 
 ###################

@@ -196,7 +196,7 @@ class ReductionRegister(object):
 
         if  self._cur_reduced_pattern in self.patterns:
             self._inside_pattern = False
-            print "FOUND PATTERN", self._cur_pattern, " with ", self._cur_parameters, "(",self._cur_reduced_pattern,")"
+#            print "FOUND PATTERN", self._cur_pattern, " with ", self._cur_parameters, "(",self._cur_reduced_pattern,")"
             pattern = self.patterns[self._cur_reduced_pattern][0]
           
             if pattern in self.rules or "__catch_all__" in self.rules:

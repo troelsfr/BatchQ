@@ -866,16 +866,28 @@ class BatchQ(object):
 
 
 import json
-def load_settings(filename):
-    try:
-        file = open(filename)
-    except:
-        home = path.expanduser("~")        
-        file = open(path.join(home,".batchq/configurations/",filename))
-    args, kwargs, switches = json.load(file)        
+def load_settings(filelist):
+    switches = []
+    ret_args = []
+    ret_kwargs = {}
+    for filename in filelist.split(","):
+        try:
+            file = open(filename)
+        except:
+            home = path.expanduser("~")        
+            file = open(path.join(home,".batchq/configurations/",filename))
 
-    file.close()
-    return args, kwargs, switches
+        args, kwargs, switches = json.load(file)        
+        for n in range(0, len(args)):
+            if n<len(ret_args):
+                ret_args[n] = args[n]
+            else:
+                ret_args[n].append(args[n])
+        ret_kwargs.update(kwargs)
+
+        file.close()
+
+    return ret_args, ret_kwargs, switches
 
 
 def load_queue(cls,settings):

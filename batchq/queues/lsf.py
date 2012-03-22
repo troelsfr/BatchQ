@@ -8,6 +8,7 @@ from batchq.shortcuts.shell import home_create_dir, send_command
 class LSFBSub(NoHUPSSH):
     _1 = batch.WildCard()
     _2 = batch.WildCard()
+    _3 = batch.WildCard()
 
     options = batch.Property("", verbose = False)    
 
@@ -21,7 +22,7 @@ class LSFBSub(NoHUPSSH):
     startjob = batch.Function(NoHUP.create_workdir,verbose=True) \
         .send_command(NoHUP.prior) \
         .Qcall(NoHUP.identifier_filename) \
-        .Qjoin("(touch ",_1, " && bsub ", options," \"", NoHUP.command, " > ",_2," \" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > .batchq.pid )") \
+        .Qjoin("(touch ",_1, " && bsub -o ",_2,"_log ", options," \"", NoHUP.command, " > ",_3," \" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > .batchq.pid )") \
         .send_command(_1)
 
     ## TESTED AND WORKING   
@@ -39,10 +40,11 @@ class LSFBSub(NoHUPSSH):
         .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
         .Qstrip(_1).Qlower(_1).Qequal(_1,"pend")
 
-    ## TESTED AND WORKING
-    status = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \
-        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) 
-
     ## TODO: write this function
     cancel = batch.Function().Qstr("TODO: This function needs to be implemented")
 
+    ## TESTED AND WORKING
+    log = batch.Function(NoHUP.create_workdir,verbose=True) \
+        .Qcall(NoHUP.identifier_filename) \
+        .Qjoin("cat ",_1,"_log").Qcontroller("terminal") \
+        .send_command(_1)

@@ -34,9 +34,11 @@ class BaseInterpreter(object):
         self._home_line = 0
         self._home_char = 0
         self._home_attributes = {}
+        self._debug = False
         if not pattern_reg is None: pattern_reg.set_owner(self)
 
         self.fix_buffer()
+        
 
     def move_monitor_cursors(self):
         self._last_monitor_echo = self._echo_position

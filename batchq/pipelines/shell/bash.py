@@ -437,14 +437,9 @@ echo $DIR"""
 
 
 if __name__ == "__main__":
-    import getpass
-    server = raw_input("Server:")
-    if server == "": server = "localhost"
-    username = ""
-    while username == "":  username = raw_input("Username:")
-    pas = getpass.getpass()
-    x = SSHTerminal(server, username, pas)
 
+    x = BashTerminal()
+    server = "localhost"
     files, dirs = x.list(recursively = False)
     pwd = x.pwd()
 
