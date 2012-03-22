@@ -184,12 +184,12 @@ class NoHUP(batch.BatchQ):
 
 
     job = batch.Function(verbose=True, enduser=True)\
-        .Qcall(submitted).Qdon(5).Qprint("Uploading input directory.").Qcall(send).Qprint("Submitting job on ").Qcall(startjob).Qreturn() \
-        .Qcall(pending).Qdo(2).Qprint("Job is pending.").Qreturn() \
-        .Qcall(running).Qdo(2).Qprint("Job is running.").Qreturn() \
+        .Qcall(submitted).Qdon(6).Qprint("Uploading input directory.").Qcall(send).Qprint("Submitting job on ").Qcall(startjob).Qstr("").Qreturn() \
+        .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qstr("")Qreturn() \
+        .Qcall(running).Qdo(3).Qprint("Job is running.").Qstr("").Qreturn() \
         .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn() \
-        .Qcall(finished).Qdo(3).Qprint("Job has finished.\nRetrieving results.").Qcall(recv).Qreturn() \
-        .Qprint("Your job has an unknown status.")
+        .Qcall(finished).Qdo(4).Qprint("Job has finished.\nRetrieving results.").Qcall(recv).Qstr("").Qreturn() \
+        .Qprint("Your job has an unknown status.").Qstr("")
 
 
 class NoHUPSSH(NoHUP):

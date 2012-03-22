@@ -21,6 +21,111 @@ subshell``. For more information on nohup alternatives see `What to do when nohu
 .. _`What to do when nohup hangs up anyway`: http://linuxshellaccount.blogspot.com/2007/12/what-to-do-when-nohup-hangs-up-anyway.html
 
 
+Quick start
+-----------
+This section is intended for getting you started quickly with BatchQ and
+consequently, few or no explanations of the commands/scripts will be
+given. If you would like the full explanation on how BatchQ works, skip
+this section. If you choose to read the quick start read all of it no
+matter whether you prefer Python over bash.
+
+Command line
+++++++++++++
+First you need to create configurations for the machines you want to
+access. This is not necessary, but convenient (more details are given in
+the following sections). Open ``bash`` and type
+
+.. code-block:: bash
+
+   $ q configuration my_server_configuration  --working_directory="Submission" --command="./script"  --input_directory="." --port=22 --server="server.address.com" --global=1
+   $ q configuration your_name  --username="your_default_used"  --global=1
+
+
+In the above change the ``server.address.com`` to the server address you
+wish to access. Also, change the ``username`` in the second line to your
+default username. Next, create a new director ``MyFirstSubmission`` and 
+download the script ``sleepy``
+
+.. code-block:: bash
+
+   mkdir MyFirstSubmission
+   cd MyFirstSubmission
+   wget http://downloads.nanophysics.dk/scripts/sleepy
+   chmod +x sleepy
+
+The job ``sleepy`` sleeps for 100 seconds every and for every second it
+echos "Hello world". Submit it using ``server.address.com`` using the
+command:
+
+.. code-block:: bash
+
+   $ q [batch_system] job@my_server_configuration,your_name --command="./sleepy"
+
+Here ``batch_system`` should be either ``nohup``, ``ssh-nohup`` or ``lsf``.
+Check the status of the job with
+
+.. code-block:: bash
+
+   $ q [batch_system] job@my_server_configuration,your_name --command="./sleepy"
+   Job is running.
+
+And after 100s you get
+
+.. code-block:: bash
+
+   $ q [batch_system] job@my_server_configuration,your_name --command="./sleepy"
+   Job has finished.
+   nRetrieving results.
+
+At this point new files should appear in your current directory:
+
+.. code-block:: bash
+
+   $ ls
+   sleepy   sleepy.data
+
+In order to see the logs of the submission type
+
+.. code-block:: bash
+
+   $ q [batch_system] stdout@my_server_configuration,your_name --command="./sleepy"
+   This is the sleepy stdout.
+   $ q [batch_system] stderr@my_server_configuration,your_name --command="./sleepy"
+   This is the sleepy stderr.
+   $ q [batch_system] log@my_server_configuration,your_name --command="./sleepy"
+   (...)
+
+The last command will differ depending on which submission system you
+use. Finally, we clean up on the server:
+
+.. code-block:: bash
+
+   $ q [batch_system] delete@my_server_configuration,your_name --command="./sleepy"
+   True
+
+Congratulations! You have submitted your first job using the command
+line tool.
+
+
+Python 
+++++++
+Next, open an editor, enter the following Python code:
+
+
+.. code-block:: python
+
+   TODO
+
+and save it as ``job_submitter.py`` in ``MyFirstSubmission``. Go back to
+the shell and type:
+
+.. code-block:: python
+
+   $ python job_submitter.py
+
+And there you go. Your second submission was done with Python.
+
+
 Using the command line tool
 ---------------------------
 The following section will treat usage of BatchQ from the command
