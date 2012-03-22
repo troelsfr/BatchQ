@@ -25,9 +25,9 @@ BatchQ. They are intended for development purposes and testing.
 
    export INSTALL_DIR=~/Documents       # Change if you want another install location 
    cd $INSTALL_DIR
-   git checkout https://github.com/troelsfr/BatchQ.git
-   echo export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR/BatchQ/ >> ~/.profile
-   echo export PATH=$PATH:$INSTALL_DIR/BatchQ/batchq/bin >> ~/.profile
+   git clone https://github.com/troelsfr/BatchQ.git
+   echo export PYTHONPATH=\$PYTHONPATH:$INSTALL_DIR/BatchQ/ >> ~/.profile
+   echo export PATH=\$PATH:$INSTALL_DIR/BatchQ/batchq/bin >> ~/.profile
 
 Note that ``.profile`` may be named differently on your system,
 i.e. ``.bashrc`` or ``.profilerc``. Start a new session of bash and
@@ -35,9 +35,9 @@ write
 
 .. code-block:: bash
    
-   q help
+   q list
 
-If a help message occurs you have successfully install BatchQ.
+If a list of available commands is displayed, you have successfully installed BatchQ.
 
 Installation (not working yet)
 ------------------------------

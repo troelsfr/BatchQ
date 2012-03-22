@@ -85,6 +85,8 @@ def help(name, *args, **kwargs):
     are reading now).
     """
     docs = "No help information present."
+    if name is None or name == "":
+        name = "help"
     if name in Library.functions.dict:
         print
         print "Function"
