@@ -16,10 +16,45 @@ Please note that at the present moment BatchQ has only been tested with
 Python 2.7 on Mac OS X 10.6 and with Python 2.6.5 on Ubuntu 10.10.
 
 
+
+Installation
+------------
+There are currently two ways of installing BatchQ. Either you use setup
+tools in which case you write
+
+.. code-block:: bash
+
+   easy_install batchq
+
+Alternatively you can download the latest version from GitHub (`.zip`_,`.tar.gz`_) and
+install using setup.py
+
+.. code-block:: bash
+
+   cd [location/of/source]
+   python setup.py install [ --user | --home=~ ]
+
+The ``--user`` and ``--home``  flags are optional and are intended for
+users who do not have write access to the global system. More
+information can be found the `Python install page`_.
+
+To test your installation type:
+
+.. code-block:: bash
+   
+   q help
+
+If a help message is displayed you are ready to go on and submit your
+first job.
+
+.. _`.tar.gz`: https://github.com/troelsfr/BatchQ/tarball/master
+.. _`.zip`: https://github.com/troelsfr/BatchQ/zipball/master
+.. _`Python install page`: http://docs.python.org/install/index.html
+
 Manual installation from GitHub
 -------------------------------
-These notes are temporary and will be removed in the release version of
-BatchQ. They are intended for development purposes and testing. 
+The manual installation is intended for development purposes and for
+persons who do not want to rely on the install script:
 
 .. code-block:: bash
 
@@ -38,26 +73,6 @@ write
    q list
 
 If a list of available commands is displayed, you have successfully installed BatchQ.
-
-Installation (not working yet)
-------------------------------
-There are currently two ways of installing BatchQ. Either you use setup
-tools in which case you write
-
-.. code-block:: bash
-
-   easy_install batchq
-
-Alternatively you can download the latest version from GitHub and
-install using setup.py
-
-.. code-block:: bash
-
-   cd [location/of/source]
-   python setup.py install
-
-That's it.
-
 
 
 

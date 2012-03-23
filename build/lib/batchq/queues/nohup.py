@@ -4,9 +4,7 @@ from batchq.pipelines.shell.ssh import SSHTerminal
 from batchq.pipelines.shell.utils import FileCommander
 from batchq.shortcuts.shell import home_create_dir, send_command
 
-
 class NoHUP(batch.BatchQ):
-
     _r = batch.WildCard(reverse = True)
     _ = batch.WildCard()
 
@@ -19,13 +17,11 @@ class NoHUP(batch.BatchQ):
     prior = batch.Property("", verbose = False)    
     post = batch.Property("", verbose = False)    
 
+    nodes = batch.Property(1, display="Nodes: ", verbose = False)    
+    cores = batch.Property(1, display="Max cores pr. node: ", verbose = False) 
+    memory = batch.Property(128000, display="Memory: ", verbose = False)    
+    wall = batch.Property(10, display="Wall time: ", verbose = False)    
 
-#    processes = batch.Property(1, display="Number of processes: ", verbose = False) 
-#    wall = batch.Property(-1, display="Wall time: ", verbose = False)    
-#    mpi = batch.Property(False, display="Use MPI: ", verbose = False)    
-#    openmp_threads = batch.Property(1, display="OpenMP threads: ", verbose = False)    
-#    max_memory = batch.Property(-1, display="Max. memory: ", verbose = False)    
-#    max_space = batch.Property(-1, display="Max. space: ", verbose = False)    
 
     overwrite_nodename_with = batch.Property("", verbose = False)
     overwrite_submission_id = batch.Property("", verbose = False)
@@ -50,6 +46,7 @@ class NoHUP(batch.BatchQ):
 
     system_string = batch.Function(verbose=True) \
         .system_string()
+
 
     ## TESTED AND WORKING
     hash_input = batch.Function(verbose=True) \
@@ -102,7 +99,8 @@ class NoHUP(batch.BatchQ):
     prepare_outcopy = batch.Function(create_workdir, verbose=True) \
         .entrance().Qpjoin(_,output_directory).Qstore("outdir") \
         .Qget("workdir").Qpjoin(_,"*").Qget("outdir")
-    
+
+
     ### TESTED AND WORKING
     send = batch.Function(prepare_incopy , verbose=True, enduser=True) \
         .cp(_r, _r, True).Qdon(1).Qthrow("Failed to transfer files.")
@@ -139,7 +137,7 @@ class NoHUP(batch.BatchQ):
         .Qnot(_).Qstore("not_running").Qcall(submitted) \
         .Qget("not_running").Qand(_,_)
 
-    ### TESTED AND WORKING
+
     status = batch.Function(verbose=True, enduser=True) \
         .Qcall(running).Qdo(2).Qstr("running").Qreturn() \
         .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
@@ -149,19 +147,12 @@ class NoHUP(batch.BatchQ):
         .Qstr("unknown status")
 
 
-    ## TODO: TEST
-#    prepare_submission = batch.Function() \
-#         .Qstr(openmp_threads).Qjoin("export  OMP_NUM_THREADS=",_).Qprint(_).send_command(_) \
-#         .Qset("command_prepend","").Qbool(mpi).Qdo(3).Qstr(processes).Qjoin("mpirun -np ",_).Qstore("command_prepend")
-
     ## TESTED AND WORKING
-#        .Qcall(prepare_submission) \
-#        .Qget("command_prepend") \
     startjob = batch.Function(create_workdir,verbose=True) \
         .send_command(prior) \
         .Qcall(identifier_filename) \
         .Qjoin("(", command, " > ",_," & echo $! > .batchq.pid )") \
-        .Qprint(_).send_command(_).Qcall(running)
+        .send_command(_).Qcall(running)
 
     ## TESTED AND WORKING
     submit = batch.Function(send, verbose=True, enduser=True) \

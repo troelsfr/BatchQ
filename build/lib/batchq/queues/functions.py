@@ -1,4 +1,4 @@
-from os import path
+
 import json
 def create_configuration(filename, args, kwargs, switches):
     """
@@ -7,12 +7,7 @@ def create_configuration(filename, args, kwargs, switches):
     If invoked from Python, this function takes four arguments
     ``filename``, ``args``, ``kwargs`` and ``switches``.
     """
-    if "global" in kwargs:
-        del kwargs['global']
-        home = path.expanduser("~")        
-        f = open(path.join(home,".batchq/configurations/",filename), "w")
-    else:
-        f = open(filename, "w")
+    f = open(filename, "w")
     f.write(json.dumps( (args, kwargs, switches) ) )
     f.close()
 

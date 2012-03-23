@@ -4,11 +4,7 @@ LICENSE
 README
 setup.py
 batchq/__init__.py
-batchq/bin/out.tex
 batchq/bin/q
-batchq/bin/q.py
-batchq/bin/templated.py
-batchq/bin/test.tex
 batchq/contrib/__init__.py
 batchq/contrib/alps/__init__.py
 batchq/contrib/alps/test.py

@@ -132,7 +132,9 @@ Each submission module provides the parameters ``processes``,
 ``wall``, ``openmp_threads``, ``mpi``, ``max_memory`` and
 ``max_space`` which can be used to specify how a given process should
 run. At the moment changing these parameters only affect the ``lsf``,
-but in future releases ``nohup`` and ``nohup-ssh`` will also be affected.
+but in future releases ``nohup`` and ``nohup-ssh`` will also be
+affected.
+
 
 
 

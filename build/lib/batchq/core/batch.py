@@ -28,7 +28,6 @@ import sys
 import getpass
 import unicodedata
 import re
-
 from os import path
 from batchq.core.errors import BatchQException,BatchQFunctionException
 
@@ -513,13 +512,7 @@ class Function(BaseField):
     @QCallable
     def Qstore(self, name):
         self._store[name] = self._rets[-1]       
-        return None
-
-#    @QCallable
-#    def Qset(self, name,val):
-#        self._store[name] = ""
-#        return ""
-
+        return self._rets[-1]
 
     @QCallable
     def Qhas(self, name):
@@ -745,8 +738,8 @@ class BatchQ(object):
 
     def __init__(self, *args, **kwargs):
         self._log = []
-
         self.fields = copy.deepcopy(self.__class__.__new_fields__)
+
         
         # Setting up replacements and names
         for name, field in self.fields.iteritems():
@@ -872,34 +865,17 @@ class BatchQ(object):
         return object.__getattribute__(self, name)
 
 
-
 import json
-configurations_directory = path.join(path.dirname(__file__), "..","configurations")
 def load_settings(filelist):
     switches = []
     ret_args = []
     ret_kwargs = {}
     for filename in filelist.split(","):
-        file = None
         try:
             file = open(filename)
         except:
-            pass
-        if file is None:
-            try:
-                home = path.expanduser("~")        
-                file = open(path.join(home,".batchq/configurations/",filename))
-            except:
-                pass
-
-        if file is None:
-            try:                
-                file = open(path.join(configurations_directory,filename))
-            except:
-                pass
-
-        if file is None:
-                raise BaseException("Configuration '%s' not found" % filename)
+            home = path.expanduser("~")        
+            file = open(path.join(home,".batchq/configurations/",filename))
 
         args, kwargs, switches = json.load(file)        
         for n in range(0, len(args)):

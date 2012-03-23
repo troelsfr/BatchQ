@@ -19,7 +19,6 @@ class LSFBSub(NoHUPSSH):
         .Qstrip(_1).Qlower(_1).Qequal(_1,"run")
 
     ## TESTED AND WORKING
-#        .Qcall(NoHUP.prepare_submission) \
     startjob = batch.Function(NoHUP.create_workdir,verbose=True) \
         .send_command(NoHUP.prior) \
         .Qcall(NoHUP.identifier_filename) \

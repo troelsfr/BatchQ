@@ -1,4 +1,4 @@
-#! /opt/local/bin/python
+#!/opt/local/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python
 from batchq.queues import *
 from batchq.core.batch import load_settings
 import sys
@@ -100,20 +100,13 @@ class Main(object):
             cls = Library.queues.dict[name]
             try:
                 if i:
-                    kwargs[u'q_interact'] = True
+                    kwargs['q_interact'] = True
                 instance = cls(*args,**kwargs)
             except:
-                print 
-                print "Class: ", cls
-                print "Arguments: ", args
-                print "Keyword arguments: ", kwargs
-                print "Error:", sys.exc_info()[0]
-                print
-
                 if inspect.getdoc(cls):
                     print inspect.getdoc(cls)
                     print
-                
+                print "Unexpected error:", sys.exc_info()[0]
                 raise
 
 
@@ -170,7 +163,6 @@ class Main(object):
         pass
 
 if __name__ == "__main__":
-    from batchq import get_version
     main = Main()
     ret = -1
 #    try:
@@ -185,19 +177,11 @@ if __name__ == "__main__":
         file, name, task = noparam[0:3]
         args = noparam[3:]
     except:
-        try:
-            task = None
-            file, name = noparam[0:2]
-            args = () 
-        except:
-            print "BatchQ ", get_version()
-            print
-            print "Type 'q help' for help."
-            print "Type 'q list' for a list of available commands."
-            sys.exit(0)
+        task = None
+        file, name = noparam[0:2]
+        args = () 
 
-    ext = lambda x: x if len(x) == 2 else x+[True]
-    fnc = lambda x: ext(x[2:].split("=",)) if len(x) > 2 and x[0:2] ==  "--" else (x[1:], True)
+    fnc = lambda x: x[2:].split("=",) if len(x) > 2 and x[0:2] ==  "--" else (x[1:], True)
     kwargs = dict([fnc(val) for val in lst ])
     
     ret = main(name,task,*args, **kwargs)
