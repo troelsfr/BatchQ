@@ -4,7 +4,7 @@ from batchq.core.batch import DescriptorQ
 class ServerDescriptor(DescriptorQ):
   queue = LSFBSub
   username = "default_user"
-  server="brutus.ethz.ch"
+  server="server.address.com"
   port=22
   prior = "module load open_mpi goto2 python hdf5 cmake mkl\nexport PATH=$PATH:$HOME/opt/alps/bin"
   working_directory = "Submission"
