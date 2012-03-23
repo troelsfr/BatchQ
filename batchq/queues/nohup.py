@@ -183,9 +183,9 @@ class NoHUP(batch.BatchQ):
     cancel = batch.Function(pid, verbose=True, enduser=True).kill(_)
 
 
-    job = batch.Function(verbose=True, enduser=True)\
+    job = batch.Function(verbose=True, enduser=True) \
         .Qcall(submitted).Qdon(6).Qprint("Uploading input directory.").Qcall(send).Qprint("Submitting job on ").Qcall(startjob).Qstr("").Qreturn() \
-        .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qstr("")Qreturn() \
+        .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qstr("").Qreturn() \
         .Qcall(running).Qdo(3).Qprint("Job is running.").Qstr("").Qreturn() \
         .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn() \
         .Qcall(finished).Qdo(4).Qprint("Job has finished.\nRetrieving results.").Qcall(recv).Qstr("").Qreturn() \

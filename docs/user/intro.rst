@@ -75,7 +75,7 @@ And after 100s you get
 
    $ q [batch_system] job@my_server_configuration,your_name --command="./sleepy"
    Job has finished.
-   nRetrieving results.
+   Retrieving results.
 
 At this point new files should appear in your current directory:
 
