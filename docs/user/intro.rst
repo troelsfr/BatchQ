@@ -37,8 +37,8 @@ the following sections). Open ``bash`` and type
 
 .. code-block:: bash
 
-   $ q configuration my_server_configuration  --working_directory="Submission" --command="./script"  --input_directory="." --port=22 --server="server.address.com" --global=1
-   $ q configuration your_name  --username="your_default_used"  --global=1
+   $ q configuration my_server_configuration  --working_directory="Submission" --command="./script"  --input_directory="." --port=22 --server="server.address.com" --global
+   $ q configuration your_name  --username="your_default_used"  --global
 
 
 In the above change the ``server.address.com`` to the server address you
