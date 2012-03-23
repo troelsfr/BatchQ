@@ -1,0 +1,8 @@
+#!/bin/bash
+echo > results.txt
+for (( i=0;i<100;i++)); do
+    echo "Hello world (stdout, id $1)" 
+    echo "Hello error (stderr, id $1)"  >&2
+    echo "Hello file id $1" >> results$1.txt
+    sleep 1;
+done

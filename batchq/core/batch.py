@@ -942,7 +942,7 @@ class MetaDescriptorQ(type):
                 fields.update(getattr(b, "__baseconfiguration__"))
 
         # Finding new fields
-        reserved = ["get_queue","update_configuration","queue_log"]
+        reserved = ["get_queue","update_configuration","queue_log","descriptor_log"]
         newfields = dict([(a,dct[a]) for a in dct.iterkeys() if not a in reserved and (len(a) < 4 or (not "__" == a[0:2] and not "__" == a[-2:] )) ])
         fields.update(newfields)
                 
@@ -953,6 +953,8 @@ class MetaDescriptorQ(type):
 
 class DescriptorQ(object):
     __metaclass__ = MetaDescriptorQ
+
+
     def __init__(self, object = None, **kwargs): #          
         queue = None
         if isinstance(object, DescriptorQ):
@@ -981,8 +983,17 @@ class DescriptorQ(object):
             if "queue" in self._configuration:
                 self._queue_cls = self._configuration['queue']
                 del self._configuration['queue']
+
+                conf = {}
+                conf.update(self._configuration)
+                conf.update({'q_interact': True})
+                self._queue = self._queue_cls(**conf)
+
+
             else:
                 raise BaseException("You need to provide a queue in order to create a queue descriptor.")
+        elif "queue" in self._configuration:
+            del self._configuration['queue']
 
         if not configuration is None:
             if isinstance(configuration, str):
@@ -1010,12 +1021,7 @@ class DescriptorQ(object):
 
 
     def get_queue(self):
-        if self._queue is None :
-            conf = {}
-            conf.update(self._configuration)
-            conf.update({'q_interact': True})
-            self._queue = self._queue_cls(**conf)
-
+            
         for n, val in self._iterconf:
             self._queue.fields[n].set(val)
 

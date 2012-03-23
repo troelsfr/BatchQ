@@ -44,7 +44,7 @@ class BaseSecureTerminal(BasePipe):
 
         super(BaseSecureTerminal, self).__init__(pipe,expect_token, submit_token, initiate_pipe = False)       
 
-        self.set_timeout(40) 
+        self.set_timeout(5) 
 
         self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>)"))
         out = self.expect()
@@ -63,7 +63,7 @@ class BaseSecureTerminal(BasePipe):
 
         self._path = posixpath
         self.pop_expect()
-
+        self.set_timeout(40) 
         self.initiate_pipe()
 
 

@@ -1,0 +1,169 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Remote Jobs using Django &mdash; Batch Q 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Batch Q 0.1 documentation" href="../index.html" />
+    <link rel="next" title="Kivy Terminal" href="kivy_terminal.html" />
+    <link rel="prev" title="Users Guide" href="../user/intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="kivy_terminal.html" title="Kivy Terminal"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../user/intro.html" title="Users Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Batch Q 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="remote-jobs-using-django">
+<h1>Remote Jobs using Django<a class="headerlink" href="#remote-jobs-using-django" title="Permalink to this headline">¶</a></h1>
+<p>The following briefly explains how to put up a local Django webinterface
+and how to synchronise it with jobs submitted to a server. No particular
+knowledge of Django is required, except if you wish to setup a permanent
+web server for keeping track of jobs states.</p>
+<div class="section" id="dependencies-and-preliminary-notes">
+<h2>Dependencies and preliminary notes<a class="headerlink" href="#dependencies-and-preliminary-notes" title="Permalink to this headline">¶</a></h2>
+<p>The web interface depends on Django 1.3 (or newer) which can be
+obtained using easy_install as follows</p>
+<div class="highlight-bash"><div class="highlight"><pre>easy_install django
+</pre></div>
+</div>
+<p>The web interface can be located in any directory. We will in the following
+assume that it is located in ~/remoteweb/.</p>
+</div>
+<div class="section" id="starting-a-local-server">
+<h2>Starting a local server<a class="headerlink" href="#starting-a-local-server" title="Permalink to this headline">¶</a></h2>
+<p>Open bash and execute following commands:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> ~/remoteweb/
+python manage.py syncdb
+python manage.py runserver
+</pre></div>
+</div>
+<p>This will start the local web server which can be accessed
+on the address <a class="reference external" href="http://localhost:8000/">http://localhost:8000/</a>. In order to synchronise the jobs
+from a given server simply type</p>
+<div class="highlight-bash"><div class="highlight"><pre>python mange.py update_database <span class="o">[</span>appName <span class="o">[</span>server<span class="o">[</span>:port<span class="o">]]]</span>
+</pre></div>
+</div>
+<p>where [appName] is &#8216;remoteJobs-vistrails&#8217; if you are using VisTrails with
+the standard settings and [server] is the name of the server. If no
+server is supplied the script will assume that you wish to work on the
+local machine. If a server name is supplied the script will prompt for
+username and password. After entering these the database is updated with
+the jobs which has previously been submitted to the server.</p>
+</div>
+<div class="section" id="webinterface">
+<h2>Webinterface<a class="headerlink" href="#webinterface" title="Permalink to this headline">¶</a></h2>
+<p>In order to access the web interface go to <a class="reference external" href="http://localhost:8000/">http://localhost:8000/</a> in
+your favorite browser. A list of should now appear</p>
+<p>which has been optimised for running on mobile units. From the
+webinterface you can see the status of your jobs, cancel or
+resubmit them. The changes take effect whenever</p>
+<div class="highlight-bash"><div class="highlight"><pre>python mange.py update_database <span class="o">[</span>appName <span class="o">[</span>server<span class="o">[</span>:port<span class="o">]]]</span>
+</pre></div>
+</div>
+<p>has been executed.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Remote Jobs using Django</a><ul>
+<li><a class="reference internal" href="#dependencies-and-preliminary-notes">Dependencies and preliminary notes</a></li>
+<li><a class="reference internal" href="#starting-a-local-server">Starting a local server</a></li>
+<li><a class="reference internal" href="#webinterface">Webinterface</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../user/intro.html"
+                        title="previous chapter">Users Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="kivy_terminal.html"
+                        title="next chapter">Kivy Terminal</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/contrib/django_webserver.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="kivy_terminal.html" title="Kivy Terminal"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../user/intro.html" title="Users Guide"
+             >previous</a> |</li>
+        <li><a href="../index.html">Batch Q 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011 -2012, Troels F. Rønnow, ETH Zürich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

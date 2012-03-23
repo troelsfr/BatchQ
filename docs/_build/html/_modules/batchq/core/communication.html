@@ -1,0 +1,422 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>batchq.core.communication &mdash; Batch Q 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Batch Q 0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Batch Q 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for batchq.core.communication</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This is some sort of docs??</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c">####################################################################################</span>
+<span class="c"># Copyright (C) 2011-2012</span>
+<span class="c"># Troels F. Roennow, ETH Zurich</span>
+<span class="c">#</span>
+<span class="c"># Permission is hereby granted, free of charge, to any person obtaining a copy of</span>
+<span class="c"># this software and associated documentation files (the &quot;Software&quot;), to deal in</span>
+<span class="c"># the Software without restriction, including without limitation the rights to</span>
+<span class="c"># use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies</span>
+<span class="c"># of the Software, and to permit persons to whom the Software is furnished to do</span>
+<span class="c"># so, subject to the following conditions:</span>
+<span class="c"># </span>
+<span class="c"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c"># copies or substantial portions of the Software.</span>
+<span class="c"># </span>
+<span class="c"># THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</span>
+<span class="c"># IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span>
+<span class="c"># FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span>
+<span class="c"># AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span>
+<span class="c"># LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span>
+<span class="c"># OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</span>
+<span class="c"># SOFTWARE.</span>
+<span class="c">####################################################################################</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">batchq.core.process</span> <span class="kn">import</span> <span class="n">Process</span>
+<span class="kn">from</span> <span class="nn">batchq.core.terminal</span> <span class="kn">import</span> <span class="n">XTermInterpreter</span> 
+<span class="kn">from</span> <span class="nn">batchq.core.errors</span> <span class="kn">import</span> <span class="n">CommunicationIOException</span><span class="p">,</span> <span class="n">BasePipeException</span><span class="p">,</span> <span class="n">CommunicationTimeout</span>
+<span class="kn">from</span> <span class="nn">batchq.core.memory</span> <span class="kn">import</span> <span class="n">Memory</span>
+
+<div class="viewcode-block" id="BasePipe"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe">[docs]</a><span class="k">class</span> <span class="nc">BasePipe</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="n">expect_token</span><span class="p">,</span> <span class="n">submit_token</span><span class="p">,</span> <span class="n">mem_scale</span><span class="o">=</span> <span class="mf">1000.</span><span class="p">,</span> <span class="n">vt100</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">initiate_pipe</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_output</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_input</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="o">=</span> <span class="n">pipe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_token</span> <span class="o">=</span> <span class="n">expect_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_token</span> <span class="o">=</span> <span class="n">submit_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="mi">4000</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_stack</span> <span class="o">=</span> <span class="p">[</span><span class="n">expect_token</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_stack</span> <span class="o">=</span> <span class="p">[</span><span class="n">expect_token</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_expect_stack</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_submit_stack</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="k">if</span> <span class="n">vt100</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span> <span class="o">=</span> <span class="n">XTermInterpreter</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span> <span class="o">=</span> <span class="n">vt100</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_timeout_onoutput</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_memory</span> <span class="o">=</span> <span class="n">Memory</span><span class="p">(</span><span class="n">mem_scale</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">initiate_pipe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">initiate_pipe</span><span class="p">()</span>
+
+
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.last_input"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.last_input">[docs]</a>    <span class="k">def</span> <span class="nf">last_input</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_input</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.last_output"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.last_output">[docs]</a>    <span class="k">def</span> <span class="nf">last_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_output</span>
+
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.terminal_interpreter"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.terminal_interpreter">[docs]</a>    <span class="k">def</span> <span class="nf">terminal_interpreter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        This property holds an instance of a ``XTermInterpreter``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span>
+
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.buffer"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.buffer">[docs]</a>    <span class="k">def</span> <span class="nf">buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Contains the VT100 interpreted buffer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">buffer</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.pipe_buffer"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.pipe_buffer">[docs]</a>    <span class="k">def</span> <span class="nf">pipe_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Contains the true pipe buffer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">buffer</span>
+
+</div>
+<div class="viewcode-block" id="BasePipe.push_submit"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.push_submit">[docs]</a>    <span class="k">def</span> <span class="nf">push_submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">submit_token</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_token</span> <span class="o">=</span> <span class="n">submit_token</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_stack</span> <span class="o">+=</span> <span class="p">[</span><span class="n">submit_token</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_submit_stack</span><span class="o">+=</span><span class="mi">1</span>
+</div>
+<div class="viewcode-block" id="BasePipe.push_expect"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.push_expect">[docs]</a>    <span class="k">def</span> <span class="nf">push_expect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expect_token</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_token</span> <span class="o">=</span> <span class="n">expect_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_stack</span> <span class="o">+=</span> <span class="p">[</span><span class="n">expect_token</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_expect_stack</span><span class="o">+=</span><span class="mi">1</span>
+</div>
+<div class="viewcode-block" id="BasePipe.pop_expect"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.pop_expect">[docs]</a>    <span class="k">def</span> <span class="nf">pop_expect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_expect_stack</span><span class="o">-=</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_expect_stack</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BasePipeException</span><span class="p">(</span><span class="s">&quot;Expectation stack is empty.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="BasePipe.pop_submit"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.pop_submit">[docs]</a>    <span class="k">def</span> <span class="nf">pop_submit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_submit_stack</span><span class="o">-=</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_submit_stack</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BasePipeException</span><span class="p">(</span><span class="s">&quot;Submit stack is empty.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_submit_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="BasePipe.initiate_pipe"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.initiate_pipe">[docs]</a>    <span class="k">def</span> <span class="nf">initiate_pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        This function is a virtual function which is called </span>
+<span class="sd">        at the end if the objects initiation. Its purpose is to initiate</span>
+<span class="sd">        the pipe with a series of commands. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="BasePipe.consume_output"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.consume_output">[docs]</a>    <span class="k">def</span> <span class="nf">consume_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">consume_until</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function consumes output of the pipe which is separated</span>
+<span class="sd">        with no more than 10 ms and returns it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pipe</span><span class="p">:</span>
+            <span class="n">pipe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="n">echo</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">set_mark</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">consume_until</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">consume_until</span><span class="p">,</span> <span class="s">&quot;search&quot;</span><span class="p">):</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">consume_until</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="k">while</span> <span class="n">pipe</span><span class="o">.</span><span class="n">isalive</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">m</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">b</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">getchar</span><span class="p">()</span>
+                <span class="k">except</span> <span class="n">CommunicationIOException</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">b</span><span class="o">!=</span><span class="s">&quot;&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">echo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">copy_echo</span><span class="p">()</span>
+                    <span class="n">tot_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+                    <span class="n">tot_echo_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">echo</span><span class="p">)</span>
+                
+                    <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">monitor</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_timeout_onoutput</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">monitor_echo</span> <span class="o">!=</span><span class="s">&quot;&quot;</span> <span class="ow">or</span> <span class="n">m</span> <span class="o">!=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
+                        <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> 
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">end_time</span><span class="o">&lt;</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span><span class="p">,</span> <span class="s">&quot;BUFFER&quot;</span><span class="p">,</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span>
+                        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">buffer</span>
+                        <span class="k">print</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span><span class="p">,</span> <span class="s">&quot;END OF BUFFER&quot;</span><span class="p">,</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span>
+                        <span class="k">print</span> <span class="s">&quot;Expecting: &quot;</span><span class="p">,</span> <span class="n">consume_until</span>
+                        <span class="k">print</span> <span class="s">&quot;Consumed: &quot;</span><span class="p">,</span> <span class="n">output</span>
+                        <span class="k">print</span> <span class="s">&quot;Escape mode:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">escape_mode</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">escape_mode</span><span class="p">:</span>
+                            <span class="k">print</span> <span class="s">&quot;Last escape:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">last_escape</span>
+                    <span class="k">raise</span> <span class="n">CommunicationTimeout</span><span class="p">(</span><span class="s">&quot;Consuming output timed out. You can increase the timeout by using set_timeout(t).&quot;</span><span class="p">)</span>
+                
+                <span class="n">m</span> <span class="o">=</span> <span class="n">consume_until</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            
+        <span class="k">elif</span> <span class="n">consume_until</span><span class="p">:</span>
+
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">consume_until</span><span class="p">)</span>
+            <span class="n">tot_len</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">tot_echo_len</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span>
+
+            <span class="k">while</span> <span class="n">pipe</span><span class="o">.</span><span class="n">isalive</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tot_len</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">consume_until</span> <span class="o">==</span> <span class="n">output</span><span class="p">[</span><span class="n">tot_len</span> <span class="o">-</span><span class="n">n</span><span class="p">:</span> <span class="n">tot_len</span><span class="p">])</span> <span class="ow">and</span> \
+                    <span class="p">(</span><span class="n">tot_echo_len</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">consume_until</span> <span class="o">==</span> <span class="n">echo</span><span class="p">[</span><span class="n">tot_echo_len</span> <span class="o">-</span><span class="n">n</span><span class="p">:</span> <span class="n">tot_echo_len</span><span class="p">]):</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">b</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">getchar</span><span class="p">()</span>
+                <span class="k">except</span> <span class="n">CommunicationIOException</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">b</span><span class="o">!=</span><span class="s">&quot;&quot;</span><span class="p">:</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">echo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">copy_echo</span><span class="p">()</span>
+                    <span class="n">tot_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+                    <span class="n">tot_echo_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">echo</span><span class="p">)</span>
+                
+                    <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">monitor</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_timeout_onoutput</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">monitor_echo</span> <span class="o">!=</span><span class="s">&quot;&quot;</span> <span class="ow">or</span> <span class="n">m</span> <span class="o">!=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
+                        <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> 
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">end_time</span><span class="o">&lt;</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span><span class="p">,</span> <span class="s">&quot;BUFFER&quot;</span><span class="p">,</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span>
+                        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">buffer</span>
+                        <span class="k">print</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span><span class="p">,</span> <span class="s">&quot;END OF BUFFER&quot;</span><span class="p">,</span> <span class="s">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span>
+                        <span class="k">print</span> <span class="s">&quot;Expecting: &quot;</span><span class="p">,</span> <span class="n">consume_until</span>
+                        <span class="k">print</span> <span class="s">&quot;Consumed: &quot;</span><span class="p">,</span> <span class="n">output</span>
+                        <span class="k">print</span> <span class="s">&quot;Escape mode:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">escape_mode</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">escape_mode</span><span class="p">:</span>
+                            <span class="k">print</span> <span class="s">&quot;Last escape:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">last_escape</span>
+                    <span class="k">raise</span> <span class="n">CommunicationTimeout</span><span class="p">(</span><span class="s">&quot;Consuming output timed out. You can increase the timeout by using set_timeout(t).&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">consume_until</span> <span class="o">==</span> <span class="n">output</span><span class="p">[</span><span class="n">tot_len</span> <span class="o">-</span><span class="n">n</span><span class="p">:</span> <span class="n">tot_len</span><span class="p">]:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">tot_len</span> <span class="o">-</span><span class="n">n</span><span class="p">]</span>
+            <span class="c"># TODO: figure out what to do when the match is in the echo</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">while</span> <span class="n">b</span> <span class="o">!=</span><span class="s">&quot;&quot;</span> <span class="ow">and</span> <span class="n">pipe</span><span class="o">.</span><span class="n">isalive</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">monitor</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_level</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">monitor</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">move_monitor_cursors</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+</div>
+<div class="viewcode-block" id="BasePipe.send_command"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.send_command">[docs]</a>    <span class="k">def</span> <span class="nf">send_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function sends a command to the pipe, wait for the prompt</span>
+<span class="sd">        to appear and return the output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_input</span> <span class="o">=</span> <span class="n">cmd</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="c"># We first consume the echo</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume_output</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_submit_token</span><span class="p">)</span>
+
+        <span class="c"># Next we consume the result of sending a submit token</span>
+        <span class="c"># This is done as bash sometimes send additional escape codes </span>
+        <span class="c"># to manipulate the echo.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume_output</span><span class="p">(</span><span class="n">consume_until</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_submit_token</span><span class="p">)</span>
+
+
+
+        <span class="c"># Then we wait for the output</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">consume_output</span><span class="p">(</span><span class="n">consume_until</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_token</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_output</span> <span class="o">=</span> <span class="n">ret</span>
+
+<span class="c">#        print &quot;$&quot;, cmd</span>
+<span class="c">#        print ret</span>
+<span class="c">#        print &quot;=&quot;*40</span>
+<span class="c">#        print self._xterminterpreter.readable_echo</span>
+<span class="c">#        print &quot;=&quot;*40</span>
+<span class="c">#        print &quot;--!&quot;</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+
+</div>
+<div class="viewcode-block" id="BasePipe.expect"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.expect">[docs]</a>    <span class="k">def</span> <span class="nf">expect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">consume_output</span><span class="p">(</span><span class="n">consume_until</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_token</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">consume_output</span><span class="p">(</span><span class="n">consume_until</span> <span class="o">=</span> <span class="n">val</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="BasePipe.set_timeout"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.set_timeout">[docs]</a>    <span class="k">def</span> <span class="nf">set_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="BasePipe.remaining"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.remaining">[docs]</a>    <span class="k">def</span> <span class="nf">remaining</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">move_monitor_cursors</span><span class="p">()</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="c">#        print &quot;WRITING &quot;, len(r), &quot;CHARS:&quot;, r, </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="c">#        print self._xterminterpreter.monitor_echo</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xterminterpreter</span><span class="o">.</span><span class="n">monitor</span>
+</div>
+<div class="viewcode-block" id="BasePipe.kill"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.kill">[docs]</a>    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="BasePipe.terminate"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.terminate">[docs]</a>    <span class="k">def</span> <span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="BasePipe.cpu_usage"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.cpu_usage">[docs]</a>    <span class="k">def</span> <span class="nf">cpu_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># TODO: Yet to be implemented</span>
+        <span class="k">pass</span>
+    </div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.pid"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.pid">[docs]</a>    <span class="k">def</span> <span class="nf">pid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">pid</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.pipe"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.pipe">[docs]</a>    <span class="k">def</span> <span class="nf">pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span>
+
+    </div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.memory_usage"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.memory_usage">[docs]</a>    <span class="k">def</span> <span class="nf">memory_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.child_memory_usage"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.child_memory_usage">[docs]</a>    <span class="k">def</span> <span class="nf">child_memory_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory</span><span class="o">.</span><span class="n">child_processes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BasePipe.total_memory_usage"><a class="viewcode-back" href="../../../api/terminal.html#batchq.core.communication.BasePipe.total_memory_usage">[docs]</a>    <span class="k">def</span> <span class="nf">total_memory_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory</span><span class="o">.</span><span class="n">total</span><span class="p">()</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Batch Q 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011 -2012, Troels F. Rønnow, ETH Zürich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.
+    </div>
+  </body>
+</html>

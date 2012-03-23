@@ -114,42 +114,35 @@ Next, open an editor, enter the following Python code:
 
 .. literalinclude:: ../../batchq/contrib/examples2/quickstart.py
 
-and save it as ``job_submitter.py`` in ``MyFirstSubmission``. Note that
-in the above code we use the second descriptor to initiate the first
-descriptor in order to reuse the queue defined for ``desc1`` in
-``desc2``. Go back to the shell and type:
+and save it as ``job_submitter.py`` in ``MyFirstSubmission``. Go back to
+the shell and type:
 
 .. code-block:: python
 
    $ python job_submitter.py
 
-Rerun the code to get the status of the job and to pull finished jobs.
- Your second submission was done with Python.   
+Note that in the above code we use the second descriptor to initiate the
+first descriptor in order to reuse the queue defined for ``desc1`` in
+``desc2``. Your second submission was done with Python.   
 
 .. note:: If choosing same input and output directory you will run into
    problems when running this script several times as  hash sum of the
    input changes once the results have been pulled. This means that you may
-   accidently resubmit a finished job. 
+   accidently resubmit a finished job.  a
 
 The above can be overcome by either separating ``input_directory`` and
 ``output_directory``, or by setting the submission id manually: 
 
 .. literalinclude:: ../../batchq/contrib/examples2/quickstart2.py
 
-To shorten the above you may use your previously defined
-configurations
+Multiple nodes
+++++++++++++++
+Each submission module provides the parameters ``processes``,
+``wall``, ``openmp_threads``, ``mpi``, ``max_memory`` and
+``max_space`` which can be used to specify how a given process should
+run. At the moment changing these parameters only affect the ``lsf``,
+but in future releases ``nohup`` and ``nohup-ssh`` will also be affected.
 
-.. literalinclude:: ../../batchq/contrib/examples2/quickstart3.py
-
-We can now generalise this to arbitrarily many jobs:
-
-.. literalinclude:: ../../batchq/contrib/examples2/quickstart4.py
-
-If we know that the output files does not overwrite each other it is
-only necessary to keep one copy of the input folder. This can be done by
-specifying the ``subdirectory``
-
-.. literalinclude:: ../../batchq/contrib/examples2/quickstart5.py
 
 
 Using the command line tool

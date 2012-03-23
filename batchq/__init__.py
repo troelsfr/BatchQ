@@ -1,2 +1,2 @@
 def get_version():
-    return "0.1-2-pre-alpha"
+    return "0.1-3-pre-alpha"
