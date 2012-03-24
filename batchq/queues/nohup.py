@@ -136,17 +136,14 @@ class NoHUP(batch.BatchQ):
 
     ### TESTED AND WORKING
     finished = batch.Function(running,verbose=True, enduser=True) \
-        .Qnot(_).Qstore("not_running").Qcall(submitted) \
-        .Qget("not_running").Qand(_,_)
+        .Qdo(2).Qbool(False).Qreturn() \
+        .Qcall(pending).Qdo(2).Qbool(False).Qreturn() \
+        .Qcall(submitted).Qdo(2).Qbool(True).Qreturn() \
+        .Qbool(False)
+#        .Qcall(pending).Qor(_,_).Qnot(_).Qstore("not_running").Qcall(submitted) \
+#        .Qget("not_running").Qand(_,_)
+        
 
-    ### TESTED AND WORKING
-    status = batch.Function(verbose=True, enduser=True) \
-        .Qcall(running).Qdo(2).Qstr("running").Qreturn() \
-        .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
-        .Qcall(pending).Qdo(2).Qstr("pending").Qreturn() \
-        .Qcall(submitted).Qdon(2).Qstr("was not submitted").Qreturn() \
-        .Qcall(failed).Qdo(2).Qstr("failed").Qreturn() \
-        .Qstr("unknown status")
 
 
     ## TODO: TEST
@@ -190,6 +187,15 @@ class NoHUP(batch.BatchQ):
 
     ## TODO: TEST
     cancel = batch.Function(pid, verbose=True, enduser=True).kill(_)
+
+    ### TESTED AND WORKING
+    status = batch.Function(verbose=True, enduser=True) \
+        .Qcall(running).Qdo(2).Qstr("running").Qreturn() \
+        .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
+        .Qcall(pending).Qdo(2).Qstr("pending").Qreturn() \
+        .Qcall(submitted).Qdon(2).Qstr("was not submitted").Qreturn() \
+        .Qcall(failed).Qdo(2).Qstr("failed").Qreturn() \
+        .Qstr("unknown status")
 
 
     job = batch.Function(verbose=True, enduser=True) \
