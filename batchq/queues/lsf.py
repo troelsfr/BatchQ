@@ -26,10 +26,10 @@ class LSFBSub(NoHUPSSH):
         .Qjoin("(touch ",_1, " && bsub -o ",_2,"_log ", options," \"", NoHUP.command, " > ",_3," \" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > .batchq.pid )") \
         .send_command(_1)
 
-    ## TESTED AND WORKING   
-    finished = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \
-        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
-        .Qstrip(_1).Qlower(_1).Qequal(_1,"done")
+#    ## TESTED AND WORKING   
+#    finished = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \
+#        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
+#        .Qstrip(_1).Qlower(_1).Qequal(_1,"done")
 
     
     failed = batch.Function(NoHUP.pid,verbose=True).Qcontroller("terminal") \

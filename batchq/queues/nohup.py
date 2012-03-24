@@ -10,7 +10,7 @@ class NoHUP(batch.BatchQ):
     _r = batch.WildCard(reverse = True)
     _ = batch.WildCard()
 
-    command = batch.Property(display="Command to execute: ")
+    command = batch.Property("echo Hello World > execution.txt",display="Command to execute: ")
     working_directory = batch.Property(display="Specify a working directory: ")
     input_directory = batch.Property(".", display="Specify an input directory: ")
     output_directory = batch.Property(".", display="Specify an output directory: ")

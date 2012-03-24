@@ -100,7 +100,8 @@ class Property(BaseField):
         self._display = display
         self._userset = not verbose
 
-    def interact(self):
+    def interact(self, reduce_interaction = False):
+        if reduce_interaction and not self._value is None: return
         t = type(self._value)
 
         val = None
@@ -112,7 +113,7 @@ class Property(BaseField):
         else:
             if self._display == "":
                 val = raw_input("Enter a text (no field desciption given): ")
-            else:
+            else:                
                 val = raw_input(self._display)
 
         if not self._value is None:
@@ -759,10 +760,13 @@ class BatchQ(object):
         last_pipe = None        
 
         interactive = False
+        reduced = False
         if "q_interact" in kwargs:
             interactive = kwargs['q_interact']
             del kwargs['q_interact']
-
+        if "q_reduce_interaction" in kwargs:
+            reduced = kwargs['q_reduce_interaction']
+            del kwargs['q_reduce_interaction']
 
         self._settings_args = copy.deepcopy(args)
         self._settings_kwargs = copy.deepcopy(kwargs)
@@ -807,7 +811,7 @@ class BatchQ(object):
         allset = True
         for name, attr in properties:
             if not attr.isuserset and interactive:
-                self._settings_kwargs[name] = attr.interact()
+                self._settings_kwargs[name] = attr.interact(reduced)
             allset = allset and attr.isset
         
         if not allset:
@@ -960,7 +964,7 @@ class DescriptorQ(object):
         inherithed_conf = {}
         if isinstance(object, DescriptorQ):
             queue = object.get_queue()
-            inherithed_conf = object.get_configuration()
+            inherithed_conf = copy.deepcopy(object.get_configuration())
         elif isinstance(object, BatchQ):
             queue = object
 
@@ -988,7 +992,7 @@ class DescriptorQ(object):
 
                 conf = {}
                 conf.update(self._configuration)
-                conf.update({'q_interact': True})
+                conf.update({'q_interact': True, 'q_reduce_interaction': True})
                 self._queue = self._queue_cls(**conf)
 
 
