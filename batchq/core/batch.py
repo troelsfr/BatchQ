@@ -942,7 +942,7 @@ class MetaDescriptorQ(type):
                 fields.update(getattr(b, "__baseconfiguration__"))
 
         # Finding new fields
-        reserved = ["get_queue","update_configuration","queue_log","descriptor_log"]
+        reserved = ["get_queue","update_configuration","queue_log","descriptor_log","get_configuration"]
         newfields = dict([(a,dct[a]) for a in dct.iterkeys() if not a in reserved and (len(a) < 4 or (not "__" == a[0:2] and not "__" == a[-2:] )) ])
         fields.update(newfields)
                 
@@ -957,8 +957,10 @@ class DescriptorQ(object):
 
     def __init__(self, object = None, **kwargs): #          
         queue = None
+        inherithed_conf = {}
         if isinstance(object, DescriptorQ):
             queue = object.get_queue()
+            inherithed_conf = object.get_configuration()
         elif isinstance(object, BatchQ):
             queue = object
 
@@ -970,7 +972,7 @@ class DescriptorQ(object):
             configuration = kwargs
 
         self._queue = queue
-        self._configuration = {}
+        self._configuration = inherithed_conf
         self._configuration.update( self.__baseconfiguration__ )
 
         if isinstance(configuration, str):
@@ -1032,6 +1034,9 @@ class DescriptorQ(object):
             self._configuration.update(conf)
         self._configuration.update(kwargs)
         self._iterconf = self._configuration.iteritems()
+
+    def get_configuration(self):
+        return self._configuration
 
     def __getattribute__(self,name):
         try:
