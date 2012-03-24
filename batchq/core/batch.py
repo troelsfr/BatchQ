@@ -1015,7 +1015,7 @@ class DescriptorQ(object):
 
 #            self._configuration.update(configuration)
 
-        self._iterconf = self._configuration.iteritems()
+
 
     @property
     def queue_log(self):
@@ -1027,8 +1027,7 @@ class DescriptorQ(object):
 
 
     def get_queue(self):
-            
-        for n, val in self._iterconf:
+        for n, val in self._configuration.iteritems():
             self._queue.fields[n].set(val)
 
         return self._queue
@@ -1037,7 +1036,7 @@ class DescriptorQ(object):
         if not conf is None:
             self._configuration.update(conf)
         self._configuration.update(kwargs)
-        self._iterconf = self._configuration.iteritems()
+
 
     def get_configuration(self):
         return self._configuration
