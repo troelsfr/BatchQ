@@ -32,7 +32,7 @@ from batchq.core.errors import CommunicationIOException, CommunicationOSExceptio
 
 class BaseProcess(object):
 
-    def __init__(self, command = None, args = [], environment = None, terminal_preferred = True, terminal_required = False, check_timeout = 0.05):
+    def __init__(self, command = None, args = [], environment = None, terminal_preferred = True, terminal_required = False, check_timeout = 0.0):
         self._own_terminal = False
         self._echo = True
         self._buffer = ""
@@ -164,6 +164,7 @@ class BaseProcess(object):
         """
         Checks wether we can read from the output stream.
         """
+
         try:
             r,w,e = select.select([self._stdout_fd],[],[], self._canread_timeout)
         except:
@@ -177,6 +178,7 @@ class BaseProcess(object):
         """
         Checks wether it is possible to write to the input stream.
         """
+#        return True
         try:
             r,w,e = select.select([],[self._stdin_fd],[], self._canwrite_timeout)
         except:

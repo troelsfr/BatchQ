@@ -92,13 +92,13 @@ class Property(BaseField):
         self._isset = len(args)>0 or 'value' in kwargs.iterkeys()
         self.__set_defaults__(*args, **kwargs)
 
-    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", value_from = None):
-        self._value_from = value_from
+    def __set_defaults__(self, value = None, password = False, verbose = True, display = ""):
         self._value = value
         self._password = password
         self._verbose = verbose
         self._display = display
         self._userset = not verbose
+        self._on_modify =None
 
     def interact(self, reduce_interaction = False):
         if reduce_interaction and not self._value is None: return
@@ -122,14 +122,11 @@ class Property(BaseField):
             self.set(val)
         return self.get()
 
-    @property
-    def fetch_value_from(self):
-        return self._value_from
 
     def initialise(self):
-        if not self._value_from is None and hasattr(self.model, self._value_from):
-            self.value = getattr(self.model, self._value_from)
-            self._userset = True
+#        if not self._value_from is None and hasattr(self.model, self._value_from):
+#            self.value = getattr(self.model, self._value_from)
+#            self._userset = True
         return True
 
     def set(self, val):
@@ -140,7 +137,11 @@ class Property(BaseField):
             self._value = val
         else:
             r.set(val)
-        
+        if self._on_modify: self._on_modify()
+
+    def set_on_modify(self, listener):
+        self._on_modify = listener
+
     def get(self):
         r = self.replacement
         if r == self:
@@ -240,8 +241,9 @@ class QCallable(object):
 
         return self._f(*args, **kwargs)
 
+import time
 class Function(BaseField):
-    def __init__(self, inherits = None, verbose = False, enduser=False):
+    def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0):
         super(Function, self).__init__()
         self._listener = None
         self._verbose_functions = ["Qthrow"]
@@ -253,14 +255,27 @@ class Function(BaseField):
         self._store = {}
         self._overall_default = ""
         self._intended_for_users = enduser
+        self._cache = cache
+        self._last_run = None
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
+        self._name = "None"
 
     @property
     def enduser(self):
         return self._intended_for_users
 
+    def clear_cache(self):
+        self._last_run = None
+
+    def set_function_name(self, name):
+        self._name = name
+
     def __call__(self, *args, **kwargs):
+        if self._last_run and self._last_run+self._cache < time.time():
+            print "Cache hit:: ", self._name
+            return self            
+
 #        print "Entering call", self
         self._executing = True
         arguments = dict([("arg%d"%i,args[i]) for i in range(0, len(args))])
@@ -341,7 +356,10 @@ class Function(BaseField):
                 elif isinstance(a, WildCard):
                     nargs += (a.replacement.get(),)
                 elif fnc == "Qcall":
-                    nargs += (a.replacement(),)
+                    if hasattr(a, "replacement"):
+                        nargs += (a.replacement(),)
+                    else:
+                        nargs += (a,)
                 elif isinstance(a, Function):
                     nargs += (a.replacement().val(),)
                 elif callable(a):
@@ -358,7 +376,10 @@ class Function(BaseField):
                     nkwargs[name] = val.replacement.get()
 
                 elif fnc == "Qcall":
-                    nkwargs[name] = val.replacement()
+                    if hasattr(val, "replacement"):
+                        nkwargs[name] = val.replacement()
+                    else:
+                        nkwargs[name] = val
                 elif isinstance(val, Function):
                     nkwargs[name] = val.replacement().val()
                 elif callable(val):
@@ -399,6 +420,7 @@ class Function(BaseField):
                 self._listener(fnc, args, kwargs, selfcall, self._rets[-1])
 
         self._executing = False    
+        self._last_run = time.time()
         return self
 
 
@@ -516,10 +538,10 @@ class Function(BaseField):
         self._store[name] = self._rets[-1]       
         return None
 
-#    @QCallable
-#    def Qset(self, name,val):
-#        self._store[name] = ""
-#        return ""
+    @QCallable
+    def Qset(self, name,val):
+        self._store[name] = ""
+        return ""
 
 
     @QCallable
@@ -780,16 +802,18 @@ class BatchQ(object):
         for _, attr in items:
             attr.model = self
         
-        properties = [(a,b) for (a,b) in items if isinstance(b, Property)]
+        properties =  [(a,b) for (a,b) in items if isinstance(b, Property)]
         minpro = len([b for (a,b) in properties if not b.isset])
         properties_dict = dict(properties)
         self._properties = properties 
+        self._functions = [(a,b) for (a,b) in items if isinstance(b, Function)]
 
         i = 0
         wasset = []
 
         for name, attr in properties:
             attr.initialise()
+            attr.set_on_modify(self.reset_cache)
             if i < len(args):
                 wasset.append(name)
                 attr.set(args[i])
@@ -824,9 +848,11 @@ class BatchQ(object):
             elif isinstance(attr, Function):
                 attr.register(self._pipelines, last_pipe)
                 setattr(self, name, attr)
-            elif isinstance(attr, Property):
-                self._createProperty(name, attr.fetch_value_from)
+                attr.set_function_name(name)
 
+    def reset_cache(self):
+        for name, attr in self._functions:
+            attr.clear_cache()
 
     def listener(self,listener):
         items = [(a,b) for a,b in self.fields.iteritems() if isinstance(b, Function)]
@@ -870,7 +896,8 @@ class BatchQ(object):
 
     def __getattribute__(self,name):
 
-        if hasattr(self, "fields") and  name in object.__getattribute__(self,"fields"):
+        if hasattr(object, "fields") and  name in object.__getattribute__(self,"fields"):
+#        if hasattr(self, "fields") and  name in object.__getattribute__(self,"fields"):
             object.__getattribute__(self,"_log").append(name)
 
         return object.__getattribute__(self, name)

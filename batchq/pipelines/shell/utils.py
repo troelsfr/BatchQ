@@ -94,7 +94,7 @@ class FileCommander(FileTransferTerminal):
     def __init__(self, server = None, username = "", password = "", port = 22, accept_figerprint = False):
         super(FileCommander,self).__init__(server, username, password, port, accept_figerprint)
         self._local_bash = BashTerminal()
-
+        self._syncroisation_cache = {}
         if server:
             self._remote_bash = SSHTerminal(server, username, password, port, accept_figerprint) 
         else:
@@ -140,46 +140,29 @@ class FileCommander(FileTransferTerminal):
 
         format_lpath = lambda x: x if not absolute_path else self.local.path.join(lpwd,x)
         format_rpath = lambda x: x if not absolute_path else self.remote.path.join(rpwd,x)
+       
 
-#REM        print "Hashing ", lpwd, local_dir
-        h1 = self.local.directory_hash(".", ignore_hidden)
-#REM        print "Hashing ", rpwd, remote_dir
-        h2 = self.remote.directory_hash(".", ignore_hidden)
-
-        if h1 == h2:
-            return ([],[])
-
-        (lfiles, ldirs) = self.local.list(".", recursive)
-        (rfiles, rdirs) = self.remote.list(".", recursive)
+        (lfiles, ldirs) = self.local.list(".", recursive,list_files = False)
+        (rfiles, rdirs) = self.remote.list(".", recursive,list_files = False)
+        lfiles_sum  = self.local.sum_files(".",ignore_hidden)
+        rfiles_sum  = self.remote.sum_files(".",ignore_hidden)
         files = []
         dirs = []
         already_checked = []
-        
+
+
         if mode & 1:
-            for file in lfiles:
-                ### FIXME:, does not work if paths stars with ./
-                if (file[0] == "." or "/." in file) and ignore_hidden: continue
+            for file,sum in lfiles_sum:
                 already_checked += [file,]
-                if file in rfiles:
-                    h1 = self.local.file_hash(file)
-                    h2 = self.remote.file_hash(file)
-                    if not h1 == h2:
-                        files += [(format_lpath(file), format_rpath(file))]
-                else:
-                    files += [(format_lpath(file), "")]
+                if not (file,sum) in rfiles_sum:
+                    files+= [(format_lpath(file), "")]
 
         if mode & 2:
-            for file in rfiles:
-                if (file[0] == "." or "/." in file) and ignore_hidden: continue
-                if file in already_checked: continue
-                if file in lfiles:
-                    h1 = self.local.file_hash(file)
-                    h2 = self.remote.file_hash(file)
-                    if not h1 == h2:
-                        files += [(format_lpath(file), format_rpath(file))]
-                else:
-                    files += [("", format_rpath(file))]
-
+            for file,sum in rfiles_sum:
+                already_checked += [file,]
+                if not (file,sum) in lfiles_sum:
+                    files+= [("", format_rpath(file))]
+       
         already_checked = []
         
         if mode & 1:
@@ -217,6 +200,7 @@ class FileCommander(FileTransferTerminal):
 #        return 
         oldlocal = self.local_pwd()
         oldremote = self.pwd()
+
         if not self.local_chdir(local_dir): return False
         if not self.chdir(remote_dir): return False
         if diff_local_dir is None: diff_local_dir = local_dir

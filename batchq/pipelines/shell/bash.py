@@ -42,13 +42,13 @@ DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%H:%M:%S"
 
           # bash, python
-HASHERS = [("md5", "md5", "(?P<hash>[a-fA-F\d]{32})"),
-           ("md5sum", "md5", "(?P<hash>[a-fA-F\d]{32})"),
+HASHERS = [("md5", "md5", r"(?P<hash>[a-fA-F\d]{32})"),
+           ("md5sum", "md5", r"(?P<hash>[a-fA-F\d]{32})")]
            # TODO: patterns below here needs to be fixed
-           ("shasum", "sha1","(?P<hash>[a-fA-F\d]{32})"),   
-           ("sha1sum", "sha1","(?P<hash>[a-fA-F\d]{32})"), 
-           ("shasum-5.12", "sha512","(?P<hash>[a-fA-F\d]{32})"),
-           ("sha512sum", "sha512","(?P<hash>[a-fA-F\d]{32})")]
+#           ("shasum", "sha1",r"(?P<hash>[a-fA-F\d]{32})"),   
+#           ("sha1sum", "sha1",r"(?P<hash>[a-fA-F\d]{32})"), 
+#           ("shasum-5.12", "sha512",r"(?P<hash>[a-fA-F\d]{32})"),
+#           ("sha512sum", "sha512",r"(?P<hash>[a-fA-F\d]{32})")]
 
 class BashTerminal(BasePipe):
     """
@@ -367,6 +367,26 @@ echo $DIR"""
         return match.group("hash")
 
 
+    def sum_files(self, dir=".", ignore_hidden=False):
+        searcher_for = re.compile(r"(?P<hash>\d+)\s+(?P<block>\d)\s+(?P<file>.*)") #(P?<hash>\d+)\s+(P?<block>\d)\s+(?P<file>.*)")
+        cmd = "find '%s'   -print0 | xargs -0 sum" % (dir)
+
+        if ignore_hidden:
+            cmd = "find '%s' \( ! -regex '.*/\..*' \) -type f  -print0 | xargs -0 sum" % (dir)
+        response = self.send_command(cmd).strip()  
+        list = response.split("\n")
+        ret = []
+        for line in list:
+            m = searcher_for.search(line.strip())
+            if m:
+                ret.append((m.group('file'),int(m.group('hash'))))
+            else:
+                print "WARNING: Regex did not match sum line: '%s'"%line
+                print "If this line looks like a sensible sum line to you something may be wrong."
+                print
+        return ret
+        
+
     def file_hash(self, filename, check_file = True):
         if check_file  and not self.isfile(filename):
             raise HashException("%s is not a file."%filanem)
@@ -401,7 +421,7 @@ echo $DIR"""
         else:
             return self.directory_hash(path)
 
-    def list(self, dir = ".", recursively = True):
+    def list(self, dir = ".", recursively = True, list_files=True, list_directories = True):
         """
         List files in directory.
 
@@ -418,9 +438,16 @@ echo $DIR"""
         first_level = lambda x: not r"/" in x
 
         append = ""
+        dir_list = []
+        file_list = []
+
         if not recursively: append = " -maxdepth 1"
-        file_list = self.send_command("find . -type f%s"%append).split("\n")
-        dir_list = self.send_command("find . -type d%s"%append).split("\n")
+
+        if list_files:
+            file_list = self.send_command("find . -type f%s"%append).split("\n")
+
+        if list_directories:
+            dir_list = self.send_command("find . -type d%s"%append).split("\n")
 
         files =filter(filt, [formatter(x) for x in file_list])
         dirs = filter(filt, [formatter(x) for x in dir_list])

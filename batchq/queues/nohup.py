@@ -9,6 +9,7 @@ class NoHUP(batch.BatchQ):
 
     _r = batch.WildCard(reverse = True)
     _ = batch.WildCard()
+    _2 = batch.WildCard()
 
     command = batch.Property("echo Hello World > execution.txt",display="Command to execute: ")
     working_directory = batch.Property(display="Specify a working directory: ")
@@ -20,12 +21,12 @@ class NoHUP(batch.BatchQ):
     post = batch.Property("", verbose = False)    
 
 
-#    processes = batch.Property(1, display="Number of processes: ", verbose = False) 
-#    wall = batch.Property(-1, display="Wall time: ", verbose = False)    
-#    mpi = batch.Property(False, display="Use MPI: ", verbose = False)    
-#    openmp_threads = batch.Property(1, display="OpenMP threads: ", verbose = False)    
-#    max_memory = batch.Property(-1, display="Max. memory: ", verbose = False)    
-#    max_space = batch.Property(-1, display="Max. space: ", verbose = False)    
+    processes = batch.Property(1, display="Number of processes: ", verbose = False) 
+    wall = batch.Property(-1, display="Wall time: ", verbose = False)    
+    mpi = batch.Property(False, display="Use MPI: ", verbose = False)    
+    openmp_threads = batch.Property(1, display="OpenMP threads: ", verbose = False)    
+    max_memory = batch.Property(-1, display="Max. memory: ", verbose = False)    
+    max_space = batch.Property(-1, display="Max. space: ", verbose = False)    
 
     overwrite_nodename_with = batch.Property("", verbose = False)
     overwrite_submission_id = batch.Property("", verbose = False)
@@ -52,26 +53,26 @@ class NoHUP(batch.BatchQ):
         .system_string()
 
     ## TESTED AND WORKING
-    hash_input = batch.Function(verbose=True) \
+    hash_input = batch.Function(verbose=True,cache = 100) \
         .entrance().chdir(_).directory_hash(input_directory,True,True) \
         .Qslugify(command).Qjoin(_,"-",_)
 
     ## TESTED AND WORKING
-    identifier_filename = batch.Function() \
+    identifier_filename = batch.Function(cache = 100) \
         .Qslugify(command).Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
         .Qstr(overwrite_submission_id).Qequal("",_).Qdo(2).Qcall(hash_input).Qstore("id") \
         .Qget("id").Qjoin(".batchq_",_)
 
 
     ## TESTED AND WORKING
-    get_subdirectory = batch.Function(verbose=True) \
+    get_subdirectory = batch.Function(verbose=True, cache = 100) \
         .Qstr(subdirectory).Qstore("subdir") \
-        .Qequal(_,".").Qdo(3).Qcall(identifier_filename).Qget("id").Qstore("subdir") \
-        .Qget("subdir")
+        .Qequal(_,".").Qdo(3).Qcall(identifier_filename).Qget("id").Qstore("subdir") 
+
 
 
     ## TESTED AND WORKING
-    create_workdir = batch.Function(verbose=True) \
+    _create_workdir = batch.Function(verbose=True,cache=100) \
         .entrance().chdir(_) \
         .exists(working_directory).Qdon(1).mkdir(working_directory, True) \
         .chdir(working_directory) \
@@ -79,18 +80,19 @@ class NoHUP(batch.BatchQ):
         .exists(_).Qdon(2).Qget("subdir").mkdir(_, True) \
         .Qget("subdir").chdir(_).pwd().Qstore("workdir")
 
+    create_workdir = batch.Function(verbose=True) \
+        .Qcall(_create_workdir).Qget("workdir")
+
     ## TODO: TEST
-    hash_work = batch.Function(verbose=True) \
-        .entrance().chdir(_).directory_hash(output_directory,True,True) \
-        .Qslugify(command).Qjoin(_,"-",_)
+#    hash_work = batch.Function(verbose=True) \
+#        .entrance().chdir(_).directory_hash(output_directory,True,True) \
+#        .Qslugify(command).Qjoin(_,"-",_)
 
 
     ## TESTED AND WORKING
-    hash_output = batch.Function(verbose=True) \
-        .entrance().chdir(_).directory_hash(output_directory,True,True) \
-        .Qdo(3).Qslugify(command).Qjoin(_,"-",_)
-
-
+#    hash_output = batch.Function(verbose=True) \
+#        .entrance().chdir(_).directory_hash(output_directory,True,True) \
+#        .Qdo(3).Qslugify(command).Qjoin(_,"-",_)
 
 
     ### TESTED AND WORKING
@@ -112,52 +114,49 @@ class NoHUP(batch.BatchQ):
         .cp(_r, _r).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
-    pid = batch.Function(create_workdir,verbose=True, enduser=True) \
-        .exists(".batchq.pid").Qdon(2).Qstr("-1").Qreturn() \
-        .cat(".batchq.pid")
+    pid = batch.Function(create_workdir,verbose=True, enduser=True, cache=100) \
+        .Qjoin(identifier_filename,".pid").Qstore("pid_file") \
+        .exists(_).Qdon(2).Qstr("-1").Qreturn() \
+        .Qget("pid_file").cat(_)
 
 
     ### TESTED AND WORKING
-    running = batch.Function(pid,verbose=True, enduser=True) \
+    running = batch.Function(pid,verbose=True, enduser=True, cache=100) \
         .Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
         .Qget("pid").isrunning(_)
 
     ### TESTED AND WORKING
-    pending = batch.Function(verbose=True, enduser=True) \
+    pending = batch.Function(verbose=True, enduser=True, cache=100) \
         .Qbool(False)
 
     ## TODO: THIS SHOULD BE IMPLEMENTED BY TESTING THE EXIT CODE
-    failed = batch.Function(verbose=True, enduser=True) \
+    failed = batch.Function(verbose=True, enduser=True, cache=100) \
         .Qbool(False)
 
     ## TESTED AND WORKING
-    submitted = batch.Function(create_workdir,verbose=True, enduser=True) \
+    submitted = batch.Function(create_workdir,verbose=True, enduser=True, cache=100) \
         .Qcall(identifier_filename).exists(_)
 
     ### TESTED AND WORKING
-    finished = batch.Function(running,verbose=True, enduser=True) \
+    finished = batch.Function(running,verbose=True, enduser=True, cache=100) \
         .Qdo(2).Qbool(False).Qreturn() \
         .Qcall(pending).Qdo(2).Qbool(False).Qreturn() \
         .Qcall(submitted).Qdo(2).Qbool(True).Qreturn() \
         .Qbool(False)
-#        .Qcall(pending).Qor(_,_).Qnot(_).Qstore("not_running").Qcall(submitted) \
-#        .Qget("not_running").Qand(_,_)
-        
-
-
 
     ## TODO: TEST
-#    prepare_submission = batch.Function() \
-#         .Qstr(openmp_threads).Qjoin("export  OMP_NUM_THREADS=",_).Qprint(_).send_command(_) \
-#         .Qset("command_prepend","").Qbool(mpi).Qdo(3).Qstr(processes).Qjoin("mpirun -np ",_).Qstore("command_prepend")
+    prepare_submission = batch.Function() \
+         .Qstr(openmp_threads).Qjoin("export  OMP_NUM_THREADS=",_).send_command(_) \
+         .Qset("command_prepend","").Qbool(mpi).Qdo(3).Qstr(processes).Qjoin("mpirun -np ", _, " ").Qstore("command_prepend")
 
     ## TESTED AND WORKING
-#        .Qcall(prepare_submission) \
-#        .Qget("command_prepend") \
+
     startjob = batch.Function(create_workdir,verbose=True) \
+        .Qcall(prepare_submission) \
         .send_command(prior) \
+        .Qget("command_prepend") \
         .Qcall(identifier_filename) \
-        .Qjoin("(", command, " > ",_," & echo $! > .batchq.pid )") \
+        .Qjoin("(", _, " ", command, " > ",_," & echo $! > ",_2,".pid )") \
         .Qprint(_).send_command(_).Qcall(running)
 
     ## TESTED AND WORKING
@@ -230,9 +229,9 @@ class NoHUPSSH(NoHUP):
         .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_)
 
     ## TESTED AND WORKING
-    hash_output = batch.Function(verbose=True).Qcontroller("local_terminal") \
-        .entrance().chdir(_).directory_hash(NoHUP.output_directory,True,True) \
-        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
+#    hash_output = batch.Function(verbose=True).Qcontroller("local_terminal") \
+#        .entrance().chdir(_).directory_hash(NoHUP.output_directory,True,True) \
+#        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
 
     ## TESTED AND WORKING
     prepare_incopy = batch.Function(NoHUP.create_workdir) \
