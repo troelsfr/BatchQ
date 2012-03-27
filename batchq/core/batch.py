@@ -541,9 +541,9 @@ class Function(BaseField):
         return None
 
     @QCallable
-    def Qset(self, name,val):
-        self._store[name] = ""
-        return ""
+    def Qset(self, name,val = ""):
+        self._store[name] = val
+        return val
 
 
     @QCallable

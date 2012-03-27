@@ -159,7 +159,7 @@ class NoHUP(batch.BatchQ):
         .Qget("command_prepend") \
         .Qcall(identifier_filename) \
         .Qjoin("(", _, " ", command, " > ",_," & echo $! > ",_2,".pid )") \
-        .Qprint(_).send_command(_).Qcall(running)
+        .send_command(_).Qcall(running)
 
     ## TESTED AND WORKING
     submit = batch.Function(send, verbose=True, enduser=True) \
@@ -253,13 +253,13 @@ class NoHUPSSH(NoHUP):
     ## TESTED AND WORKING
     send = batch.Function(prepare_incopy , verbose=True) \
         .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_LOCAL_REMOTE) \
-        .Qequal(_, None).Qdo(1).Qset("sync_cache",True) \
+        .Qequal(_, False).Qdo(1).Qset("sync_cache",True) \
         .Qget("sync_cache")
     
     ## TESTED AND WORKING
     recv = batch.Function(prepare_outcopy , verbose=True) \
         .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_REMOTE_LOCAL, diff_local_dir =_r) \
-        .Qequal(_, None).Qdo(1).Qset("sync_cache",True) \
+        .Qequal(_, False).Qdo(1).Qset("sync_cache",True) \
         .Qget("sync_cache")
 
     

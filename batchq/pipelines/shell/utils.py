@@ -207,9 +207,9 @@ class FileCommander(FileTransferTerminal):
         oldremote = self.pwd()
 
         if not self.local_chdir(local_dir): 
-            return False
+            return None
         if not self.chdir(remote_dir): 
-            return False
+            return None
         if diff_local_dir is None: diff_local_dir = local_dir
         if diff_remote_dir is None: diff_remote_dir = remote_dir
 
@@ -257,6 +257,5 @@ class FileCommander(FileTransferTerminal):
         self.chdir(oldremote)
 
         if len(dirs) == 0 and  len(files) == 0:
-            return None
-#        print (dirs, files)
+            return False
         return (dirs, files)
