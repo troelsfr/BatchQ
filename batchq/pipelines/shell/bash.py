@@ -368,21 +368,26 @@ echo $DIR"""
 
 
     def sum_files(self, dir=".", ignore_hidden=False):
-        searcher_for = re.compile(r"(?P<hash>\d+)\s+(?P<block>\d)\s+(?P<file>.*)") #(P?<hash>\d+)\s+(P?<block>\d)\s+(?P<file>.*)")
-        cmd = "find '%s'   -print0 | xargs -0 sum" % (dir)
+        searcher_for = re.compile(r"(?P<hash>\d+)\s+(?P<block>\d+)\s+(?P<file>.*)") #(P?<hash>\d+)\s+(P?<block>\d)\s+(?P<file>.*)")
+        cmd = "find '%s' -type f   -print0 | xargs -0 sum" % (dir)
 
         if ignore_hidden:
             cmd = "find '%s' \( ! -regex '.*/\..*' \) -type f  -print0 | xargs -0 sum" % (dir)
         response = self.send_command(cmd).strip()  
         list = response.split("\n")
+
         ret = []
+        x = response.strip()
+        # Handling empty directories
+        if x == "" or x == "00000     0": return ret
+
         for line in list:
             m = searcher_for.search(line.strip())
             if m:
                 ret.append((m.group('file'),int(m.group('hash'))))
             else:
-                print "WARNING: Regex did not match sum line: '%s'"%line
-                print "If this line looks like a sensible sum line to you something may be wrong."
+                print "WARNING: Regex did not match sum line: '%s' (file omitted)"%line
+                print "If this line looks like a sensible sum line to you, something may be wrong. (%s)" % self.__class__.__name__
                 print
         return ret
         
@@ -412,6 +417,7 @@ echo $DIR"""
             cmd = "find '%s' \( ! -regex '.*/\..*' \)   -type f -print0  | sort -z | xargs -0 cat | %s" % (dir, hasher)
     
         response = self.send_command(cmd).strip()
+
         return self._extract_hash(pattern,response)
 
 

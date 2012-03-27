@@ -53,31 +53,31 @@ class NoHUP(batch.BatchQ):
         .system_string()
 
     ## TESTED AND WORKING
-    hash_input = batch.Function(verbose=True,cache = 100) \
+    hash_input = batch.Function(verbose=True,cache = 5) \
         .entrance().chdir(_).directory_hash(input_directory,True,True) \
         .Qslugify(command).Qjoin(_,"-",_)
 
     ## TESTED AND WORKING
-    identifier_filename = batch.Function(cache = 100) \
+    identifier_filename = batch.Function(cache = 5) \
         .Qslugify(command).Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
         .Qstr(overwrite_submission_id).Qequal("",_).Qdo(2).Qcall(hash_input).Qstore("id") \
         .Qget("id").Qjoin(".batchq_",_)
 
 
     ## TESTED AND WORKING
-    get_subdirectory = batch.Function(verbose=True, cache = 100) \
+    get_subdirectory = batch.Function(verbose=True, cache = 5) \
         .Qstr(subdirectory).Qstore("subdir") \
-        .Qequal(_,".").Qdo(3).Qcall(identifier_filename).Qget("id").Qstore("subdir") 
-
+        .Qequal(_,".").Qdo(3).Qcall(identifier_filename).Qget("id").Qstore("subdir") \
+        .Qget("subdir")
 
 
     ## TESTED AND WORKING
-    _create_workdir = batch.Function(verbose=True,cache=100) \
+    _create_workdir = batch.Function(verbose=True,cache=5) \
         .entrance().chdir(_) \
-        .exists(working_directory).Qdon(1).mkdir(working_directory, True) \
+        .isdir(working_directory).Qdon(1).mkdir(working_directory, True) \
         .chdir(working_directory) \
         .Qcall(get_subdirectory) \
-        .exists(_).Qdon(2).Qget("subdir").mkdir(_, True) \
+        .isdir(_).Qdon(2).Qget("subdir").mkdir(_, True) \
         .Qget("subdir").chdir(_).pwd().Qstore("workdir")
 
     create_workdir = batch.Function(verbose=True) \
@@ -97,11 +97,13 @@ class NoHUP(batch.BatchQ):
 
     ### TESTED AND WORKING
     prepare_incopy = batch.Function(create_workdir, verbose=True) \
+        .Qset("sync_cache",False) \
         .entrance().Qpjoin(_,input_directory).Qstore("indir") \
         .Qpjoin(_,"*").Qget("workdir")
 
     ### TESTED AND WORKING
     prepare_outcopy = batch.Function(create_workdir, verbose=True) \
+        .Qset("sync_cache",False) \
         .entrance().Qpjoin(_,output_directory).Qstore("outdir") \
         .Qget("workdir").Qpjoin(_,"*").Qget("outdir")
     
@@ -114,31 +116,31 @@ class NoHUP(batch.BatchQ):
         .cp(_r, _r).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
-    pid = batch.Function(create_workdir,verbose=True, enduser=True, cache=100) \
+    pid = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
         .Qjoin(identifier_filename,".pid").Qstore("pid_file") \
-        .exists(_).Qdon(2).Qstr("-1").Qreturn() \
+        .isfile(_).Qdon(2).Qstr("-1").Qreturn() \
         .Qget("pid_file").cat(_)
 
 
     ### TESTED AND WORKING
-    running = batch.Function(pid,verbose=True, enduser=True, cache=100) \
+    running = batch.Function(pid,verbose=True, enduser=True, cache=5) \
         .Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
         .Qget("pid").isrunning(_)
 
     ### TESTED AND WORKING
-    pending = batch.Function(verbose=True, enduser=True, cache=100) \
+    pending = batch.Function(verbose=True, enduser=True, cache=5) \
         .Qbool(False)
 
     ## TODO: THIS SHOULD BE IMPLEMENTED BY TESTING THE EXIT CODE
-    failed = batch.Function(verbose=True, enduser=True, cache=100) \
+    failed = batch.Function(verbose=True, enduser=True, cache=5) \
         .Qbool(False)
 
     ## TESTED AND WORKING
-    submitted = batch.Function(create_workdir,verbose=True, enduser=True, cache=100) \
-        .Qcall(identifier_filename).exists(_)
+    submitted = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
+        .Qcall(identifier_filename).isfile(_)
 
     ### TESTED AND WORKING
-    finished = batch.Function(running,verbose=True, enduser=True, cache=100) \
+    finished = batch.Function(running,verbose=True, enduser=True, cache=5) \
         .Qdo(2).Qbool(False).Qreturn() \
         .Qcall(pending).Qdo(2).Qbool(False).Qreturn() \
         .Qcall(submitted).Qdo(2).Qbool(True).Qreturn() \
@@ -202,7 +204,7 @@ class NoHUP(batch.BatchQ):
         .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qstr("").Qreturn() \
         .Qcall(running).Qdo(3).Qprint("Job is running.").Qstr("").Qreturn() \
         .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn() \
-        .Qcall(finished).Qdo(4).Qprint("Job has finished.\nRetrieving results.").Qcall(recv).Qstr("").Qreturn() \
+        .Qcall(finished).Qdo(8).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qstr("").Qreturn() \
         .Qprint("Your job has an unknown status.").Qstr("")
 
 
@@ -235,23 +237,29 @@ class NoHUPSSH(NoHUP):
 
     ## TESTED AND WORKING
     prepare_incopy = batch.Function(NoHUP.create_workdir) \
+        .Qset("sync_cache",False) \
         .Qcontroller("local_terminal") \
         .pwd().Qpjoin(_,NoHUP.input_directory).Qstore("indir")  \
         .Qget("workdir")
 
     ## TESTED AND WORKING
     prepare_outcopy = batch.Function(NoHUP.create_workdir).Qcontroller("local_terminal") \
-        .push_entrance().exists(NoHUP.output_directory).Qdon(1).mkdir(NoHUP.output_directory, True).popd() \
+        .Qset("sync_cache",False)  \
+        .push_entrance().isdir(NoHUP.output_directory).Qdon(1).mkdir(NoHUP.output_directory, True).popd() \
         .entrance().Qpjoin(_,NoHUP.output_directory).Qstore("outdir") \
         .entrance().Qpjoin(_,NoHUP.input_directory).Qstore("indir")  \
         .Qget("outdir").Qget("workdir").Qget("indir")
 
     ## TESTED AND WORKING
     send = batch.Function(prepare_incopy , verbose=True) \
-        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_LOCAL_REMOTE)
-
+        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_LOCAL_REMOTE) \
+        .Qequal(_, None).Qdo(1).Qset("sync_cache",True) \
+        .Qget("sync_cache")
+    
     ## TESTED AND WORKING
     recv = batch.Function(prepare_outcopy , verbose=True) \
-        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_REMOTE_LOCAL, diff_local_dir =_r)
+        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_REMOTE_LOCAL, diff_local_dir =_r) \
+        .Qequal(_, None).Qdo(1).Qset("sync_cache",True) \
+        .Qget("sync_cache")
 
     

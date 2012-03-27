@@ -11,10 +11,22 @@ class LSFBSub(NoHUPSSH):
     _3 = batch.WildCard(reverse=True)
     _4 = batch.WildCard()
 
+
+    lsf_status = batch.Function(NoHUP.pid,verbose=True,cache=5).Qcontroller("terminal") \
+        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
+        .Qstrip(_1).Qlower(_1)
+
+    ## TODO: Fix the failed command - this information should be extracted from the log
+    failed = batch.Function(lsf_status,verbose=True,cache=5).Qcontroller("terminal") \
+        .Qequal(_1,"exit")
+
     ## TESTED AND WORKING
-    running = batch.Function(NoHUP.pid,verbose=True,cache=100) \
-        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}'").send_command(_1) \
-        .Qstrip(_1).Qlower(_1).Qequal(_1,"run")
+    pending = batch.Function(lsf_status,verbose=True,cache=5).Qcontroller("terminal") \
+        .Qequal(_1,"pend")
+
+    ## TESTED AND WORKING
+    running = batch.Function(lsf_status,verbose=True,cache=5) \
+        .Qequal(_1,"run")
 
     prepare_submission = batch.Function() \
          .Qstr(NoHUP.openmp_threads).Qjoin("export  OMP_NUM_THREADS=",_1).send_command(_1) \
@@ -33,18 +45,8 @@ class LSFBSub(NoHUPSSH):
         .Qget("command_prepend") \
         .Qcall(NoHUP.identifier_filename, 1) \
         .Qjoin("(touch ",_1, " && bsub -o ", _2, "_log ", _3," \"", _3 , NoHUP.command, " > ",_3," \" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > ",_4,".pid )") \
-        .Qprint(_1).send_command(_1)
+        .send_command(_1)
 
-
-    ## TODO: Fix the failed command - this information should be extracted from the log
-    failed = batch.Function(NoHUP.pid,verbose=True,cache=100).Qcontroller("terminal") \
-        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
-        .Qstrip(_1).Qlower(_1).Qequal(_1,"exit")
-
-    ## TESTED AND WORKING
-    pending = batch.Function(NoHUP.pid,verbose=True,cache=100).Qcontroller("terminal") \
-        .Qjoin("bjobs ",_1," | awk '{ if($1 == ",_2,") {printf $3}}' ").send_command(_1) \
-        .Qstrip(_1).Qlower(_1).Qequal(_1,"pend")
 
     ## TODO: write this function
     cancel = batch.Function().Qstr("TODO: This function needs to be implemented")

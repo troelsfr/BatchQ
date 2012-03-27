@@ -131,13 +131,14 @@ class Property(BaseField):
 
     def set(self, val):
         r = self.replacement
+        oldval = r.get()
         if r == self:
             self._isset = True
             self._userset = True
             self._value = val
         else:
             r.set(val)
-        if self._on_modify: self._on_modify()
+        if oldval != val and self._on_modify: self._on_modify()
 
     def set_on_modify(self, listener):
         self._on_modify = listener
@@ -272,8 +273,9 @@ class Function(BaseField):
         self._name = name
 
     def __call__(self, *args, **kwargs):
-        if self._last_run and self._last_run+self._cache < time.time():
-            print "Cache hit:: ", self._name
+
+        if not self._last_run is None and time.time() < self._last_run+self._cache :
+#            print "Cache hit:: ", self._name
             return self            
 
 #        print "Entering call", self
@@ -1077,7 +1079,7 @@ class DescriptorQ(object):
             if name[0] == "_":
                 return object.__getattribute__(self,name)
 
-        
+
         fnc = getattr(self.get_queue(), name)
         object.__getattribute__(self,"_log").append(name)
         return fnc().val

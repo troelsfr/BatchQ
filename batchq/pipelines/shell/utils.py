@@ -146,6 +146,10 @@ class FileCommander(FileTransferTerminal):
         (rfiles, rdirs) = self.remote.list(".", recursive,list_files = False)
         lfiles_sum  = self.local.sum_files(".",ignore_hidden)
         rfiles_sum  = self.remote.sum_files(".",ignore_hidden)
+
+#        print "LEFT", lfiles_sum
+#        print "RIGHT", rfiles_sum
+
         files = []
         dirs = []
         already_checked = []
@@ -185,6 +189,7 @@ class FileCommander(FileTransferTerminal):
         if not self.remote.popd():
             raise BaseException("Remote direcory stack error")
 
+#        print "DIFF:", (files, dirs)
         return (files, dirs)
 
 
@@ -201,8 +206,10 @@ class FileCommander(FileTransferTerminal):
         oldlocal = self.local_pwd()
         oldremote = self.pwd()
 
-        if not self.local_chdir(local_dir): return False
-        if not self.chdir(remote_dir): return False
+        if not self.local_chdir(local_dir): 
+            return False
+        if not self.chdir(remote_dir): 
+            return False
         if diff_local_dir is None: diff_local_dir = local_dir
         if diff_remote_dir is None: diff_remote_dir = remote_dir
 
@@ -248,5 +255,8 @@ class FileCommander(FileTransferTerminal):
 
         self.local_chdir(oldlocal)
         self.chdir(oldremote)
+
+        if len(dirs) == 0 and  len(files) == 0:
+            return None
 #        print (dirs, files)
         return (dirs, files)

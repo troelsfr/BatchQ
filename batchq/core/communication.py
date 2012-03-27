@@ -252,7 +252,7 @@ class BasePipe(object):
         self._pipe.write(cmd)
 
         # We first consume the echo
-
+#        print cmd
         self.consume_output()
 
         self._pipe.write(self._submit_token)
