@@ -966,7 +966,7 @@ def load_queue(cls,settings):
 
 
 
-class MetaDescriptorQ(type):
+class MetaDescriptor(type):
     def __new__(cls, name, bases, dct):
         fields = {}
 
@@ -985,14 +985,14 @@ class MetaDescriptorQ(type):
         return type.__new__(cls, name, bases, dct)
 
 
-class DescriptorQ(object):
-    __metaclass__ = MetaDescriptorQ
+class Descriptor(object):
+    __metaclass__ = MetaDescriptor
 
 
     def __init__(self, object = None, **kwargs): #          
         queue = None
         inherithed_conf = {}
-        if isinstance(object, DescriptorQ):
+        if isinstance(object, Descriptor):
             queue = object.get_queue()
             inherithed_conf = copy.deepcopy(object.get_configuration())
         elif isinstance(object, BatchQ):
@@ -1090,7 +1090,7 @@ def load_descriptor(cls,settings):
     settings['q_interact'] = True
     q = load_queue(cls,settings)
     del settings['q_interact']
-    d= DescriptorQ(q, settings)
+    d= Descriptor(q, settings)
     return d
 
 
@@ -1099,46 +1099,58 @@ class Collection(object):
         self._descriptors = copy.copy(descriptors)
         self._min = -1
         self._max = 1
-
-
+        self._until_finish = True
+        self._return_list = False
 
     @property
     def descriptors(self):
         return self._descriptors
 
-    @property
-    def collective(self):
-        return self._collective
 
     def __iadd__(self,this, other):
-        if isinstance(other,DescriptorQ):  other = [other]
+        if isinstance(other,Descriptor):  other = [other]
         if isinstance(other,Collection):   other = other.descriptors
         this._descriptors += other
         return this
 
     def __add__(self,this, other):
-        if isinstance(other,DescriptorQ):  return Collection(this.descriptors + [other])
+        if isinstance(other,Descriptor):  return Collection(this.descriptors + [other])
         if isinstance(other,Collection): return Collection(this.descriptors + other.descriptors)
         return Collection(this.descriptors + other)
 
+    def __delitem__(self, n):
+        del self._descriptors[n]
+
+    def __getitem__(self, n):        
+        return Collection(self._descriptors[n])
+
+    def __nonzero__(self):
+        return len(self._descriptors) != 0
+
     def __str__(self):
-        return ", ".join([job.status() for job in self.descriptors])
+        return ", ".join([job.identifier() for job in self.descriptors])
+
 
     def append(self, object):
         self.__iadd__(self,object)
 
-    def _collect_parameters(self, min,max):
+    def _collect_parameters(self, min,max,finish, result_list):
         self._min = min
         self._max = max
+        self._until_finish = finish
+        self._return_list = result_list
 
-
-    def wait(self, min = -1, max_retries = 1):
+    def wait(self, min = -1, max_retries = -1, finish = False, result_list = False):
         ret = Collection(self.descriptors)
-        ret._collect_parameters(min,max_retries)
+        ret._collect_parameters(min,max_retries,finish,result_list)
         return ret
 
     def any(self):
         return self.wait(1)
+
+    def list(self):        
+        return self.wait(1, -1, True,True)
+
 
     def __getattribute__(self,name):
         try:
@@ -1157,22 +1169,34 @@ class Collection(object):
             j = 0
 
             min = self._min
-            if min < 0: min += 1 + len(self._descriptors)
+            max = self._max
+
+            if not min is None and min < 0: min += 1 + len(self._descriptors)
+
             notstop = True
+            allowbreak = not self._until_finish 
+            ret2 = copy.copy(self._descriptors)
+            ret1 = []            
+            results = []
             while notstop:
-                j += 1
-                if not max == -1 and j < max:
-                    notstop = False
-                for a in self._descriptors:
+                results = []
+                for a in ret2 :
                     b = getattr(a, name)(*args, **kwargs)
+                    results.append(b)
                     if b:
                         i += 1
-                        ret1.append(a)
+                        ret1.append(a)                    
                         if not min is None and min<=i: 
                             notstop = False
-                            break
-                    else:
-                        ret2.append(a)
+                            if allowbreak: break
+                j += 1
+
+                if not max == -1 and j >= max:
+                    notstop = False
+
+                ret2 = [a for a in ret2 if not a in ret1] 
+
+            if self._return_list: return results
             return Collection(ret1), Collection(ret2)
                     
         return foreach

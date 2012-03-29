@@ -58,10 +58,12 @@ class NoHUP(batch.BatchQ):
         .Qslugify(command).Qjoin(_,"-",_)
 
     ## TESTED AND WORKING
-    identifier_filename = batch.Function(cache = 5) \
+    identifier = batch.Function(cache = 5) \
         .Qslugify(command).Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
         .Qstr(overwrite_submission_id).Qequal("",_).Qdo(2).Qcall(hash_input).Qstore("id") \
-        .Qget("id").Qjoin(".batchq_",_)
+        .Qget("id")
+
+    identifier_filename = batch.Function(identifier,cache = 5).Qjoin(".batchq_",_)
 
 
     ## TESTED AND WORKING
