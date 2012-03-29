@@ -68,8 +68,10 @@ class BaseField(object):
 
     def get_name(self):
         return self.__field_name__
+
     def set_name(self, name):
         self.__field_name__ = name
+
     name = property(get_name, set_name)
 
 
@@ -260,7 +262,7 @@ class Function(BaseField):
         self._last_run = None
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
-        self._name = "None"
+
 
     @property
     def enduser(self):
@@ -269,8 +271,6 @@ class Function(BaseField):
     def clear_cache(self):
         self._last_run = None
 
-    def set_function_name(self, name):
-        self._name = name
 
     def __call__(self, *args, **kwargs):
 
@@ -801,9 +801,10 @@ class BatchQ(object):
         items.sort(lambda (a,x),(b,y): cmp(x.__counter__, y.__counter__))
 
 
-        for _, attr in items:
+        for name, attr in items:
             attr.model = self
-        
+            attr.name = name
+
         properties =  [(a,b) for (a,b) in items if isinstance(b, Property)]
         minpro = len([b for (a,b) in properties if not b.isset])
         properties_dict = dict(properties)
@@ -850,7 +851,7 @@ class BatchQ(object):
             elif isinstance(attr, Function):
                 attr.register(self._pipelines, last_pipe)
                 setattr(self, name, attr)
-                attr.set_function_name(name)
+
 
     def reset_cache(self):
         for name, attr in self._functions:
@@ -1092,8 +1093,90 @@ def load_descriptor(cls,settings):
     d= DescriptorQ(q, settings)
     return d
 
-        
 
+class Collection(object):
+    def __init__(self,descriptors = [], *args, **kwargs):
+        self._descriptors = copy.copy(descriptors)
+        self._min = -1
+        self._max = 1
+
+
+
+    @property
+    def descriptors(self):
+        return self._descriptors
+
+    @property
+    def collective(self):
+        return self._collective
+
+    def __iadd__(self,this, other):
+        if isinstance(other,DescriptorQ):  other = [other]
+        if isinstance(other,Collection):   other = other.descriptors
+        this._descriptors += other
+        return this
+
+    def __add__(self,this, other):
+        if isinstance(other,DescriptorQ):  return Collection(this.descriptors + [other])
+        if isinstance(other,Collection): return Collection(this.descriptors + other.descriptors)
+        return Collection(this.descriptors + other)
+
+    def __str__(self):
+        return ", ".join([job.status() for job in self.descriptors])
+
+    def append(self, object):
+        self.__iadd__(self,object)
+
+    def _collect_parameters(self, min,max):
+        self._min = min
+        self._max = max
+
+
+    def wait(self, min = -1, max_retries = 1):
+        ret = Collection(self.descriptors)
+        ret._collect_parameters(min,max_retries)
+        return ret
+
+    def any(self):
+        return self.wait(1)
+
+    def __getattribute__(self,name):
+        try:
+            attr = object.__getattribute__(self, name)
+            return attr
+        except AttributeError:
+            # Ensure right behaviour with built-in and hidden variables functions
+            if name[0] == "_":
+                return object.__getattribute__(self,name)
+
+
+        def foreach(*args, **kwargs):
+            ret1 = []
+            ret2 = []
+            i = 0
+            j = 0
+
+            min = self._min
+            if min < 0: min += 1 + len(self._descriptors)
+            notstop = True
+            while notstop:
+                j += 1
+                if not max == -1 and j < max:
+                    notstop = False
+                for a in self._descriptors:
+                    b = getattr(a, name)(*args, **kwargs)
+                    if b:
+                        i += 1
+                        ret1.append(a)
+                        if not min is None and min<=i: 
+                            notstop = False
+                            break
+                    else:
+                        ret2.append(a)
+            return Collection(ret1), Collection(ret2)
+                    
+        return foreach
+    
 
 if __name__ == "__main__":
     import sys

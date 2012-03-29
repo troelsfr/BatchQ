@@ -22,11 +22,11 @@ class NoHUP(batch.BatchQ):
 
 
     processes = batch.Property(1, display="Number of processes: ", verbose = False) 
-    wall = batch.Property(-1, display="Wall time: ", verbose = False)    
+    time = batch.Property(-1, display="Wall time: ", verbose = False)    
     mpi = batch.Property(False, display="Use MPI: ", verbose = False)    
-    openmp_threads = batch.Property(1, display="OpenMP threads: ", verbose = False)    
-    max_memory = batch.Property(-1, display="Max. memory: ", verbose = False)    
-    max_space = batch.Property(-1, display="Max. space: ", verbose = False)    
+    threads = batch.Property(1, display="OpenMP threads: ", verbose = False)    
+    memory = batch.Property(-1, display="Max. memory: ", verbose = False)    
+    diskspace = batch.Property(-1, display="Max. space: ", verbose = False)    
 
     overwrite_nodename_with = batch.Property("", verbose = False)
     overwrite_submission_id = batch.Property("", verbose = False)
@@ -148,7 +148,7 @@ class NoHUP(batch.BatchQ):
 
     ## TODO: TEST
     prepare_submission = batch.Function() \
-         .Qstr(openmp_threads).Qjoin("export  OMP_NUM_THREADS=",_).send_command(_) \
+         .Qstr(threads).Qjoin("export  OMP_NUM_THREADS=",_).send_command(_) \
          .Qset("command_prepend","").Qbool(mpi).Qdo(3).Qstr(processes).Qjoin("mpirun -np ", _, " ").Qstore("command_prepend")
 
     ## TESTED AND WORKING
@@ -191,10 +191,10 @@ class NoHUP(batch.BatchQ):
 
     ### TESTED AND WORKING
     status = batch.Function(verbose=True, enduser=True) \
+        .Qcall(submitted).Qdon(2).Qstr("was not submitted").Qreturn() \
         .Qcall(running).Qdo(2).Qstr("running").Qreturn() \
         .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
         .Qcall(pending).Qdo(2).Qstr("pending").Qreturn() \
-        .Qcall(submitted).Qdon(2).Qstr("was not submitted").Qreturn() \
         .Qcall(failed).Qdo(2).Qstr("failed").Qreturn() \
         .Qstr("unknown status")
 
