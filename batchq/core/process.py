@@ -46,7 +46,6 @@ class BaseProcess(object):
         self._ready = False
 
 
-
         if not command is None:
             self.spawn(command, args,environment)
 
