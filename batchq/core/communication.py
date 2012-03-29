@@ -147,7 +147,8 @@ class BasePipe(object):
                 try:
                     b = pipe.getchar()
                 except CommunicationIOException, e:
-                    break
+                   # break
+                    pass
 
                 if b!="":
                     self._xterminterpreter.write(b)
@@ -190,8 +191,8 @@ class BasePipe(object):
                 try:
                     b = pipe.getchar()
                 except CommunicationIOException, e:
-                    break
-
+                #    break
+                    pass
                 if b!="":
 
                     self._xterminterpreter.write(b)

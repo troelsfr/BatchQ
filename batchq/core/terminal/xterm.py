@@ -136,7 +136,8 @@ class XTermInterpreter(BaseInterpreter):
 
     @XTermRegister.hook("__catch_all__")
     def warning_non_supported (self,sequence, *args): # <ESC>[? ... h or <ESC>[? ... m or <ESC>[? ...l
-        print "WARNING: No support for sequence ",sequence
+        pass
+#        print "WARNING: No support for sequence ",sequence
 ###############
 ## Escape sequences
     @XTermEscapeRegister.register(r"\x1b\[(?P<quest>\??)(?P<attributes>(\d+;)*\d*)(?P<property>(h|l|m))")
