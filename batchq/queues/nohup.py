@@ -3,7 +3,27 @@ from batchq.pipelines.shell.bash import BashTerminal
 from batchq.pipelines.shell.ssh import SSHTerminal
 from batchq.pipelines.shell.utils import FileCommander
 from batchq.shortcuts.shell import home_create_dir, send_command
+from datetime import timedelta
+import re
 
+str_time_regex = re.compile(r'((?P<days>\d+?)days?, *)?((?P<hours>\d+?)hr *)?((?P<minutes>\d+?)m *)?((?P<seconds>\d+?)s *)?')
+def str_to_timedelta(s):
+    m = str_time_regex.search(s)
+    if not m: return timedelta(0)
+    kwargs = dict([(a,int(b)) for a,b in m.groupdict().iteritems() if b])
+    return timedelta(**kwargs)
+
+def format_time(t):
+    if isinstance(t, str):
+        t = str_to_timedelta(t).total_seconds()        
+    elif isinstance(t, timedelta):
+        t = t.total_seconds()
+        
+
+    if t < 0: return -1
+    if t/60 - t/60. == 0.:
+        return t/60
+    return t/60+1
 
 class NoHUP(batch.BatchQ):
 
@@ -22,7 +42,7 @@ class NoHUP(batch.BatchQ):
 
 
     processes = batch.Property(1, display="Number of processes: ", verbose = False) 
-    time = batch.Property(-1, display="Wall time: ", verbose = False)    
+    time = batch.Property(-1, display="Wall time: ", verbose = False, formatter = format_time)    
     mpi = batch.Property(False, display="Use MPI: ", verbose = False)    
     threads = batch.Property(1, display="OpenMP threads: ", verbose = False)    
     memory = batch.Property(-1, display="Max. memory: ", verbose = False)    
@@ -65,7 +85,6 @@ class NoHUP(batch.BatchQ):
 
     identifier_filename = batch.Function(identifier,cache = 5).Qjoin(".batchq_",_)
 
-
     ## TESTED AND WORKING
     get_subdirectory = batch.Function(verbose=True, cache = 5) \
         .Qstr(subdirectory).Qstore("subdir") \
@@ -84,17 +103,6 @@ class NoHUP(batch.BatchQ):
 
     create_workdir = batch.Function(verbose=True) \
         .Qcall(_create_workdir).Qget("workdir")
-
-    ## TODO: TEST
-#    hash_work = batch.Function(verbose=True) \
-#        .entrance().chdir(_).directory_hash(output_directory,True,True) \
-#        .Qslugify(command).Qjoin(_,"-",_)
-
-
-    ## TESTED AND WORKING
-#    hash_output = batch.Function(verbose=True) \
-#        .entrance().chdir(_).directory_hash(output_directory,True,True) \
-#        .Qdo(3).Qslugify(command).Qjoin(_,"-",_)
 
 
     ### TESTED AND WORKING
@@ -125,28 +133,49 @@ class NoHUP(batch.BatchQ):
 
 
     ### TESTED AND WORKING
-    running = batch.Function(pid,verbose=True, enduser=True, cache=5) \
-        .Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
-        .Qget("pid").isrunning(_)
+    ### TODO: This function should check for a finished file somehow
+#    running = batch.Function(pid,verbose=True, enduser=True, cache=5) \
+#        .Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
+#        .Qget("pid").isrunning(_)
 
     ### TESTED AND WORKING
     pending = batch.Function(verbose=True, enduser=True, cache=5) \
         .Qbool(False)
 
     ## TODO: THIS SHOULD BE IMPLEMENTED BY TESTING THE EXIT CODE
-    failed = batch.Function(verbose=True, enduser=True, cache=5) \
-        .Qbool(False)
 
     ## TESTED AND WORKING
     submitted = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
-        .Qcall(identifier_filename).isfile(_)
+        .Qcall(identifier_filename).Qjoin(_,".pid").isfile(_)
 
     ### TESTED AND WORKING
-    finished = batch.Function(running,verbose=True, enduser=True, cache=5) \
-        .Qdo(2).Qbool(False).Qreturn() \
-        .Qcall(pending).Qdo(2).Qbool(False).Qreturn() \
-        .Qcall(submitted).Qdo(2).Qbool(True).Qreturn() \
+#    finished = batch.Function(running,verbose=True, enduser=True, cache=5) \
+#        .Qdo(2).Qbool(False).Qreturn() \
+#        .Qcall(pending).Qdo(2).Qbool(False).Qreturn() \
+#        .Qcall(submitted).Qdo(2).Qbool(True).Qreturn() \
+#        .Qbool(False)
+
+    lazy_finished = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
+        .Qjoin(identifier_filename,".finished").isfile(_).Qdo(2).Qbool(True).Qreturn() \
         .Qbool(False)
+
+    finished = batch.Function(lazy_finished,verbose=True, enduser=True, cache=5)
+
+    lazy_running = batch.Function(lazy_finished,verbose=True, enduser=True, cache=5) \
+        .Qdo(2).Qbool(False).Qreturn() \
+        .Qjoin(identifier_filename,".running").isfile(_).Qdo(2).Qbool(True).Qreturn() \
+        .Qbool(False)
+       
+    running = batch.Function(lazy_running,verbose=True, enduser=True, cache=5) \
+        .Qdon(2).Qbool(False).Qreturn() \
+        .Qcall(pid).Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
+        .Qget("pid").isrunning(_)
+
+    failed = batch.Function(lazy_finished, enduser=True, cache=5) \
+        .Qdon(2).Qbool(False).Qreturn() \
+        .Qjoin(identifier_filename,".finished").cat(_).Qint(_).Qequal(_,0).Qnot(_)
+        
+
 
     ## TODO: TEST
     prepare_submission = batch.Function() \

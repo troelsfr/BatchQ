@@ -94,8 +94,13 @@ class Property(BaseField):
         self._isset = len(args)>0 or 'value' in kwargs.iterkeys()
         self.__set_defaults__(*args, **kwargs)
 
-    def __set_defaults__(self, value = None, password = False, verbose = True, display = ""):
+    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", formatter = None):
+        self._formatter = formatter
         self._value = value
+
+        if self._formatter:
+            self._value = self._formatter(value)
+
         self._password = password
         self._verbose = verbose
         self._display = display
@@ -137,7 +142,10 @@ class Property(BaseField):
         if r == self:
             self._isset = True
             self._userset = True
-            self._value = val
+            if self._formatter:
+                self._value = self._formatter(val)
+            else:
+                self._value = val
         else:
             r.set(val)
         if oldval != val and self._on_modify: self._on_modify()
@@ -472,6 +480,10 @@ class Function(BaseField):
     def variables(self):
         return self._store
 
+
+    @QCallable
+    def Qcontains(self, a,b):
+        return a in b
 
     @QCallable
     def Qprint(self, *args,**kwargs):
@@ -1167,7 +1179,10 @@ class Collection(object):
             ret2 = []
             i = 0
             j = 0
-
+            progress_fnc = None
+            if "progress" in kwargs:
+                progress_fnc = kwargs['progress']
+                del kwargs['progress']
             min = self._min
             max = self._max
 
@@ -1177,18 +1192,26 @@ class Collection(object):
             allowbreak = not self._until_finish 
             ret2 = copy.copy(self._descriptors)
             ret1 = []            
-            results = []
+            results = []            
             while notstop:
                 results = []
+                cycle = 0
+                cycle_size = len(ret2)
                 for a in ret2 :
+                    cycle += 1
                     b = getattr(a, name)(*args, **kwargs)
                     results.append(b)
                     if b:
-                        i += 1
-                        ret1.append(a)                    
+                        i += 1                        
+                        ret1.append(a)           
                         if not min is None and min<=i: 
+                            if progress_fnc:
+                                progress_fnc(i,min,cycle,cycle_size, j,b,a) 
                             notstop = False
                             if allowbreak: break
+
+                    if progress_fnc:
+                        progress_fnc(i,min,cycle,cycle_size, j,b,a) 
                 j += 1
 
                 if not max == -1 and j >= max:

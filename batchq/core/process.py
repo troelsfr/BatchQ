@@ -32,9 +32,9 @@ from batchq.core.errors import CommunicationIOException, CommunicationOSExceptio
 
 class BaseProcess(object):
 
-    def __init__(self, command = None, args = [], environment = None, terminal_preferred = True, terminal_required = False, check_timeout = 0.05):
+    def __init__(self, command = None, args = [], environment = None, terminal_preferred = True, terminal_required = False, check_timeout = 0.005):
         self._own_terminal = False
-        self._echo = True
+        #self._echo = True
         self._buffer = ""
         self._seeker = 0
         self._maxread = 2000
@@ -100,7 +100,7 @@ class BaseProcess(object):
                 if e[0] == errno.ECHILD:
                     raise ExceptionPexpect ('isalive() encountered condition where "terminated" is 0, but there was no child process. Did someone else call waitpid() on our process?')
                 else:
-                    raise e
+                    raise
             i+=1
 
         if pid == 0:

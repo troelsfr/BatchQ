@@ -1,5 +1,5 @@
 from batchq.queues import  LSFBSub
-from batchq.core.batch import DescriptorQ
+from batchq.core.batch import Descriptor as DescriptorQ
 
 class ServerDescriptor(DescriptorQ):
   queue = LSFBSub
