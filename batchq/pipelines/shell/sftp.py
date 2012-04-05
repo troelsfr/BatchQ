@@ -53,12 +53,14 @@ class SFTPTerminal(BaseSecureTerminal):
 
     def sendfile(self, local_file, remote_file):
         res = self.send_command("put %s %s" % (format_path(local_file), format_path(remote_file)) )
+#        print "SENDFILE: ", res
         if "No such file or directory" in res:
             return False
         return True
 
     def getfile(self, local_file, remote_file):
         res = self.send_command("get %s %s" % (format_path(remote_file), format_path(local_file)) )
+#        print "GETFILE: ", res
         if "No such file or directory" in res:
             return False
         return True

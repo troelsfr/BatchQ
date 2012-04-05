@@ -22,19 +22,25 @@ def format_time(t):
 
     if t < 0: return -1
     if t/60 - t/60. == 0.:
-        return t/60
-    return t/60+1
+        return int(t/60)
+    return int(t/60+1)
 
 class NoHUP(batch.BatchQ):
 
     _r = batch.WildCard(reverse = True)
     _ = batch.WildCard()
     _2 = batch.WildCard()
+    _last = batch.WildCard( select = 0, reverse = True)
 
     command = batch.Property("echo Hello World > execution.txt",display="Command to execute: ")
     working_directory = batch.Property(display="Specify a working directory: ")
     input_directory = batch.Property(".", display="Specify an input directory: ")
     output_directory = batch.Property(".", display="Specify an output directory: ")
+
+    # TODO: 
+#    input_paths = batch.Property([], display="Specify an input paths: ")
+
+
 
     subdirectory = batch.Property(".", verbose = False)
     prior = batch.Property("", verbose = False)    
@@ -52,6 +58,7 @@ class NoHUP(batch.BatchQ):
     overwrite_submission_id = batch.Property("", verbose = False)
 
     terminal = batch.Controller(BashTerminal)
+
 
     #### STUFF FOR SYSTEM IDENTIFICATION
     whoami = batch.Function() \
@@ -102,8 +109,8 @@ class NoHUP(batch.BatchQ):
         .Qget("subdir").chdir(_).pwd().Qstore("workdir")
 
     create_workdir = batch.Function(verbose=True) \
-        .Qcall(_create_workdir).Qget("workdir")
-
+        .Qcall(_create_workdir).Qget("workdir").chdir(_) \
+        .Qget("workdir")
 
     ### TESTED AND WORKING
     prepare_incopy = batch.Function(create_workdir, verbose=True) \
@@ -132,28 +139,14 @@ class NoHUP(batch.BatchQ):
         .Qget("pid_file").cat(_)
 
 
-    ### TESTED AND WORKING
-    ### TODO: This function should check for a finished file somehow
-#    running = batch.Function(pid,verbose=True, enduser=True, cache=5) \
-#        .Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
-#        .Qget("pid").isrunning(_)
 
     ### TESTED AND WORKING
     pending = batch.Function(verbose=True, enduser=True, cache=5) \
         .Qbool(False)
 
-    ## TODO: THIS SHOULD BE IMPLEMENTED BY TESTING THE EXIT CODE
-
     ## TESTED AND WORKING
     submitted = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
         .Qcall(identifier_filename).Qjoin(_,".pid").isfile(_)
-
-    ### TESTED AND WORKING
-#    finished = batch.Function(running,verbose=True, enduser=True, cache=5) \
-#        .Qdo(2).Qbool(False).Qreturn() \
-#        .Qcall(pending).Qdo(2).Qbool(False).Qreturn() \
-#        .Qcall(submitted).Qdo(2).Qbool(True).Qreturn() \
-#        .Qbool(False)
 
     lazy_finished = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
         .Qjoin(identifier_filename,".finished").isfile(_).Qdo(2).Qbool(True).Qreturn() \
@@ -184,13 +177,23 @@ class NoHUP(batch.BatchQ):
 
     ## TESTED AND WORKING
 
+#    OLD FUNCTION
+#    startjob = batch.Function(create_workdir,verbose=True) \
+#        .Qcall(prepare_submission) \
+#        .send_command(prior) \
+#        .Qget("command_prepend") \
+#        .Qcall(identifier_filename) \
+#        .Qjoin("(", _, " ", command, " > ",_," & echo $! > ",_2,".pid )") \
+#        .send_command(_).Qcall(running)
+
     startjob = batch.Function(create_workdir,verbose=True) \
         .Qcall(prepare_submission) \
         .send_command(prior) \
         .Qget("command_prepend") \
-        .Qcall(identifier_filename) \
-        .Qjoin("(", _, " ", command, " > ",_," & echo $! > ",_2,".pid )") \
-        .send_command(_).Qcall(running)
+        .Qcall(identifier_filename, 1) \
+        .Qjoin("(touch ",_last, ".submitted ;  touch ",_last,".running ; ", command, " 1> ",_last,".running 2> ",_last,".error  && echo $! > ",_last,".pid  ;  echo $? > ",_last,".finished )") \
+        .send_command(_)
+
 
     ## TESTED AND WORKING
     submit = batch.Function(send, verbose=True, enduser=True) \
@@ -248,9 +251,17 @@ class NoHUPSSH(NoHUP):
     server = batch.Property("localhost", display="Server: ")
     port = batch.Property(22, display="Port: ")
 
+
+
     filecommander = batch.Controller(FileCommander,server,username, password, port)
     local_terminal = batch.Controller(BashTerminal,q_instance = filecommander.local)
     terminal = batch.Controller(BashTerminal,q_instance = filecommander.remote)
+
+
+    reconnect = batch.Function() \
+        .connection_lost().Qdo(1).connect(server,username, password, port) \
+        .Qcontroller("filecommander") \
+        .connection_lost().Qdo(1).connect(server,username, password, port) 
 
 #    hash_input_directory = batch.Function(verbose=True) \
 #        .Qcontroller("local_terminal") \

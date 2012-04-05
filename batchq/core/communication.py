@@ -42,7 +42,7 @@ class BasePipe(object):
         self._expect_token = expect_token
         self._submit_token = submit_token
         self._timeout = 4000
-
+        self._consume_delay = 0.0001
 
         self._expect_stack = [expect_token]
         self._submit_stack = [expect_token]
@@ -128,7 +128,7 @@ class BasePipe(object):
         pass
 
 
-    def consume_output(self, pipe = None, consume_until = None):
+    def consume_output(self, pipe = None, consume_until = None, wait_for_some_output = False):
         """
         This function consumes output of the pipe which is separated
         with no more than 10 ms and returns it.
@@ -151,6 +151,7 @@ class BasePipe(object):
                     pass
 
                 if b!="":
+
                     self._xterminterpreter.write(b)
                     output = self._xterminterpreter.copy()
                     echo = self._xterminterpreter.copy_echo()
@@ -219,16 +220,27 @@ class BasePipe(object):
                         if self._xterminterpreter.escape_mode:
                             print "Last escape:", self._xterminterpreter.last_escape
                     raise CommunicationTimeout("Consuming output timed out. You can increase the timeout by using set_timeout(t).")
-
+#            if self.__class__.__name__ == "SSHTerminal":
+#                print "CONSUMING:: ",
+#                for a in echo:
+#                    print a, "(", ord(a), ")",
+#                print
             if consume_until == output[tot_len -n: tot_len]:
                 output = output[0:tot_len -n]
             # TODO: figure out what to do when the match is in the echo
+
         else:
-            b = pipe.read()
-            while b !="" and pipe.isalive():
-                self._xterminterpreter.write(b)
-                output = self._xterminterpreter.copy()
+            end_time = time.time() + self._consume_delay
+            echo = ""
+            while time.time()<end_time or (echo == "" and wait_for_some_output):
                 b = pipe.read()
+                
+                while b !="" and pipe.isalive():                
+                    self._xterminterpreter.write(b)
+                    output = self._xterminterpreter.copy()
+                    echo = self._xterminterpreter.copy_echo()
+                    b = pipe.read()
+
 
             if self._debug_level == 2:
                 sys.stdout.write(self._xterminterpreter.monitor)
@@ -248,20 +260,22 @@ class BasePipe(object):
         to appear and return the output.
         """
         self._last_input = cmd
-
+#        time.sleep(1)
+#        if self.__class__.__name__ == "SSHTerminal":
+#            print "-"*20, "BEGIN", "-"*20
 
         self._pipe.write(cmd)
 
         # We first consume the echo
 #        print self.__class__.__name__, "  $> ", cmd
-        self.consume_output()
+        if cmd !="":
+            self.consume_output(wait_for_some_output = True)
 
         self._pipe.write(self._submit_token)
 
         # Next we consume the result of sending a submit token
         # This is done as bash sometimes send additional escape codes 
         # to manipulate the echo.
-
         self.consume_output(consume_until = self._submit_token)
 
 
@@ -269,13 +283,22 @@ class BasePipe(object):
         # Then we wait for the output
         ret = self.consume_output(consume_until = self._expect_token)
         self._last_output = ret
-
-#        print "$", cmd
+#        print " -- RET --"
 #        print ret
-#        print "="*40
-#        print self._xterminterpreter.readable_echo
-#        print "="*40
-#        print "--!"
+#        print
+        if False and  not cmd[0:2] == "ak" and self.__class__.__name__ == "SSHTerminal":
+            print "COMMAND:: ", cmd
+            print "EXPECT::  ", self._expect_token
+            print "RETURN::  ", ret
+            print "="*40, self.__class__.__name__, "="*40
+            print self._xterminterpreter.readable_echo
+            print "="*38, "END",self.__class__.__name__, "="*38
+            if not hasattr(self, "i"):
+                self.i = 0
+            else:
+                self.i+=1
+#            if self.i>2:    sys.exit(0)
+        #        print "--!"
         return ret
 
 

@@ -99,7 +99,7 @@ class Property(BaseField):
         self._value = value
 
         if self._formatter:
-            self._value = self._formatter(value)
+            self._value = self._formatter(self._value)
 
         self._password = password
         self._verbose = verbose
@@ -275,6 +275,10 @@ class Function(BaseField):
     @property
     def enduser(self):
         return self._intended_for_users
+
+    @property
+    def cache_timeout(self):
+        return self._cache
 
     def clear_cache(self):
         self._last_run = None
@@ -647,7 +651,7 @@ class Function(BaseField):
             self._rets.pop(a)
         return None
 
-class ControllerReference(object):
+class ControllerMethodReference(object):
     def __init__(self, controller, field):
         self._controller = controller
         self._fields = [field]
@@ -670,7 +674,7 @@ class ControllerReference(object):
             if name[0:2] == "__" and name[-2:] == "__":
                 return BaseField.__getattribute__(self,name)
 
-        self._fields.append(name)
+        object.__getattribute__(self, "_fields").append(name)
         return self
 
 
@@ -689,7 +693,7 @@ class Controller(BaseField):
         self._fields = []
 
     def __call__(self):
-        return self._instance
+        return self._instance()
 
     def __getattribute__(self,name):
         try:
@@ -700,17 +704,30 @@ class Controller(BaseField):
             if name[0:2] == "__" and name[-2:] == "__":
                 return BaseField.__getattribute__(self,name)
 
-        return ControllerReference(self, name)
+            inst = object.__getattribute__(self, "_instance")
+            if not inst is None:
+                try:
+                    if hasattr(inst, name):
+                        return getattr(inst, name)
+                except:
+                    pass
+
+        return ControllerMethodReference(self, name)
 
 
-    def initiate(self):
+    def initiate(self, instance = None):
         """
         This function initiates the pipeline with the arguments given.
         """
-        if self._instance:
+
+        if not instance is None:
+            self._instance = instance
+
+        if not self._instance is None:
             if isinstance(self._instance, self._model):
-                return self._instance
-            return self._instance()
+                return self._instance            
+            self._instance = self._instance()
+            return self._instance
 
         nargs = ()
         nkwargs = {}
@@ -730,6 +747,7 @@ class Controller(BaseField):
             else:
                 nkwargs[name] = val
         self._instance = self._model(*nargs, **nkwargs)
+
         return self._instance
 
     @property
@@ -737,20 +755,27 @@ class Controller(BaseField):
         return self._instance
 
 
+import datetime
 
 class MetaBatchQ(type):
     def __new__(cls, name, bases, dct):
         fields = []
+        baseconfiguration = {}
 
         # Inherithed fields
         for b in bases:
             if hasattr(b, "__new_fields__"):
-                fields += [(x,y,) for x,y in b.__new_fields__.iteritems()]
+                fields += [(x,y,) for x,y in b.__new_fields__.iteritems()]    
+            if hasattr(b, "__baseconfiguration__"):
+                baseconfiguration.update([(x,y,) for x,y in b.__baseconfiguration__.iteritems()])
+
         fields = dict(fields)
 
         # Finding new fields
         newfields = [(a,dct[a]) for a in dct.iterkeys() if isinstance(dct[a], BaseField)]
-
+        collect_types = [bool, int, str, float, datetime.timedelta]
+        baseconfiguration.update(dict( [(a,dct[a]) for a in dct.iterkeys() if type(dct[a]) in collect_types and not a.startswith("__") ] ) )
+        
 
         for a,b in newfields:
             if a in fields:
@@ -760,7 +785,7 @@ class MetaBatchQ(type):
             fields[a] = b
                 
         dct['__new_fields__'] = fields
-
+        dct['__baseconfiguration__'] = baseconfiguration
         return type.__new__(cls, name, bases, dct)
  
 
@@ -784,7 +809,8 @@ class BatchQ(object):
         self._log = []
 
         self.fields = copy.deepcopy(self.__class__.__new_fields__)
-        
+#        print self.fields
+
         # Setting up replacements and names
         for name, field in self.fields.iteritems():
             field.set_replaced_by()
@@ -797,15 +823,20 @@ class BatchQ(object):
 
         interactive = False
         reduced = False
+
         if "q_interact" in kwargs:
             interactive = kwargs['q_interact']
             del kwargs['q_interact']
         if "q_reduce_interaction" in kwargs:
             reduced = kwargs['q_reduce_interaction']
             del kwargs['q_reduce_interaction']
+        if "q_pipelines" in kwargs:
+            self._pipelines = kwargs['q_pipelines']
+            del kwargs['q_pipelines']
 
         self._settings_args = copy.deepcopy(args)
-        self._settings_kwargs = copy.deepcopy(kwargs)
+        self._settings_kwargs = copy.deepcopy(self.__class__.__baseconfiguration__)
+        self._settings_kwargs.update(kwargs)
 
         # Make sure that items are treated in order
 
@@ -829,16 +860,16 @@ class BatchQ(object):
         for name, attr in properties:
             attr.initialise()
             attr.set_on_modify(self.reset_cache)
-            if i < len(args):
+            if i < len(self._settings_args):
                 wasset.append(name)
-                attr.set(args[i])
+                attr.set(self._settings_args[i])
                 i += 1
 
         if i < len(args):
             raise TypeError("%s recived %d arguments, but at most %d required." % (self.__class__.__name__, len(args)+ len(kwargs), len(properties)))
 
 
-        for name, val in kwargs.iteritems():
+        for name, val in self._settings_kwargs.iteritems():
             if not name in wasset:
                 if name in properties_dict:
                     properties_dict[name].set(val)
@@ -857,12 +888,19 @@ class BatchQ(object):
             raise TypeError("%s recived %d arguments, at least one of %d mandatory keywords were not set." % (self.__class__.__name__, len(args)+ len(kwargs), minpro))
 
         for name, attr in items:
-            if isinstance(attr, Controller):              
+            if name in self._pipelines:
+                attr.initiate(self._pipelines[name])
+                last_pipe = name
+                setattr(self, name, attr)
+            elif isinstance(attr, Controller):              
                 self._pipelines[name] =  attr.initiate()
                 last_pipe = name
+                setattr(self, name, attr)
             elif isinstance(attr, Function):
                 attr.register(self._pipelines, last_pipe)
                 setattr(self, name, attr)
+
+
 
 
     def reset_cache(self):
@@ -878,6 +916,17 @@ class BatchQ(object):
     @property
     def settings(self):
         return [self._settings_args,self._settings_kwargs]
+
+    def clone(self, **kwargs):
+        kw = copy.deepcopy(self._settings_kwargs)
+        kw.update(kwargs)
+        kw.update({"q_pipelines": self._pipelines})
+        ret = self.__class__(**kw)
+#        print "OBJ",ret
+#        print "FNC",ret.submitted
+#        print "PIPELINES:", ret._pipelines
+        return  ret
+
 
     def pipeline(self,name):       
         """
@@ -978,190 +1027,192 @@ def load_queue(cls,settings):
 
 
 
-class MetaDescriptor(type):
-    def __new__(cls, name, bases, dct):
-        fields = {}
-
-        # Inherithed fields
-        for b in bases:
-            if hasattr(b, "__baseconfiguration__"):
-                fields.update(getattr(b, "__baseconfiguration__"))
-
-        # Finding new fields
-        reserved = ["get_queue","update_configuration","queue_log","descriptor_log","get_configuration"]
-        newfields = dict([(a,dct[a]) for a in dct.iterkeys() if not a in reserved and (len(a) < 4 or (not "__" == a[0:2] and not "__" == a[-2:] )) ])
-        fields.update(newfields)
-                
-        dct['__baseconfiguration__'] = fields
-
-        return type.__new__(cls, name, bases, dct)
-
-
-class Descriptor(object):
-    __metaclass__ = MetaDescriptor
-
-
-    def __init__(self, object = None, **kwargs): #          
-        queue = None
-        inherithed_conf = {}
-        if isinstance(object, Descriptor):
-            queue = object.get_queue()
-            inherithed_conf = copy.deepcopy(object.get_configuration())
-        elif isinstance(object, BatchQ):
-            queue = object
-
-        self._log = []
-        configuration = None
-        if 'configuration' in kwargs:
-            configuration = kwargs['configuration']
-        elif len(kwargs) > 0:
-            configuration = kwargs
-
-        self._queue = queue
-        self._configuration = inherithed_conf
-        self._configuration.update( self.__baseconfiguration__ )
-
-        if isinstance(configuration, str):
-            _,configuration,_ = load_settings(configuration)
-
-        if not configuration is None: self._configuration.update(configuration)
-
-        self._queue_cls = None
-        if self._queue is None :
-            if "queue" in self._configuration:
-                self._queue_cls = self._configuration['queue']
-                del self._configuration['queue']
-
-                conf = {}
-                conf.update(self._configuration)
-                conf.update({'q_interact': True, 'q_reduce_interaction': True})
-                self._queue = self._queue_cls(**conf)
-
-
-            else:
-                raise BaseException("You need to provide a queue in order to create a queue descriptor.")
-        elif "queue" in self._configuration:
-            del self._configuration['queue']
-
-        if not configuration is None:
-            if isinstance(configuration, str):
-                newargs, newkwargs, switches = load_settings(configuration)
-                u,t,i,q,f = switches
-                if len(args)< len(newargs):
-                    for n in range(0,len(args)):
-                        newargs[n] = args[n]
-                    args = tuple(newargs)
-                
-                configuration = self._queue._args_to_dict(args)
-                configuration.update(newkwargs)
-
-#            self._configuration.update(configuration)
 
 
 
-    @property
-    def queue_log(self):
-        return self._queue.queue_log
-
-    @property
-    def descriptor_log(self):
-        return self._log
-
-
-    def get_queue(self):
-        for n, val in self._configuration.iteritems():
-            self._queue.fields[n].set(val)
-
-        return self._queue
-
-    def update_configuration(self, conf = None, **kwargs):
-        if not conf is None:
-            self._configuration.update(conf)
-        self._configuration.update(kwargs)
-
-
-    def get_configuration(self):
-        return self._configuration
-
-    def __getattribute__(self,name):
-        try:
-            attr = object.__getattribute__(self, name)
-            return attr
-        except AttributeError:
-            # Ensure right behaviour with built-in and hidden variables functions
-            if name[0] == "_":
-                return object.__getattribute__(self,name)
-
-
-        fnc = getattr(self.get_queue(), name)
-        object.__getattribute__(self,"_log").append(name)
-        return fnc().val
-
-## TODO: Needs to be tested
-def load_descriptor(cls,settings):
-    settings['q_interact'] = True
-    q = load_queue(cls,settings)
-    del settings['q_interact']
-    d= Descriptor(q, settings)
-    return d
 
 
 class Collection(object):
-    def __init__(self,descriptors = [], *args, **kwargs):
-        self._descriptors = copy.copy(descriptors)
+    def newconstructor(self, *args, **kwargs):
+        set = None
+        results_set = None
+        complement = None
+        results_complementary = None
+
+        if len(args) == 1:
+            object = args[0]            
+            if isinstance(object, BatchQ):
+                set = [object]
+            elif isinstance(object, list):
+                set = object
+                # TODO: Check kwargs
+            elif isinstance(object, Collection):
+                set = object.objects
+                results_set = object.results
+                complement = object.complementary_objects
+                results_complementary = object.complementary_results
+            # If is type BatchQ:
+                set = [object(kwargs)]
+            
+    def __init__(self, set = None,results_set = None,complement = None,results_complementary=None):
+        self._set = [] 
+        if not set is None:
+            self._set = set
+
+        self._results =[]
+        if not results_set is None:
+            self._results = results_set
+        else:
+            self._results = [None]*len(self._set)
+
+        if len(self._results) != len(self._set):
+            raise BaseException("Set list and result list must be equally long")
+
+        self._complementary = []
+        if not complement is None:
+            self._complementary = complement
+
+        self._results_complementary = []
+        if not results_complementary is None:
+            self._results_complementary = results_complementary
+        else:
+            self._results_complementary = [None]*len(self._complementary)
+
+        if len(self._results_complementary) < len(self._complementary):
+            self._results_complementary += [None]*( len(self._complementary) - len(self._results_complementary) )
+        if len(self._results_complementary) != len(self._complementary):
+            raise BaseException("Complementary set list and result list must be equally long")
+
+
         self._min = -1
         self._max = 1
         self._until_finish = True
-        self._return_list = False
+        self._split_results = False
+
+    def all(self):
+        return self + ~self
+        
+    @property
+    def objects(self):
+        return self._set
 
     @property
-    def descriptors(self):
-        return self._descriptors
+    def complementary_objects(self):
+        return self._complementary
+  
+    @property
+    def results(self):
+        return self._results
+
+    @property
+    def complementary_results(self):
+        return self._results_complementary
+
+    def __append(self, object, ret = None):
+        if object in self._set:
+            return
+        if object in self._complementary:
+            #TODO: delete this object from complementary
+            pass
+        self._set.append(object)
+        self._results.append(ret)
+
+    def __append_complementary(self, object, ret = None):
+        if object in self._set or object in self._complementary:
+            return
+        self._complementary.append(object)
+        self._results_complementary.append(ret)
 
 
-    def __iadd__(self,this, other):
-        if isinstance(other,Descriptor):  other = [other]
-        if isinstance(other,Collection):   other = other.descriptors
-        this._descriptors += other
-        return this
+    def __len__(self):
+        return len(self._set)
 
-    def __add__(self,this, other):
-        if isinstance(other,Descriptor):  return Collection(this.descriptors + [other])
-        if isinstance(other,Collection): return Collection(this.descriptors + other.descriptors)
-        return Collection(this.descriptors + other)
+    def __iadd__(self, other):
+        if isinstance(other, Collection):
+            # Adding objects
+            n = len(other.objects)
+            for i in range(0, n):
+                self.__append(other.objects[i], other.results[i])
+                
+            # and complementary objects
+            n = len(other.complementary_objects)
+            for i in range(0, n):
+                self.__append_complementary(other.complementary_objects[i], other.complementary_results[i])
+        elif isinstance(other, BatchQ):
+            self.__append(other)
+
+        return self
+
+    def __add__(self, other):
+        ret = Collection()
+        ret.__iadd__(self)
+        ret.__iadd__(other)
+        return ret
 
     def __delitem__(self, n):
-        del self._descriptors[n]
+        del self._set[n]
 
     def __getitem__(self, n):        
-        return Collection(self._descriptors[n])
+        x = self._set[n]
+        if not isinstance(x, list): x = [x]
+        return Collection(x)
+
+    def invert(self):
+        t = self._set
+        r = self._results
+        self._set = self._complementary 
+        self._results = self._results_complementary 
+        self._complementary = t
+        self._results_complementary = r
 
     def __nonzero__(self):
-        return len(self._descriptors) != 0
+        return len(self._set) != 0
 
     def __str__(self):
-        return ", ".join([job.identifier() for job in self.descriptors])
+        if len(self._results) != len(self._set):
+            raise BaseException("Something is wrong")
+        return ", ".join([str(r) for r in self._results])
+#        return ", ".join([job.identifier().val() for job in self.objects])
 
+    def __invert__(self):
+        x = copy.copy(self)
+        x.invert()
+        return x
+        
+    def __neg__(self):
+        return ~ self   
 
-    def append(self, object):
-        self.__iadd__(self,object)
-
-    def _collect_parameters(self, min,max,finish, result_list):
+    def _collect_parameters(self, min,max,finish, split = False):
         self._min = min
         self._max = max
         self._until_finish = finish
-        self._return_list = result_list
+        self._split_results = split
 
-    def wait(self, min = -1, max_retries = -1, finish = False, result_list = False):
-        ret = Collection(self.descriptors)
-        ret._collect_parameters(min,max_retries,finish,result_list)
+    def wait(self, min = -1, max_retries = -1, finish = False, split= False):
+        ret = copy.copy(self)
+        ret._collect_parameters(min,max_retries,finish, split)
         return ret
+
+    def split(self):
+        return self.wait(self._min,self._max,self._until_finish, True)
+
 
     def any(self):
         return self.wait(1)
 
-    def list(self):        
-        return self.wait(1, -1, True,True)
+    def as_list(self):        
+        if self._results is None:
+           return [] 
+        return self._results
+
+    def as_dict(self):        
+        # TODO: implement
+        if self._results is None:
+           return [] 
+# TODO: Implement
+#        [job.identifier().val() for job in self.objects]
+        return self._results
+
 
 
     def __getattribute__(self,name):
@@ -1186,24 +1237,37 @@ class Collection(object):
             min = self._min
             max = self._max
 
-            if not min is None and min < 0: min += 1 + len(self._descriptors)
+            if not min is None and min < 0: min += 1 + len(self._set)
 
             notstop = True
             allowbreak = not self._until_finish 
-            ret2 = copy.copy(self._descriptors)
+            ret2 = copy.copy(self._set)
             ret1 = []            
-            results = []            
+
+            results1 = []  
+
+            infinity_wait = 10000
             while notstop:
-                results = []
+                results2 = []
                 cycle = 0
                 cycle_size = len(ret2)
+                wait =  infinity_wait
                 for a in ret2 :
                     cycle += 1
-                    b = getattr(a, name)(*args, **kwargs)
-                    results.append(b)
-                    if b:
+                    method = getattr(a, name)
+                    b = method(*args, **kwargs)
+                    if hasattr(b,"val"): b = b.val()
+
+                    
+                    to = method.cache_timeout if hasattr(method, "cache_timeout") else infinity_wait
+                    if to < wait: wait =to
+
+                    if not b:
+                        results2.append(b)
+                    else:
                         i += 1                        
-                        ret1.append(a)           
+                        ret1.append(a)    
+                        results1.append(b)       
                         if not min is None and min<=i: 
                             if progress_fnc:
                                 progress_fnc(i,min,cycle,cycle_size, j,b,a) 
@@ -1213,17 +1277,32 @@ class Collection(object):
                     if progress_fnc:
                         progress_fnc(i,min,cycle,cycle_size, j,b,a) 
                 j += 1
-
+                if notstop and wait != infinity_wait:
+                    time.sleep(wait)
                 if not max == -1 and j >= max:
                     notstop = False
 
                 ret2 = [a for a in ret2 if not a in ret1] 
 
-            if self._return_list: return results
-            return Collection(ret1), Collection(ret2)
+
+            col = Collection(ret1, results1, ret2, results2)
+            if self._split_results: return col, ~col
+            return col
                     
         return foreach
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     import sys

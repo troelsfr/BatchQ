@@ -256,6 +256,9 @@ class FileCommander(FileTransferTerminal):
         self.local_chdir(oldlocal)
         self.chdir(oldremote)
 
+#        print "DIRS:", dirs
+#        print "FILES:", files
+
         if len(dirs) == 0 and  len(files) == 0:
             return False
         return (dirs, files)

@@ -106,9 +106,9 @@ class BaseInterpreter(object):
 
 
     def write(self, str):
-
         for c in str:
             self.writeChar(c)
+
 
     def writeChar(self,c):
         self._full_echo += c

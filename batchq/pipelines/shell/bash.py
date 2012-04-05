@@ -84,11 +84,13 @@ class BashTerminal(BasePipe):
         be the same independently of the user.
         """
 
-        self._pipe.write("export PS1=\"%s\"" % self._expect_token)
-        self.consume_output()
-        self._pipe.write(self._submit_token)  
-        self.consume_output()
 
+        self.send_command("export PS1=\"%s\"" % self._expect_token)
+#        self._pipe.write("export PS1=\"%s\"" % self._expect_token)
+#        self.consume_output()
+#        self._pipe.write(self._submit_token)  
+#        self.consume_output(consume_until = self._submit_token )
+        if self.__class__.__name__ == "SSHTerminal": print "----"
         self.send_command("unset HISTFILE")
         self._entrance = self.send_command("pwd").strip()
 
@@ -97,7 +99,6 @@ class BashTerminal(BasePipe):
 
     def push_entrance(self):
         return self.pushd(self._entrance)
-
 
     @property    
     def path(self):
