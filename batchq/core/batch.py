@@ -821,8 +821,20 @@ class BatchQ(object):
 
         last_pipe = None        
 
-        interactive = False
-        reduced = False
+        interactive = True
+        reduced = True
+
+        self._settings_args = []
+        self._settings_kwargs = {}
+
+        if len(args) > 0:
+            if isinstance(args[0], BatchQ):
+                object = args[0]
+                a, k = object.settings
+                self._settings_args = copy.deepcopy(a)
+                self._settings_kwargs.update(k)
+                kwargs.update({"q_pipelines": object.pipelines})
+                args = args[1:]
 
         if "q_interact" in kwargs:
             interactive = kwargs['q_interact']
@@ -834,8 +846,9 @@ class BatchQ(object):
             self._pipelines = kwargs['q_pipelines']
             del kwargs['q_pipelines']
 
-        self._settings_args = copy.deepcopy(args)
-        self._settings_kwargs = copy.deepcopy(self.__class__.__baseconfiguration__)
+        n = len(self._settings_args)
+        self._settings_args += args[n:]
+        self._settings_kwargs.update(self.__class__.__baseconfiguration__)
         self._settings_kwargs.update(kwargs)
 
         # Make sure that items are treated in order
@@ -883,7 +896,8 @@ class BatchQ(object):
             if not attr.isuserset and interactive:
                 self._settings_kwargs[name] = attr.interact(reduced)
             allset = allset and attr.isset
-        
+            if not attr.isset:
+                print name, "was not set"
         if not allset:
             raise TypeError("%s recived %d arguments, at least one of %d mandatory keywords were not set." % (self.__class__.__name__, len(args)+ len(kwargs), minpro))
 
@@ -901,6 +915,10 @@ class BatchQ(object):
                 setattr(self, name, attr)
 
 
+        for name, attr in properties:
+            if attr.password and name in self._settings_kwargs:
+                del self._settings_kwargs[name]
+                self._settings_kwargs[name] = "DELETED FOR SECURITY REASONS"
 
 
     def reset_cache(self):
@@ -919,6 +937,7 @@ class BatchQ(object):
 
     def clone(self, **kwargs):
         kw = copy.deepcopy(self._settings_kwargs)
+
         kw.update(kwargs)
         kw.update({"q_pipelines": self._pipelines})
         ret = self.__class__(**kw)
@@ -927,6 +946,10 @@ class BatchQ(object):
 #        print "PIPELINES:", ret._pipelines
         return  ret
 
+
+    @property
+    def pipelines(self):       
+        return self._pipelines
 
     def pipeline(self,name):       
         """

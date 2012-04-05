@@ -90,7 +90,7 @@ class BashTerminal(BasePipe):
 #        self.consume_output()
 #        self._pipe.write(self._submit_token)  
 #        self.consume_output(consume_until = self._submit_token )
-        if self.__class__.__name__ == "SSHTerminal": print "----"
+#        if self.__class__.__name__ == "SSHTerminal": print "----"
         self.send_command("unset HISTFILE")
         self._entrance = self.send_command("pwd").strip()
 
