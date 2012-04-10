@@ -807,7 +807,7 @@ class MetaBatchQ(type):
         dct['__baseconfiguration__'] = baseconfiguration
         return type.__new__(cls, name, bases, dct)
  
-
+__debug_counter__ = 0
 class BatchQ(object):
     """
     The BatchQ object is the ancestor to a specific BatchQ model.
@@ -815,31 +815,35 @@ class BatchQ(object):
     __metaclass__ = MetaBatchQ
 
     def _debug_comment(self, msg):
+        global __debug_counter__
         msg = msg[:100]
         msg = msg.replace("\n", "<RET>")
-        self._debug_counter += 1
+        __debug_counter__ += 1
+#        print "SENDING ", "#####" +str(__debug_counter__) + " " + msg
         for pipe in self._pipelines.itervalues():
-            pipe.send_command("#####" +str(self._debug_counter) + " " + msg)
+            pipe.send_command("#####" +str(__debug_counter__) + " " + msg)
 
     def _debug_call_stack_push(self, fnc):
-        self._debug_counter += 1
+        global __debug_counter__
+        __debug_counter__ += 1
         self._debug_call_stack.append(fnc)
         fnc = fnc[:100]
         msg = " : ".join( self._debug_call_stack )
         msg = msg.replace("\n", "<RET>")
 
         for pipe in self._pipelines.itervalues():
-            pipe.send_command("#####" +str(self._debug_counter) + " " + msg)
+            pipe.send_command("#####" +str(__debug_counter__) + " " + msg)
 
 
     def _debug_call_stack_pop(self, fnc):
-        self._debug_counter += 1
+        global __debug_counter__
+        __debug_counter__ += 1
         self._debug_call_stack.pop()
         fnc = fnc[:100]
         msg = "RETURNING! " +  " : ".join( self._debug_call_stack ) + " (  " + fnc + "  )"
         msg = msg.replace("\n", "<RET>")
         for pipe in self._pipelines.itervalues():
-            pipe.send_command("#####" +str(self._debug_counter) + " " + msg)
+            pipe.send_command("#####" +str(__debug_counter__) + " " + msg)
 
 
 
@@ -854,7 +858,6 @@ class BatchQ(object):
             setattr(self.__class__, alt_n, property( g, s ))
 
     def __init__(self, *args, **kwargs):
-        self._debug_counter = 0
         self._log = []
         self._debug_call_stack = []
 

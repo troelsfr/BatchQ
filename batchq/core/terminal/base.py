@@ -37,6 +37,9 @@ class BaseInterpreter(object):
         self._home_char = 0
         self._home_attributes = {}
         self._debug = False
+        self._carriage_return = 0
+
+
         if not pattern_reg is None: pattern_reg.set_owner(self)
 
         self.fix_buffer()
@@ -165,11 +168,8 @@ class BaseInterpreter(object):
 
     def put(self,c):
         n = self._curchar
-        if self._curchar >= self._max_cols:
-            # TODO: Only if wordwrap enabled
-            self._curchar = 0
-            self._curline +=1
-            self.fix_buffer()
+        if self._curchar - self._carriage_return >= self._max_cols:
+            self._carriage_return = self._max_cols*int(self._curchar / self._max_cols)
 
         m = len(self._lines[self._curline])
         self._lines[self._curline] = self._lines[self._curline][0:n] + c + self._lines[self._curline][n+1:m]

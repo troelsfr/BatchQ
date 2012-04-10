@@ -99,6 +99,7 @@ class XTermInterpreter(BaseInterpreter):
     @XTermRegister.hook("NL")
     def newline(self,sequence):
         self._curline+=1
+        self._carriage_return = 0
         self.fix_buffer()
 
     @XTermRegister.hook("VT")
@@ -117,7 +118,7 @@ class XTermInterpreter(BaseInterpreter):
 #        print "Hello world"
 #        print ord(self._full_echo[-4]),ord(self._full_echo[-3]),ord(self._full_echo[-2]),ord(self._full_echo[-1])
 #        print "Hello world"
-        self._curchar = 0
+        self._curchar = self._carriage_return
         self.fix_buffer()
 
     @XTermRegister.hook("SO")

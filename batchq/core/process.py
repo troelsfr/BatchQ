@@ -32,7 +32,7 @@ from batchq.core.errors import CommunicationIOException, CommunicationOSExceptio
 
 class BaseProcess(object):
 
-    def __init__(self, command = None, args = [], environment = None, terminal_preferred = True, terminal_required = False, check_timeout = 0.05):
+    def __init__(self, command = None, args = [], environment = None, terminal_preferred = True, terminal_required = False, check_timeout = 0.00):
         self._own_terminal = False
         #self._echo = True
         self._buffer = ""
