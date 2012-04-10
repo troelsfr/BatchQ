@@ -82,7 +82,7 @@ class BaseInterpreter(object):
         
     @property
     def buffer(self):
-        return "\n".join(self._lines)
+        return ("\n".join(self._lines)).replace("\r\n","")
 
     @property
     def last_escape(self):
@@ -140,13 +140,13 @@ class BaseInterpreter(object):
 #        if self._curline == self._last_monitor_line and self._curchar < self._last_monitor_char: return ""
 
         n = len(self._lines)
-        buf = "\n".join(self._lines[self._mark_line:n])
+        buf = "\n".join(self._lines[self._mark_line:n]).replace(u"\r\n","")
         n = len(buf)
         return buf[self._mark_char:n]
 
     def copy_until_end(self,char, line):
         n = len(self._lines)
-        buf = "\n".join(self._lines[line:n])
+        buf = ("\n".join(self._lines[line:n])).replace(u"\r\n","")
         n = len(buf)
         return buf[char:n]
 
@@ -169,7 +169,12 @@ class BaseInterpreter(object):
     def put(self,c):
         n = self._curchar
         if self._curchar - self._carriage_return >= self._max_cols:
-            self._carriage_return = self._max_cols*int(self._curchar / self._max_cols)
+            self._lines[self._curline] = self._lines[self._curline][0:n] + u"\r" # + self._lines[self._curline][n+1:m]
+#            self._carriage_return = self._max_cols*int(self._curchar / self._max_cols)
+            # TODO: Only if wordwrap enabled
+            self._curchar = 0
+            self._curline +=1
+            self.fix_buffer()
 
         m = len(self._lines[self._curline])
         self._lines[self._curline] = self._lines[self._curline][0:n] + c + self._lines[self._curline][n+1:m]
