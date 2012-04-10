@@ -490,6 +490,12 @@ class Function(BaseField):
         return a in b
 
     @QCallable
+    def Qclear_cache(self):
+        self.model.clear_cache()
+        return None
+
+
+    @QCallable
     def Qprint(self, *args,**kwargs):
         if len(args) == 1:
             print args[0]
@@ -872,7 +878,7 @@ class BatchQ(object):
 
         for name, attr in properties:
             attr.initialise()
-            attr.set_on_modify(self.reset_cache)
+            attr.set_on_modify(self.clear_cache)
             if i < len(self._settings_args):
                 wasset.append(name)
                 attr.set(self._settings_args[i])
@@ -921,7 +927,7 @@ class BatchQ(object):
                 self._settings_kwargs[name] = "DELETED FOR SECURITY REASONS"
 
 
-    def reset_cache(self):
+    def clear_cache(self):
         for name, attr in self._functions:
             attr.clear_cache()
 

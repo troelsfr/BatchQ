@@ -187,6 +187,7 @@ class NoHUP(batch.BatchQ):
 #        .send_command(_).Qcall(running)
 
     startjob = batch.Function(create_workdir,verbose=True) \
+        .Qclear_cache() \
         .Qcall(prepare_submission) \
         .send_command(prior) \
         .Qget("command_prepend") \

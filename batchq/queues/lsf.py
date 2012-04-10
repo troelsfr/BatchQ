@@ -56,8 +56,8 @@ class LSFBSub(NoHUPSSH):
         .Qget("command_prepend") \
         .Qcall(NoHUP.identifier_filename, 1) \
         .Qjoin("(touch ",_last, ".submitted ; bsub -oo ", _last, ".log ", _rev," \"touch ",_last,".running ; ", _rev , NoHUP.command, " 1> ",_rev,".running 2> ",_last,".error ; echo \\$? > ",_last,".finished \" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > ",_last,".pid )") \
-        .send_command(_1)
-
+        .send_command(_1) \
+        .Qclear_cache() 
 
     ## TODO: write this function
     cancel = batch.Function().Qstr("TODO: This function needs to be implemented")
