@@ -10,6 +10,8 @@ class BaseInterpreter(object):
     This object implements the base interpretater.
     """
     def __init__(self,escape_register, key_register, pattern_reg = None,  max_cols = 80, max_rows = 80):
+        self._max_cols = max_cols
+        self._max_rows = max_rows
         self.erase_display(p = 2)
         self._buffer = ""
         self._escpat = False
@@ -163,6 +165,12 @@ class BaseInterpreter(object):
 
     def put(self,c):
         n = self._curchar
+        if self._curchar >= self._max_cols:
+            # TODO: Only if wordwrap enabled
+            self._curchar = 0
+            self._curline +=1
+            self.fix_buffer()
+
         m = len(self._lines[self._curline])
         self._lines[self._curline] = self._lines[self._curline][0:n] + c + self._lines[self._curline][n+1:m]
 #        print self._curchar, self._lines

@@ -268,7 +268,7 @@ class Function(BaseField):
         self._intended_for_users = enduser
         self._cache = cache
         self._last_run = None
-        self._debug = False
+        self._debug = True
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
 
@@ -815,19 +815,25 @@ class BatchQ(object):
     __metaclass__ = MetaBatchQ
 
     def _debug_comment(self, msg):
+        msg = msg[:100]
+        msg = msg.replace("\n", "<RET>")
         for pipe in self._pipelines.itervalues():
             pipe.send_command("##### " + msg)
 
     def _debug_call_stack_push(self, fnc):
         self._debug_call_stack.append(fnc)
+        fnc = fnc[:100]
         msg = " : ".join( self._debug_call_stack )
+        msg = msg.replace("\n", "<RET>")
         for pipe in self._pipelines.itervalues():
             pipe.send_command("##### " + msg)
 
 
     def _debug_call_stack_pop(self, fnc):
         self._debug_call_stack.pop()
-        msg = "RETURNING     " +  " : ".join( self._debug_call_stack ) + "          (  " + fnc + "  )"
+        fnc = fnc[:100]
+        msg = "RETURNING! " +  " : ".join( self._debug_call_stack ) + " (  " + fnc + "  )"
+        msg = msg.replace("\n", "<RET>")
         for pipe in self._pipelines.itervalues():
             pipe.send_command("##### " + msg)
 
