@@ -268,6 +268,7 @@ class Function(BaseField):
         self._intended_for_users = enduser
         self._cache = cache
         self._last_run = None
+        self._debug = False
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
 
@@ -285,11 +286,14 @@ class Function(BaseField):
 
 
     def __call__(self, *args, **kwargs):
-
         if not self._last_run is None and time.time() < self._last_run+self._cache :
+            if self._debug:
+                self.model._debug_comment("USING CACHE FOR " +self.name + "="+str(self._rets[-1]))
 #            print "Cache hit:: ", self._name
             return self            
 
+        if self._debug:
+            self.model._debug_call_stack_push(self.name)
 #        print "Entering call", self
         self._executing = True
         arguments = dict([("arg%d"%i,args[i]) for i in range(0, len(args))])
@@ -435,6 +439,8 @@ class Function(BaseField):
 
         self._executing = False    
         self._last_run = time.time()
+        if self._debug:
+            self.model._debug_call_stack_pop(self.name + "=" + str(self._rets[-1]))
         return self
 
 
@@ -488,6 +494,13 @@ class Function(BaseField):
     @QCallable
     def Qcontains(self, a,b):
         return a in b
+
+
+    @QCallable
+    def Qdebug_comment(self, msg):
+        self.model._debug_comment(msg)
+        return None
+
 
     @QCallable
     def Qclear_cache(self):
@@ -801,6 +814,25 @@ class BatchQ(object):
     """
     __metaclass__ = MetaBatchQ
 
+    def _debug_comment(self, msg):
+        for pipe in self._pipelines.itervalues():
+            pipe.send_command("##### " + msg)
+
+    def _debug_call_stack_push(self, fnc):
+        self._debug_call_stack.append(fnc)
+        msg = " : ".join( self._debug_call_stack )
+        for pipe in self._pipelines.itervalues():
+            pipe.send_command("##### " + msg)
+
+
+    def _debug_call_stack_pop(self, fnc):
+        self._debug_call_stack.pop()
+        msg = "RETURNING     " +  " : ".join( self._debug_call_stack ) + "          (  " + fnc + "  )"
+        for pipe in self._pipelines.itervalues():
+            pipe.send_command("##### " + msg)
+
+
+
     def _createProperty(self,n,alt_n = None):
         def s(self,val):
             return self.fields[n].set(val)
@@ -813,6 +845,7 @@ class BatchQ(object):
 
     def __init__(self, *args, **kwargs):
         self._log = []
+        self._debug_call_stack = []
 
         self.fields = copy.deepcopy(self.__class__.__new_fields__)
 #        print self.fields
