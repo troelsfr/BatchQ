@@ -268,7 +268,7 @@ class Function(BaseField):
         self._intended_for_users = enduser
         self._cache = cache
         self._last_run = None
-        self._debug = True
+        self._debug = False
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
 

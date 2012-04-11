@@ -26,6 +26,7 @@ import hashlib
 import re
 from batchq.core.errors import HashException
 import zipfile
+import copy
 
 cmdhasher = "md5"
 hasher_routine = "md5"
@@ -65,6 +66,13 @@ def which (filename, lookin = [], env = None):
         if os.access(f, os.X_OK):
             return f
     return None
+
+
+def environment (**kwargs):
+    nenv = copy.deepcopy(os.environ)
+    nenv.update(kwargs)
+    return nenv
+
 
 
 def filelist(path, list = None):        

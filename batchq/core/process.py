@@ -29,6 +29,7 @@ import pty
 import threading
 import warnings
 from batchq.core.errors import CommunicationIOException, CommunicationOSException, CommunicationWarning
+from batchq.core.utils import environment as create_environment
 
 class BaseProcess(object):
 
@@ -45,6 +46,9 @@ class BaseProcess(object):
         self._terminal_required = terminal_required
         self._ready = False
 
+
+        if environment is None:
+            environment = create_environment(TERM = 'xterm',TERM_PROGRAM= 'Apple_Terminal', TERM_PROGRAM_VERSION='273.1')
 
         if not command is None:
             self.spawn(command, args,environment)
