@@ -168,8 +168,11 @@ class BasePipe(object):
                 if end_time<time.time():
                     if self._debug_level >= 3:
                         print "-"*20, "BUFFER", "-"*20
-                        print self._xterminterpreter.buffer
+                        print self._xterminterpreter.buffer[-200:]
                         print "-"*20, "END OF BUFFER", "-"*20
+                        print "-"*20, "READABLE ECHO", "-"*20
+                        print self._xterminterpreter.readable_echo[-200:]
+                        print "-"*20, "END OF READABLE ECHO", "-"*20
                         print "Expecting: ", consume_until
                         print "Consumed: ", output
                         print "Escape mode:", self._xterminterpreter.escape_mode
@@ -212,8 +215,12 @@ class BasePipe(object):
                 if end_time<time.time():
                     if self._debug_level >= 3:
                         print "-"*20, "BUFFER", "-"*20
-                        print self._xterminterpreter.buffer
+                        print self._xterminterpreter.buffer[-200:]
                         print "-"*20, "END OF BUFFER", "-"*20
+                        print "-"*20, "READABLE ECHO", "-"*20
+                        print self._xterminterpreter.readable_echo[-200:]
+                        print "-"*20, "END OF READABLE ECHO", "-"*20
+
                         print "Expecting: ", consume_until
                         print "Consumed: ", output
                         print "Escape mode:", self._xterminterpreter.escape_mode
