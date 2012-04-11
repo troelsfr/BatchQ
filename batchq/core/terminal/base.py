@@ -1,4 +1,3 @@
-
 def convert_to_int(x):
     try:
         return int(x)
@@ -107,7 +106,24 @@ class BaseInterpreter(object):
 
     @property
     def readable_echo(self):
-        return self._full_echo.replace(u"\x1b", "<ESC>").replace(u"\x07", "<BEL>").replace(u"\x0D", "<RET>")
+        pattern_start = {u'\x00':'NUL', u'\x01':'SOH',u'\x02':'STX',u'\x03':'ETX',u'\x04':'EOT',u'\x05':'ENQ',u'\x06':'ACK',u'\x07':'BEL',
+                         u'\x08':'BS',u'\x09':'TAB',u'\x0A':'NL',u'\x0B':'VT',u'\x0C':'NP',u'\x0D':'CR',u'\x0E':'SO',u'\x0F':'SI',u'\x10':'DLF',
+                         u'\x11':'DC1',u'\x12':'DC2',u'\x13':'DC3',u'\x14':'DC4',u'\x15':'NAK',u'\x16':'SYN',u'\x17':'ETB',u'\x18':'CAN',u'\x19':'EM',
+                         u'\x1A':'SUB',u'\x1b': 'ESC',u'\x1C':'FS',u'\x1D':'GS',u'\x1E':'RS',u'\x1F':'US'}
+        basic_reductions = {'ESC [': 'CSI', 'ESC D': 'IND', 'ESC E': 'NEL', 'ESC H': 'HTS', 'ESC M': 'RI', 'ESC N': 'SS2','ESC O': 'SS3',
+                            'ESC P': 'DCS', 'ESC V': 'SPA', 'ESC W':'EPA', 'ESC X': 'SOS', 'ESC Z':'CSI c', "ESC \\": 'ST', 'ESC ]':'OSC',
+                            'ESC ^': 'PM', 'ESC _':'APC'}
+        echo = self._full_echo
+        for a,b in pattern_start.iteritems():
+            echo = echo.replace(a,b+" ")
+
+        for a,b in basic_reductions.iteritems():
+            echo = echo.replace(a,"<"+b+">")
+
+        for a,b in pattern_start.iteritems():
+            echo = echo.replace(b+" ","<"+b+">")
+        
+        return echo.replace("<NL>", "\n")
 
 
     def write(self, str):
