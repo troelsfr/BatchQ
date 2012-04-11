@@ -24,7 +24,8 @@ class LSFBSub(NoHUPSSH):
         .Qjoin("cat ",_1).Qcontroller("terminal") \
         .send_command(_1)
 
-    failed = batch.Function(verbose=True,cache=5).Qcontroller("terminal") \
+    failed = batch.Function(NoHUP.lazy_finished,verbose=True,cache=5).Qcontroller("terminal") \
+        .Qdon(2).Qbool(False).Qreturn() \
         .Qcall(log).Qcontains("Successfully completed.",_1) \
         .Qdon(3).Qbool(True).Qreturn() \
         .Qcall(lsf_status).Qequal(_1,"exit")

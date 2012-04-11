@@ -46,7 +46,7 @@ class NoHUP(batch.BatchQ):
     prior = batch.Property("", verbose = False)    
     post = batch.Property("", verbose = False)    
 
-
+    server = batch.Property("localhost", display="Server: ", verbose=False)
     processes = batch.Property(1, display="Number of processes: ", verbose = False) 
     time = batch.Property(-1, display="Wall time: ", verbose = False, formatter = format_time)    
     mpi = batch.Property(False, display="Use MPI: ", verbose = False)    
@@ -176,16 +176,6 @@ class NoHUP(batch.BatchQ):
          .Qset("command_prepend","").Qbool(mpi).Qdo(3).Qstr(processes).Qjoin("mpirun -np ", _, " ").Qstore("command_prepend")
 
     ## TESTED AND WORKING
-
-#    OLD FUNCTION
-#    startjob = batch.Function(create_workdir,verbose=True) \
-#        .Qcall(prepare_submission) \
-#        .send_command(prior) \
-#        .Qget("command_prepend") \
-#        .Qcall(identifier_filename) \
-#        .Qjoin("(", _, " ", command, " > ",_," & echo $! > ",_2,".pid )") \
-#        .send_command(_).Qcall(running)
-
     startjob = batch.Function(create_workdir,verbose=True) \
         .Qclear_cache() \
         .Qcall(prepare_submission) \
@@ -231,15 +221,17 @@ class NoHUP(batch.BatchQ):
         .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
         .Qcall(pending).Qdo(2).Qstr("pending").Qreturn() \
         .Qcall(failed).Qdo(2).Qstr("failed").Qreturn() \
+        .Qcall(submitted).Qdo(2).Qstr("pre-pending").Qreturn() \
         .Qstr("unknown status")
 
 
     job = batch.Function(verbose=True, enduser=True) \
-        .Qcall(submitted).Qdon(6).Qprint("Uploading input directory.").Qcall(send).Qprint("Submitting job on ").Qcall(startjob).Qstr("").Qreturn() \
+        .Qcall(submitted).Qdon(6).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qstr("").Qreturn() \
         .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qstr("").Qreturn() \
         .Qcall(running).Qdo(3).Qprint("Job is running.").Qstr("").Qreturn() \
         .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn() \
         .Qcall(finished).Qdo(8).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qstr("").Qreturn() \
+        .Qcall(submitted).Qdo(3).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qstr("").Qreturn() \
         .Qprint("Your job has an unknown status.").Qstr("")
 
 

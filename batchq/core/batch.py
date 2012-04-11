@@ -512,6 +512,8 @@ class Function(BaseField):
     def Qprint(self, *args,**kwargs):
         if len(args) == 1:
             print args[0]
+        elif len(kwargs) == 0:
+            print " ".join(args)
         else:
             print args, kwargs
         return None
@@ -988,7 +990,7 @@ class BatchQ(object):
     def settings(self):
         return [self._settings_args,self._settings_kwargs]
 
-    def clone(self, **kwargs):
+    def create_job(self, **kwargs):
         kw = copy.deepcopy(self._settings_kwargs)
 
         kw.update(kwargs)
