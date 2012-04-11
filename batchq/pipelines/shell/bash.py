@@ -84,8 +84,10 @@ class BashTerminal(BasePipe):
         be the same independently of the user.
         """
 
-
         self.send_command("export PS1=\"%s\"" % self._expect_token)
+        self.send_command("export TERM=\"xterm\"")
+        self.send_command("export TERM_PROGRAM=\"Apple_Terminal\"") 
+        self.send_command("export TERM_PROGRAM_VERSION=\"273.1\"")
 #        self._pipe.write("export PS1=\"%s\"" % self._expect_token)
 #        self.consume_output()
 #        self._pipe.write(self._submit_token)  
