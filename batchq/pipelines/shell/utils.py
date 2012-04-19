@@ -1,7 +1,7 @@
 from batchq.pipelines.shell.bash import BashTerminal
 from batchq.pipelines.shell.ssh import SSHTerminal
 from batchq.pipelines.shell.sftp import SFTPTerminal
-
+import time
 class FileTransferTerminal(SFTPTerminal):
     """
     This object is similar to SFTPTerminal if server, username and
@@ -144,11 +144,10 @@ class FileCommander(FileTransferTerminal):
 
         (lfiles, ldirs) = self.local.list(".", recursive,list_files = False)
         (rfiles, rdirs) = self.remote.list(".", recursive,list_files = False)
-        lfiles_sum  = self.local.sum_files(".",ignore_hidden)
-        rfiles_sum  = self.remote.sum_files(".",ignore_hidden)
 
-#        print "LEFT", lfiles_sum
-#        print "RIGHT", rfiles_sum
+        lfiles_sum  = self.local.sum_files(".",ignore_hidden)
+
+        rfiles_sum  = self.remote.sum_files(".",ignore_hidden)        
 
         files = []
         dirs = []
@@ -189,11 +188,11 @@ class FileCommander(FileTransferTerminal):
         if not self.remote.popd():
             raise BaseException("Remote direcory stack error")
 
-#        print "DIFF:", (files, dirs)
+
         return (files, dirs)
 
 
-    def sync(self, local_dir = ".", remote_dir =".", recursive = True, mode = 3, ignore_hidden =True, diff_local_dir =None, diff_remote_dir =None):
+    def sync(self, local_dir = ".", remote_dir =".", recursive = True, mode = 3, ignore_hidden =True, diff_local_dir =None, diff_remote_dir =None, use_tar = False):
         """
         This function compares a local and a remote directory and
         transfer missing files in one direction depending on the mode
@@ -201,8 +200,7 @@ class FileCommander(FileTransferTerminal):
         ``FileCommander.MODE_REMOTE_LOCAL``). Note this function ignores the
         creation/modification date of the file or directory.
         """
-#        print "Syncing", local_dir, remote_dir,diff_local_dir, diff_remote_dir, mode
-#        return 
+
         oldlocal = self.local_pwd()
         oldremote = self.pwd()
 
@@ -217,6 +215,7 @@ class FileCommander(FileTransferTerminal):
             lfiles, ldirs = self.diff(diff_local_dir, diff_remote_dir, recursive, self.MODE_LOCAL_REMOTE, False, ignore_hidden)            
             copyfnc = self.sendfile
             bash = self.remote
+            other_bash = self.local
             files =[file for file,_ in lfiles]
             dirs =[dir for dir,_ in ldirs]
             work_dir = remote_dir
@@ -224,12 +223,12 @@ class FileCommander(FileTransferTerminal):
             rfiles, rdirs = self.diff(diff_local_dir, diff_remote_dir, recursive, self.MODE_REMOTE_LOCAL, False, ignore_hidden)
             copyfnc = self.getfile
             bash = self.local
+            other_bash = self.remote
             files = [file for _,file in rfiles]
             dirs = [dir for _,dir in rdirs]
             work_dir = local_dir
         else:
             raise BaseException("Select one and only one mode.")
-
 
         if not bash.pushd(work_dir):
             raise BaseException("Directory does not exist %s" %work_dir)
@@ -242,13 +241,34 @@ class FileCommander(FileTransferTerminal):
                 raise BaseException("Could not create: '%s'. Issued '%s' and got following output: '%s'" % (dir, bash.last_input,bash.last_output))
 
         # Syncronising files
+        if use_tar and len(files) > 0:
+            i = 1
+            filename = ".syncronisation_%d.tar" %i
+            while other_bash.isfile(filename) or bash.isfile(filename):
+                i += 1
+                filename = ".syncronisation_%d.tar" %i
 
-        for file in sorted(files):
-            if file.strip() == "":
-                raise "Error recieved an empty directory"
-            if not copyfnc(file,file):
-                raise BaseException("Could not copy: '%s'. Issued '%s' and got following output: '%s'" % (file, self.last_input,self.last_output))
+            if not other_bash.create_tar(filename, files):
+                raise BaseException("Could not create tar archive: '%s' and '%s'" % (file, other_bash.last_input,other_bash.last_output))
 
+            if not copyfnc(filename,filename):
+                raise BaseException("Could not transfer tar archive: '%s' and '%s'" % (str(self.last_input),str(self.last_output)))
+            other_bash.rm(filename)
+
+
+            while not bash.isfile(filename):
+                time.sleep(1)
+
+            if not bash.extract_tar(filename):
+                raise BaseException("Could not extract tar archive: '%s' and '%s'" % (str(bash.last_input),str(bash.last_output)))
+            bash.rm(filename)
+
+        if not use_tar:
+            for file in sorted(files):
+                if file.strip() == "":
+                    raise BaseException("Error recieved an empty directory.")
+                if not copyfnc(file,file):
+                    raise BaseException("Could not copy: '%s'. Issued '%s' and got following output: '%s'" % (file, self.last_input,self.last_output))
 
         if not bash.popd():
             raise "Could not pop working directory"
@@ -256,9 +276,8 @@ class FileCommander(FileTransferTerminal):
         self.local_chdir(oldlocal)
         self.chdir(oldremote)
 
-#        print "DIRS:", dirs
-#        print "FILES:", files
 
         if len(dirs) == 0 and  len(files) == 0:
             return False
+
         return (dirs, files)

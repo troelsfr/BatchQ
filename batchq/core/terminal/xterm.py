@@ -101,6 +101,7 @@ class XTermInterpreter(BaseInterpreter):
         self._curline+=1
         self._carriage_return = 0
         self.fix_buffer()
+#        self._lines.set_break_token(self._curline-1, "\n")
 
     @XTermRegister.hook("VT")
     def vertical_tab(self,sequence):
@@ -194,32 +195,27 @@ class XTermInterpreter(BaseInterpreter):
     def cursor_down (self,seq="",count=1):
         self._curline += count
         n = len(self._lines)
-        if self._curline > n: self._lines += [""]*(self._curline - n)
+            
 
     @XTermRegister.hook("CSI Ps C", defaults = (1,) )
     def cursor_forward (self,seq="",count=1):
         self._curchar += count
-        n = len(self._lines[self._curline])
-        if self._curchar>n: self._lines[self._curline] += " "*(self._curchar - n)
+        
 
     @XTermRegister.hook("CSI Ps D", defaults = (1,) )
     def cursor_back (self,seq="",count=1):
         self._curchar -= count
-        if self._curchar<0: self._curchar = 0
 
 
     @XTermRegister.hook("CSI Ps ; Ps H", defaults = (1,1) )
     def cursor_home (self, seq = "", line=1, char=1):
         self._curline = line - 1 
         self._curchar = char - 1
-        self.fix_buffer()
 
     @XTermRegister.hook("CSI Ps ; Ps f", defaults = (1,1) )
     def cursor_force_position (self, seq = "", line=1, char=1): 
         self._curline = line - 1
         self._curchar = char - 1
-        self.fix_buffer()
-
 
     @XTermRegister.hook("CSI 7")
     def cursor_save_attrs (self, seq = ""): # 
@@ -227,26 +223,19 @@ class XTermInterpreter(BaseInterpreter):
         self._home_char = self._curchar
         self._home_attributes = self._attributes
 
-
-
     @XTermRegister.hook("ESC 8")
     def cursor_restore_attrs (self, seq =""): # <ESC>8 
         self._curline = self._home_line
         self._curchar = self._home_char
         self._attributes = self._home_attributes
-        self.fix_buffer()
-
-
 
     @XTermRegister.hook("ESC H")
     def set_tab (self,seq = ""): # <ESC>H
         pass
 
-
     @XTermRegister.hook("CSI Ps g")
     def clear_tabs (self,seq = ""):
         pass
-
 
     @XTermRegister.hook("ESC # 3")
     def double_letters_height_top_half (self,seq = ""): # <ESC>#3
@@ -268,20 +257,27 @@ class XTermInterpreter(BaseInterpreter):
     def screen_alignment_display (self,seq = ""): # <ESC>#8
         pass
 
+    @XTermRegister.hook("CSI Ps P", defaults = (1, ) )
+    def delete_character(self, seq, n):
+        del self._lines[self._curline][self._curchar]
+#        del self._lines[(self._curline, self._curchar)]
 
     @XTermRegister.hook("CSI Ps K",defaults = (0, ) )
     def erase_until (self,seq = "", k = 0): 
         if isinstance(k,str) and k[0] == "?": pass # TODO: Handle quenstion marks
         if k == 0:
+#            self._lines.erase(self._curline,self._curchar,self._curline,self._lines.line_length(self._curline) )
+            # TODO: FIX, should use del
             line = self._lines[self._curline]
             line = line[0:self._curchar]
             self._lines[self._curline] = line
-
         elif k == 1:
+#            self._lines.erase(self._curline,0,self._curline+1,self._curchar )
             line = self._lines[self._curline]
             line = line[self._curchar+1:len(line)]
             self._lines[self._curline] = line
         elif k == 2:
+#            self._lines.erase_lines(self._curline)
             self._lines[self._curline] = ""
 
 
@@ -289,16 +285,21 @@ class XTermInterpreter(BaseInterpreter):
     def erase_display (self,seq = "", p = 0):
         if isinstance(p,str) and k[0] == "?": pass # TODO: Handle quenstion marks
         if p == 0:
-            n = len(self._lines)
-            self._lines = self._lines[0:self._curline]                       
+            self.erase_lines(self._curline, n)
+#            n = len(self._lines)
+#            self._lines = self._lines[0:self._curline]                       
+
+#            n = len(self._lines)
+#            self._lines.erase_lines(self._curline, n)
         elif p==1:
-            n = len(self._lines)
-            self._lines = self._lines[self._curline+1:n]           
+            self.erase_lines(0,self._curline+1)
+#            self._lines.erase_lines(0,self._curline+1)
+#            n = len(self._lines)
+#            self._lines = self._lines[self._curline+1:n]           
         elif p == 2:
-            self._lines = [""]
+            self.erase_lines()
             self._curchar = 0
             self._curline = 0
-            self.fix_buffer()
         elif p == 3:
             print "TODO: feature not implemented"
 

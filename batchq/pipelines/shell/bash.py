@@ -26,7 +26,7 @@ from batchq.core.process import Process
 from batchq.core.errors import HashException
 from batchq.core.utils import which 
 
-
+from profilehooks import profile
 import posixpath
 import hashlib
 import os
@@ -88,11 +88,7 @@ class BashTerminal(BasePipe):
         self.send_command("export TERM=\"xterm\"")
         self.send_command("export TERM_PROGRAM=\"Apple_Terminal\"") 
         self.send_command("export TERM_PROGRAM_VERSION=\"273.1\"")
-#        self._pipe.write("export PS1=\"%s\"" % self._expect_token)
-#        self.consume_output()
-#        self._pipe.write(self._submit_token)  
-#        self.consume_output(consume_until = self._submit_token )
-#        if self.__class__.__name__ == "SSHTerminal": print "----"
+
         self.send_command("unset HISTFILE")
         self._entrance = self.send_command("pwd").strip()
 
@@ -280,7 +276,18 @@ echo $DIR"""
         return info
 
 
+    def create_tar(self, filename, filelist):
+        cmd = "tar -cvf %s %s" % (filename, " ".join(filelist))
+        self.send_command(cmd)
+        return self.last_exitcode() == 0
 
+    def extract_tar(self, filename):
+        cmd = "tar -xf %s" % (filename)        
+        self.send_command(cmd)
+#        print "LAST: ", self.last_exitcode()
+        return self.last_exitcode() == 0
+
+        
     def last_pid(self):
         """
         Returns the pid of the last started proccess. If this is
@@ -370,14 +377,17 @@ echo $DIR"""
         return match.group("hash")
 
 
+
+#    @profile(immediate=True)
     def sum_files(self, dir=".", ignore_hidden=False):
         searcher_for = re.compile(r"(?P<hash>\d+)\s+(?P<block>\d+)\s+(?P<file>.*)") #(P?<hash>\d+)\s+(P?<block>\d)\s+(?P<file>.*)")
         cmd = "find '%s' -type f   -print0 | xargs -0 sum" % (dir)
 
         if ignore_hidden:
             cmd = "find '%s' \( ! -regex '.*/\..*' \) -type f  -print0 | xargs -0 sum" % (dir)
-        response = self.send_command(cmd).strip()  
-        list = response.split("\n")
+        response = self.send_command(cmd)
+        list = response.strip().split("\n")
+
 
         ret = []
         x = response.strip()

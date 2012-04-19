@@ -135,7 +135,6 @@ class BasePipe(object):
         """        
         if not pipe:
             pipe = self._pipe
-
         output = ""
         echo = ""
         self._xterminterpreter.set_mark()
@@ -147,7 +146,6 @@ class BasePipe(object):
                 try:
                     b = pipe.getchar()
                 except CommunicationIOException, e:
-                   # break
                     pass
 
                 if b!="":
@@ -158,11 +156,12 @@ class BasePipe(object):
                     tot_len = len(output)
                     tot_echo_len = len(echo)
                 
-                    m = self._xterminterpreter.monitor
-                    if self._reset_timeout_onoutput and (self._xterminterpreter.monitor_echo !="" or m !=""):
+
+                    if self._reset_timeout_onoutput and (self._xterminterpreter.monitor_echo !=""):
                         end_time = time.time()+self._timeout 
 
                     if self._debug_level == 2:
+                        m = self._xterminterpreter.monitor
                         sys.stdout.write(m)
 
                 if end_time<time.time():
@@ -193,9 +192,8 @@ class BasePipe(object):
                     (tot_echo_len < n or not consume_until == echo[tot_echo_len -n: tot_echo_len]):
 
                 try:
-                    b = pipe.getchar()
+                    b = pipe.read_nonblocking_until(consume_until, True)
                 except CommunicationIOException, e:
-                #    break
                     pass
                 if b!="":
 
@@ -205,11 +203,12 @@ class BasePipe(object):
                     tot_len = len(output)
                     tot_echo_len = len(echo)
                 
-                    m = self._xterminterpreter.monitor
-                    if self._reset_timeout_onoutput and (self._xterminterpreter.monitor_echo !="" or m !=""):
+
+                    if self._reset_timeout_onoutput and (self._xterminterpreter.monitor_echo !=""):
                         end_time = time.time()+self._timeout 
 
                     if self._debug_level == 2:
+                        m = self._xterminterpreter.monitor
                         sys.stdout.write(m)
 
                 if end_time<time.time():
@@ -227,11 +226,7 @@ class BasePipe(object):
                         if self._xterminterpreter.escape_mode:
                             print "Last escape:", self._xterminterpreter.last_escape
                     raise CommunicationTimeout("Consuming output timed out. You can increase the timeout by using set_timeout(t).")
-#            if self.__class__.__name__ == "SSHTerminal":
-#                print "CONSUMING:: ",
-#                for a in echo:
-#                    print a, "(", ord(a), ")",
-#                print
+
             if consume_until == output[tot_len -n: tot_len]:
                 output = output[0:tot_len -n]
             # TODO: figure out what to do when the match is in the echo
@@ -241,7 +236,6 @@ class BasePipe(object):
             echo = ""
             while time.time()<end_time or (echo == "" and wait_for_some_output):
                 b = pipe.read()
-                
                 while b !="" and pipe.isalive():                
                     self._xterminterpreter.write(b)
                     output = self._xterminterpreter.copy()
@@ -261,22 +255,19 @@ class BasePipe(object):
 
         return output
 
-    def send_command(self, cmd):
+    def send_command(self, cmd, wait_for_input_response = True):
         """
         This function sends a command to the pipe, wait for the prompt
         to appear and return the output.
         """
         self._last_input = cmd
-#        time.sleep(1)
-#        if self.__class__.__name__ == "SSHTerminal":
-#            print "-"*20, "BEGIN", "-"*20
+
 
         self._pipe.write(cmd)
 
-        # We first consume the echo
-#        print self.__class__.__name__, "  $> ", cmd
+
         if cmd !="":
-            self.consume_output(wait_for_some_output = True)
+            self.consume_output(wait_for_some_output = wait_for_input_response)
 
         self._pipe.write(self._submit_token)
 
@@ -287,12 +278,10 @@ class BasePipe(object):
 
 
 
-        # Then we wait for the output
+        # Then we wait for the output        
         ret = self.consume_output(consume_until = self._expect_token)
         self._last_output = ret
-#        print " -- RET --"
-#        print ret
-#        print
+
         if False and  not cmd[0:2] == "ak" and self.__class__.__name__ == "SSHTerminal":
             print "COMMAND:: ", cmd
             print "EXPECT::  ", self._expect_token
@@ -304,8 +293,7 @@ class BasePipe(object):
                 self.i = 0
             else:
                 self.i+=1
-#            if self.i>2:    sys.exit(0)
-        #        print "--!"
+
         return ret
 
 
@@ -321,9 +309,9 @@ class BasePipe(object):
     def remaining(self):
         self._xterminterpreter.move_monitor_cursors()
         r = self._pipe.read()
-#        print "WRITING ", len(r), "CHARS:", r, 
+
         self._xterminterpreter.write(r)
-#        print self._xterminterpreter.monitor_echo
+
         return self._xterminterpreter.monitor
 
     def kill(self):

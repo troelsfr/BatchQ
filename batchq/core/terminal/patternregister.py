@@ -216,7 +216,7 @@ class ReductionRegister(object):
 
                 
                 f(self._own,*args)
-            return True
+            return pattern
 
         return self._inside_pattern
 

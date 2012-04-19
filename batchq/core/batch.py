@@ -91,37 +91,41 @@ class Property(BaseField):
     """
     def __init__(self, *args, **kwargs):
         super(Property, self).__init__()
-        self._isset = len(args)>0 or 'value' in kwargs.iterkeys()
+        self.isset = len(args)>0 or 'value' in kwargs.iterkeys()
         self.__set_defaults__(*args, **kwargs)
 
-    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", formatter = None):
+    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", formatter = None, type = str, invariant = False):
         self._formatter = formatter
         self._value = value
 
         if self._formatter:
             self._value = self._formatter(self._value)
 
-        self._password = password
-        self._verbose = verbose
-        self._display = display
-        self._userset = not verbose
+        self.password = password
+        self.verbose = verbose
+        self.display = display
+        self.isuserset = not verbose
         self._on_modify =None
+        self.type = type
+        self.invariant = invariant
+
+
 
     def interact(self, reduce_interaction = False):
         if reduce_interaction and not self._value is None: return
         t = type(self._value)
 
         val = None
-        if self._password:
-            if self._display == "":
+        if self.password:
+            if self.display == "":
                 val = getpass.getpass()
             else:
-                val = getpass.getpass(self._display)
+                val = getpass.getpass(self.display)
         else:
-            if self._display == "":
+            if self.display == "":
                 val = raw_input("Enter a text (no field desciption given): ")
             else:                
-                val = raw_input(self._display)
+                val = raw_input(self.display)
 
         if not self._value is None:
             self.set(t(val))
@@ -140,8 +144,8 @@ class Property(BaseField):
         r = self.replacement
         oldval = r.get()
         if r == self:
-            self._isset = True
-            self._userset = True
+            self.isset = True
+            self.isuserset = True
             if self._formatter:
                 self._value = self._formatter(val)
             else:
@@ -163,25 +167,6 @@ class Property(BaseField):
         else:
             return r.get()
 
-    @property
-    def isset(self):
-        return self._isset
-
-    @property
-    def isuserset(self):
-        return self._userset
-
-    @property
-    def password(self):
-        return self._password
-
-    @property
-    def verbose(self):
-        return self._verbose
-
-    @property
-    def display(self):
-        return self._display
 
     
 
@@ -254,7 +239,7 @@ class QCallable(object):
 
 import time
 class Function(BaseField):
-    def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0):
+    def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0, type = str):
         super(Function, self).__init__()
         self._listener = None
         self._verbose_functions = ["Qthrow"]
@@ -265,28 +250,21 @@ class Function(BaseField):
         self._executing = False
         self._store = {}
         self._overall_default = ""
-        self._intended_for_users = enduser
-        self._cache = cache
+        self.enduser = enduser
+        self.cache_timeout = cache
         self._last_run = None
         self._debug = False
+        self.type = type
+
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
-
-
-    @property
-    def enduser(self):
-        return self._intended_for_users
-
-    @property
-    def cache_timeout(self):
-        return self._cache
 
     def clear_cache(self):
         self._last_run = None
 
 
     def __call__(self, *args, **kwargs):
-        if not self._last_run is None and time.time() < self._last_run+self._cache :
+        if not self._last_run is None and time.time() < self._last_run+self.cache_timeout :
             if self._debug:
                 self.model._debug_comment("USING CACHE FOR " +self.name + "="+str(self._rets[-1]))
 #            print "Cache hit:: ", self._name
@@ -705,10 +683,10 @@ class Controller(BaseField):
         self._model = model
         self._args = args
         self._kwargs = kwargs
-        self._instance = None
+        self.instance = None
 
         if "q_instance" in kwargs:
-            self._instance = kwargs["q_instance"]
+            self.instance = kwargs["q_instance"]
             del kwargs["q_instance"]
 
         self._fields = []
@@ -725,7 +703,7 @@ class Controller(BaseField):
             if name[0:2] == "__" and name[-2:] == "__":
                 return BaseField.__getattribute__(self,name)
 
-            inst = object.__getattribute__(self, "_instance")
+            inst = object.__getattribute__(self, "instance")
             if not inst is None:
                 try:
                     if hasattr(inst, name):
@@ -742,13 +720,13 @@ class Controller(BaseField):
         """
 
         if not instance is None:
-            self._instance = instance
+            self.instance = instance
 
-        if not self._instance is None:
-            if isinstance(self._instance, self._model):
-                return self._instance            
-            self._instance = self._instance()
-            return self._instance
+        if not self.instance is None:
+            if isinstance(self.instance, self._model):
+                return self.instance            
+            self.instance = self.instance()
+            return self.instance
 
         nargs = ()
         nkwargs = {}
@@ -767,13 +745,9 @@ class Controller(BaseField):
                 nkwargs[name]  = val()
             else:
                 nkwargs[name] = val
-        self._instance = self._model(*nargs, **nkwargs)
+        self.instance = self._model(*nargs, **nkwargs)
 
-        return self._instance
-
-    @property
-    def instance(self):
-        return self._instance
+        return self.instance
 
 
 import datetime
@@ -1111,27 +1085,7 @@ def load_queue(cls,settings):
 
 
 class Collection(object):
-    def newconstructor(self, *args, **kwargs):
-        set = None
-        results_set = None
-        complement = None
-        results_complementary = None
-
-        if len(args) == 1:
-            object = args[0]            
-            if isinstance(object, BatchQ):
-                set = [object]
-            elif isinstance(object, list):
-                set = object
-                # TODO: Check kwargs
-            elif isinstance(object, Collection):
-                set = object.objects
-                results_set = object.results
-                complement = object.complementary_objects
-                results_complementary = object.complementary_results
-            # If is type BatchQ:
-                set = [object(kwargs)]
-            
+           
     def __init__(self, set = None,results_set = None,complement = None,results_complementary=None):
         self._set = [] 
         if not set is None:
@@ -1355,10 +1309,11 @@ class Collection(object):
                     if progress_fnc:
                         progress_fnc(i,min,cycle,cycle_size, j,b,a) 
                 j += 1
-                if notstop and wait != infinity_wait:
-                    time.sleep(wait)
                 if not max == -1 and j >= max:
                     notstop = False
+
+                if notstop and wait != infinity_wait:
+                    time.sleep(wait)
 
                 ret2 = [a for a in ret2 if not a in ret1] 
 

@@ -34,11 +34,13 @@ from batchq.core.utils import environment as create_environment
 class BaseProcess(object):
 
     def __init__(self, command = None, args = [], environment = None, terminal_preferred = True, terminal_required = False, check_timeout = 0.00):
-        self._own_terminal = False
+        self.has_terminal = False
         #self._echo = True
+        self._flush_buffer = True
         self._buffer = ""
         self._seeker = 0
         self._maxread = 2000
+        self._maxwrite = 500
         self._canread_timeout = check_timeout
         self._canwrite_timeout = check_timeout
         self._pipe = None
@@ -52,10 +54,6 @@ class BaseProcess(object):
 
         if not command is None:
             self.spawn(command, args,environment)
-
-    @property
-    def has_terminal(self):
-        return self._own_terminal
 
     @property
     def buffer(self):
@@ -139,7 +137,7 @@ class BaseProcess(object):
         # First try to create process in new tty
         if (self._terminal_preferred or self._terminal_required) and \
                 self.spawnTTY(command, args, environment):  
-            self._own_terminal = True
+            self.has_terminal = True
             self._ready = True
             return True
 
@@ -201,11 +199,13 @@ class BaseProcess(object):
             app = os.read(self._stdout_fd, self._maxread)
             self._buffer += app
 
+
         while len(app) == self._maxread:
 
             self._buffer += app
             if self.can_read():
                 app = os.read(self._stdout_fd, self._maxread)
+
             else:
                 break
 
@@ -218,8 +218,12 @@ class BaseProcess(object):
             raise CommunicationIOException("No proccess has been spawned yet or process dead.")
         
         if self.can_write():
-            os.write(self._stdin_fd, str   )
-            self.flush()           
+            for i in range(0,int(len(str)/self._maxwrite)+1):
+
+                os.write(self._stdin_fd, str[i*self._maxwrite:(i+1)*self._maxwrite]   )
+                self.flush() 
+                self._updateBuffer()
+
         else:
             print "Error, could not write"
 
@@ -236,7 +240,42 @@ class BaseProcess(object):
         oldp = self._seeker
         self._seeker = len(self._buffer)
 
+        if self._flush_buffer:
+            self._buffer = self._buffer[oldp:]
+            self._seeker = len(self._buffer)
+            return self._buffer
         return self._buffer[oldp:]
+
+
+    def read_nonblocking_until(self, until, forward = True):
+        """
+        Returns the next char
+        """
+        n = len(self._buffer) 
+        self._updateBuffer()
+        self.flush()
+
+        oldp = self._seeker
+        buf = self._buffer[self._seeker:]
+
+        if not until in buf:
+            return ""
+
+#        print "UNTIL", until
+#        print "BUFFER", self._buffer
+
+        if forward:
+            before, after = buf.split(until,1)
+        else:
+            before, after = buf.rsplit(until,1)
+
+        m = len(after)
+        if self._seeker < n - m :
+            self._seeker = n-m
+#            print "RETURNING: ", self._buffer[oldp:self._seeker]
+            return self._buffer[oldp:self._seeker]
+
+        return ""
 
     def getchar(self):
         """

@@ -1,0 +1,7 @@
+include AUTHORS
+include LICENSE
+include README
+recursive-include docs *.rst
+recursive-exclude docs/_build *
+include fabfile.py
+recursive-include tests *.py

@@ -1,0 +1,15 @@
+Response: 
+Hello world
+
+
+VT100 Buffer:
+export PS1="#-->"bash-3.2$ export PS1="#-->"
+#-->echo Hello world
+Hello world
+#-->
+
+Pipe Buffer:
+export PS1="#-->"[?1034hbash-3.2$ export PS1="#-->"
+#-->echo Hello world
+Hello world
+#-->

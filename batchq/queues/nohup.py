@@ -37,22 +37,17 @@ class NoHUP(batch.BatchQ):
     input_directory = batch.Property(".", display="Specify an input directory: ")
     output_directory = batch.Property(".", display="Specify an output directory: ")
 
-    # TODO: 
-#    input_paths = batch.Property([], display="Specify an input paths: ")
-
-
-
     subdirectory = batch.Property(".", verbose = False)
     prior = batch.Property("", verbose = False)    
     post = batch.Property("", verbose = False)    
 
-    server = batch.Property("localhost", display="Server: ", verbose=False)
-    processes = batch.Property(1, display="Number of processes: ", verbose = False) 
-    time = batch.Property(-1, display="Wall time: ", verbose = False, formatter = format_time)    
-    mpi = batch.Property(False, display="Use MPI: ", verbose = False)    
-    threads = batch.Property(1, display="OpenMP threads: ", verbose = False)    
-    memory = batch.Property(-1, display="Max. memory: ", verbose = False)    
-    diskspace = batch.Property(-1, display="Max. space: ", verbose = False)    
+    server = batch.Property("localhost", display="Server: ", verbose=False, invariant = True)
+    processes = batch.Property(1, display="Number of processes: ", verbose = False, type = int) 
+    time = batch.Property(-1, display="Wall time: ", verbose = False, formatter = format_time, type = int)    
+    mpi = batch.Property(False, display="Use MPI: ", verbose = False, type = bool)    
+    threads = batch.Property(1, display="OpenMP threads: ", verbose = False, type = int)    
+    memory = batch.Property(-1, display="Max. memory: ", verbose = False, type = int)    
+    diskspace = batch.Property(-1, display="Max. space: ", verbose = False, type = int)    
 
     overwrite_nodename_with = batch.Property("", verbose = False)
     overwrite_submission_id = batch.Property("", verbose = False)
@@ -125,15 +120,15 @@ class NoHUP(batch.BatchQ):
         .Qget("workdir").Qpjoin(_,"*").Qget("outdir")
     
     ### TESTED AND WORKING
-    send = batch.Function(prepare_incopy , verbose=True, enduser=True) \
+    send = batch.Function(prepare_incopy , verbose=True, enduser=True, type=bool) \
         .cp(_r, _r, True).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
-    recv = batch.Function(prepare_outcopy, verbose=True, enduser=True) \
+    recv = batch.Function(prepare_outcopy, verbose=True, enduser=True, type=bool) \
         .cp(_r, _r).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
-    pid = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
+    pid = batch.Function(create_workdir,verbose=True, enduser=True, cache=5, type=int) \
         .Qjoin(identifier_filename,".pid").Qstore("pid_file") \
         .isfile(_).Qdon(2).Qstr("-1").Qreturn() \
         .Qget("pid_file").cat(_)
@@ -141,30 +136,30 @@ class NoHUP(batch.BatchQ):
 
 
     ### TESTED AND WORKING
-    pending = batch.Function(verbose=True, enduser=True, cache=5) \
+    pending = batch.Function(verbose=True, enduser=True, cache=5, type=bool) \
         .Qbool(False)
 
     ## TESTED AND WORKING
-    submitted = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
+    submitted = batch.Function(create_workdir,verbose=True, enduser=True, cache=5, type=bool) \
         .Qcall(identifier_filename).Qjoin(_,".pid").isfile(_)
 
-    lazy_finished = batch.Function(create_workdir,verbose=True, enduser=True, cache=5) \
+    lazy_finished = batch.Function(create_workdir,verbose=True, cache=5) \
         .Qjoin(identifier_filename,".finished").isfile(_).Qdo(2).Qbool(True).Qreturn() \
         .Qbool(False)
 
-    finished = batch.Function(lazy_finished,verbose=True, enduser=True, cache=5)
+    finished = batch.Function(lazy_finished,verbose=True, enduser=True, cache=5, type=bool)
 
-    lazy_running = batch.Function(lazy_finished,verbose=True, enduser=True, cache=5) \
+    lazy_running = batch.Function(lazy_finished,verbose=True, cache=5) \
         .Qdo(2).Qbool(False).Qreturn() \
         .Qjoin(identifier_filename,".running").isfile(_).Qdo(2).Qbool(True).Qreturn() \
         .Qbool(False)
        
-    running = batch.Function(lazy_running,verbose=True, enduser=True, cache=5) \
+    running = batch.Function(lazy_running,verbose=True, enduser=True, cache=5, type=bool) \
         .Qdon(2).Qbool(False).Qreturn() \
         .Qcall(pid).Qstore("pid").Qequal(_,"-1").Qdo(2).Qbool(False).Qreturn() \
         .Qget("pid").isrunning(_)
 
-    failed = batch.Function(lazy_finished, enduser=True, cache=5) \
+    failed = batch.Function(lazy_finished, enduser=True, cache=5, type=bool) \
         .Qdon(2).Qbool(False).Qreturn() \
         .Qjoin(identifier_filename,".finished").cat(_).Qint(_).Qequal(_,0).Qnot(_)
         
@@ -187,35 +182,35 @@ class NoHUP(batch.BatchQ):
 
 
     ## TESTED AND WORKING
-    submit = batch.Function(send, verbose=True, enduser=True) \
+    submit = batch.Function(send, verbose=True, enduser=True, type=bool) \
         .Qcall(startjob)
 
 
     ## TESTED AND WORKING
-    stdout = batch.Function(submitted,verbose=True, enduser=True) \
+    stdout = batch.Function(submitted,verbose=True, enduser=True, type=str) \
         .Qdo(2).Qcall(identifier_filename).cat(_)
 
     # TODO:
-    stderr = batch.Function(submitted,verbose=True, enduser=True) \
+    stderr = batch.Function(submitted,verbose=True, enduser=True, type=str) \
         .Qprint("not implemented yet")
 
-    log = batch.Function(submitted,verbose=True, enduser=True) \
+    log = batch.Function(submitted,verbose=True, enduser=True, type=str) \
         .Qprint("No log implemented for SSH. Use stderr and stdout")
 
 
     ## TESTED AND WORKING
-    clean = batch.Function(create_workdir,verbose=True, enduser=True) \
+    clean = batch.Function(create_workdir,verbose=True, enduser=True, type=bool) \
         .Qdo(1).rm(".batchq*", force = True)
 
     ## TESTED AND WORKING
-    delete = batch.Function(create_workdir,verbose=True, enduser=True) \
+    delete = batch.Function(create_workdir,verbose=True, enduser=True, type=bool) \
         .Qdo(2).Qget("workdir").rm(_, force = True, recursively = True)
 
     ## TODO: TEST
-    cancel = batch.Function(pid, verbose=True, enduser=True).kill(_)
+    cancel = batch.Function(pid, verbose=True, enduser=True, type=bool).kill(_)
 
     ### TESTED AND WORKING
-    status = batch.Function(verbose=True, enduser=True) \
+    status = batch.Function(verbose=True, enduser=True, type=str) \
         .Qcall(submitted).Qdon(2).Qstr("was not submitted").Qreturn() \
         .Qcall(running).Qdo(2).Qstr("running").Qreturn() \
         .Qcall(finished).Qdo(2).Qstr("finished").Qreturn() \
@@ -225,7 +220,7 @@ class NoHUP(batch.BatchQ):
         .Qstr("unknown status")
 
 
-    job = batch.Function(verbose=True, enduser=True) \
+    run_job = batch.Function(verbose=True, enduser=True) \
         .Qcall(submitted).Qdon(6).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qstr("").Qreturn() \
         .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qstr("").Qreturn() \
         .Qcall(running).Qdo(3).Qprint("Job is running.").Qstr("").Qreturn() \
@@ -239,19 +234,16 @@ class NoHUPSSH(NoHUP):
     _ = batch.WildCard()
     _r = batch.WildCard(reverse=True)
 
-    username = batch.Property(display="Username: ")
-    password = batch.Property(password = True, display="Password: ")
-    server = batch.Property("localhost", display="Server: ")
-    port = batch.Property(22, display="Port: ")
-
-
+    username = batch.Property(display="Username: ", invariant = True)
+    password = batch.Property(password = True, display="Password: ", invariant = True)
+    server = batch.Property("localhost", display="Server: ", invariant = True)
+    port = batch.Property(22, display="Port: ", invariant = True)
 
     filecommander = batch.Controller(FileCommander,server,username, password, port)
     local_terminal = batch.Controller(BashTerminal,q_instance = filecommander.local)
     terminal = batch.Controller(BashTerminal,q_instance = filecommander.remote)
 
-
-    reconnect = batch.Function() \
+    reconnect = batch.Function(enduser=True) \
         .connection_lost().Qdo(1).connect(server,username, password, port) \
         .Qcontroller("filecommander") \
         .connection_lost().Qdo(1).connect(server,username, password, port) 

@@ -54,6 +54,7 @@ class BaseSecureTerminal(BasePipe):
 
         self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>)"))
         out = self.expect()
+#        print "END OF EXPECT", out
         newfigerprint = "(yes/no)" in out
 
         if not accept_figerprint and newfigerprint:
@@ -61,7 +62,8 @@ class BaseSecureTerminal(BasePipe):
         elif newfigerprint:
             self.send_command("yes")
         
-        out = self.send_command(password)
+
+        out = self.send_command(password, False)
 
 
         if "Password:" in out or "password" in out:
@@ -70,7 +72,7 @@ class BaseSecureTerminal(BasePipe):
 
         self._path = posixpath
         self.pop_expect()
-        self.set_timeout(40) 
+        self.set_timeout(3) 
         self.initiate_pipe()
 
 
