@@ -1,2 +1,0 @@
-Tutorial: LSF Remote Submission
-===============================

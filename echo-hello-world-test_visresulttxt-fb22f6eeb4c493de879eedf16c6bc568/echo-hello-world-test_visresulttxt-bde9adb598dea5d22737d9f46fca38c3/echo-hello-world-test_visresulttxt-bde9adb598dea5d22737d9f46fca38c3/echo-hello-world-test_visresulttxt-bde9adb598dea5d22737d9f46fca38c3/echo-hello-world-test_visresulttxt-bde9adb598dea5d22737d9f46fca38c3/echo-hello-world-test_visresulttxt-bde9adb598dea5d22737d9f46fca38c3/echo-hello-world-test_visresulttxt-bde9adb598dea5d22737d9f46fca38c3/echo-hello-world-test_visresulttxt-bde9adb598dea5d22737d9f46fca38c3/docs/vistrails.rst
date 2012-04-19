@@ -1,2 +1,0 @@
-Remote Jobs using VisTrails
-===========================
