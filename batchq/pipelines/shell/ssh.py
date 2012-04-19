@@ -72,7 +72,7 @@ class BaseSecureTerminal(BasePipe):
 
         self._path = posixpath
         self.pop_expect()
-        self.set_timeout(3) 
+        self.set_timeout(40) 
         self.initiate_pipe()
 
 
