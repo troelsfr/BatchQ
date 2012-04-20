@@ -26,7 +26,7 @@ from batchq.core.process import Process
 from batchq.core.errors import HashException
 from batchq.core.utils import which 
 
-from profilehooks import profile
+#from profilehooks import profile
 import posixpath
 import hashlib
 import os
