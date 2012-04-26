@@ -121,11 +121,15 @@ class NoHUP(batch.BatchQ):
         .Qget("workdir").Qpjoin(_,"*").Qget("outdir")
     
     ### TESTED AND WORKING
-    send = batch.Function(prepare_incopy , verbose=True, enduser=True, type=None) \
+    send = batch.Function(verbose=True, enduser=True, type=None) \
+        .Qbool(input_directory).Qdon(1).Qreturn() \
+        .Qcall(prepare_incopy) \
         .cp(_r, _r, True).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
-    recv = batch.Function(prepare_outcopy, verbose=True, enduser=True, type=None) \
+    recv = batch.Function(verbose=True, enduser=True, type=None) \
+        .Qbool(output_directory).Qdon(1).Qreturn() \
+        .Qcall(prepare_outcopy) \
         .cp(_r, _r).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
@@ -279,14 +283,16 @@ class NoHUPSSH(NoHUP):
         .Qget("outdir").Qget("workdir").Qget("indir")
 
     ## TESTED AND WORKING
-    send = batch.Function(prepare_incopy , verbose=True) \
-        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_LOCAL_REMOTE) \
+    send = batch.Function(verbose=True) \
+        .Qbool(NoHUP.input_directory).Qdon(1).Qreturn() \
+        .Qcall(prepare_incopy).Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_LOCAL_REMOTE) \
         .Qequal(_, False).Qdo(1).Qset("sync_cache",True) \
         .Qget("sync_cache")
     
     ## TESTED AND WORKING
-    recv = batch.Function(prepare_outcopy , verbose=True) \
-        .Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_REMOTE_LOCAL, diff_local_dir =_r) \
+    recv = batch.Function(verbose=True) \
+        .Qbool(NoHUP.output_directory).Qdon(1).Qreturn() \
+        .Qcall(prepare_outcopy).Qcontroller("filecommander").sync(_r,_r, mode = FileCommander.MODE_REMOTE_LOCAL, diff_local_dir =_r) \
         .Qequal(_, False).Qdo(1).Qset("sync_cache",True) \
         .Qget("sync_cache")
 
