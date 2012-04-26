@@ -6,6 +6,7 @@ from batchq.shortcuts.shell import home_create_dir, send_command
 from datetime import timedelta
 import re
 
+
 str_time_regex = re.compile(r'((?P<days>\d+?)days?, *)?((?P<hours>\d+?)hr *)?((?P<minutes>\d+?)m *)?((?P<seconds>\d+?)s *)?')
 def str_to_timedelta(s):
     m = str_time_regex.search(s)
@@ -120,11 +121,11 @@ class NoHUP(batch.BatchQ):
         .Qget("workdir").Qpjoin(_,"*").Qget("outdir")
     
     ### TESTED AND WORKING
-    send = batch.Function(prepare_incopy , verbose=True, enduser=True, type=bool) \
+    send = batch.Function(prepare_incopy , verbose=True, enduser=True, type=None) \
         .cp(_r, _r, True).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
-    recv = batch.Function(prepare_outcopy, verbose=True, enduser=True, type=bool) \
+    recv = batch.Function(prepare_outcopy, verbose=True, enduser=True, type=None) \
         .cp(_r, _r).Qdon(1).Qthrow("Failed to transfer files.")
 
     ### TESTED AND WORKING
@@ -182,7 +183,7 @@ class NoHUP(batch.BatchQ):
 
 
     ## TESTED AND WORKING
-    submit = batch.Function(send, verbose=True, enduser=True, type=bool) \
+    submit = batch.Function(send, verbose=True, enduser=True, type=None) \
         .Qcall(startjob)
 
 
@@ -199,15 +200,15 @@ class NoHUP(batch.BatchQ):
 
 
     ## TESTED AND WORKING
-    clean = batch.Function(create_workdir,verbose=True, enduser=True, type=bool) \
+    clean = batch.Function(create_workdir,verbose=True, enduser=True, type=None) \
         .Qdo(1).rm(".batchq*", force = True)
 
     ## TESTED AND WORKING
-    delete = batch.Function(create_workdir,verbose=True, enduser=True, type=bool) \
+    delete_working_directory = batch.Function(create_workdir,verbose=True, enduser=True, type=None) \
         .Qdo(2).Qget("workdir").rm(_, force = True, recursively = True)
 
     ## TODO: TEST
-    cancel = batch.Function(pid, verbose=True, enduser=True, type=bool).kill(_)
+    cancel = batch.Function(pid, verbose=True, enduser=True, type=None).kill(_)
 
     ### TESTED AND WORKING
     status = batch.Function(verbose=True, enduser=True, type=str) \
@@ -220,14 +221,14 @@ class NoHUP(batch.BatchQ):
         .Qstr("unknown status")
 
 
-    run_job = batch.Function(verbose=True, enduser=True) \
-        .Qcall(submitted).Qdon(6).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qstr("").Qreturn() \
-        .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qstr("").Qreturn() \
-        .Qcall(running).Qdo(3).Qprint("Job is running.").Qstr("").Qreturn() \
-        .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn() \
-        .Qcall(finished).Qdo(8).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qstr("").Qreturn() \
-        .Qcall(submitted).Qdo(3).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qstr("").Qreturn() \
-        .Qprint("Your job has an unknown status.").Qstr("")
+    run_job = batch.Function(verbose=True, enduser=True,type=batch.FunctionMessage) \
+        .Qcall(submitted).Qdon(6).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qstr("").Qreturn(1,"Submitting job on ", server) \
+        .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qreturn(3, "Job is pending.") \
+        .Qcall(running).Qdo(3).Qprint("Job is running.").Qreturn(4, "Job is running.") \
+        .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn(-5, _) \
+        .Qcall(finished).Qdo(8).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qreturn(0) \
+        .Qcall(submitted).Qdo(3).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qreturn(2,"Job is pre-pending (i.e. submitted but not in the batch system).") \
+        .Qprint("Your job has an unknown status.").Qreturn(-1,"Your job has an unkown status. This is usually a bad thing and you should probably file a bug report.")
 
 
 class NoHUPSSH(NoHUP):
@@ -243,7 +244,7 @@ class NoHUPSSH(NoHUP):
     local_terminal = batch.Controller(BashTerminal,q_instance = filecommander.local)
     terminal = batch.Controller(BashTerminal,q_instance = filecommander.remote)
 
-    reconnect = batch.Function(enduser=True) \
+    reconnect = batch.Function(enduser=True, type=None) \
         .connection_lost().Qdo(1).connect(server,username, password, port) \
         .Qcontroller("filecommander") \
         .connection_lost().Qdo(1).connect(server,username, password, port) 

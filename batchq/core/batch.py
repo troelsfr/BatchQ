@@ -237,6 +237,13 @@ class QCallable(object):
 
         return self._f(*args, **kwargs)
 
+class FunctionMessage(object):
+    def __init__(self, message, function, code = 0):
+        self.message = message
+        self.function = function
+        self.code = code
+
+
 import time
 class Function(BaseField):
     def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0, type = str):
@@ -497,8 +504,10 @@ class Function(BaseField):
         return None
         
     @QCallable
-    def Qreturn(self):
+    def Qreturn(self,code=0, message=None):
         self._queue_counter = len(self._queue)
+        if code == 0: return None
+        return FunctionMessage(message, code, self.name)
 
     @QCallable
     def Qdo(self, n = None):
