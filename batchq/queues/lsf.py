@@ -7,6 +7,8 @@ from batchq.shortcuts.shell import home_create_dir, send_command
 
 
 class LSFBSub(NoHUPSSH):
+    __descriptive_name__ = "Remote LSF"
+
     _1 = batch.WildCard()
     _rev = batch.WildCard(reverse=True)
     _last = batch.WildCard( select = 0, reverse = True)

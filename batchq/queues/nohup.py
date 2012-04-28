@@ -3,6 +3,7 @@ from batchq.pipelines.shell.bash import BashTerminal
 from batchq.pipelines.shell.ssh import SSHTerminal
 from batchq.pipelines.shell.utils import FileCommander
 from batchq.shortcuts.shell import home_create_dir, send_command
+from batchq.queues.generators import Directory
 from datetime import timedelta
 import re
 
@@ -27,6 +28,7 @@ def format_time(t):
     return int(t/60+1)
 
 class NoHUP(batch.BatchQ):
+    __descriptive_name__ = "Local subshell"
 
     _r = batch.WildCard(reverse = True)
     _ = batch.WildCard()
@@ -34,9 +36,9 @@ class NoHUP(batch.BatchQ):
     _last = batch.WildCard( select = 0, reverse = True)
 
     command = batch.Property("echo Hello World > execution.txt",display="Command to execute: ")
-    working_directory = batch.Property(display="Specify a working directory: ")
-    input_directory = batch.Property(".", display="Specify an input directory: ")
-    output_directory = batch.Property(".", display="Specify an output directory: ")
+    working_directory = batch.Property(".", display="Specify a working directory: ", invariant = True)
+    input_directory = batch.Property("", display="Specify an input directory: ")
+    output_directory = batch.Property("", display="Specify an output directory: ", generator=Directory)
 
     subdirectory = batch.Property(".", verbose = False)
     prior = batch.Property("", verbose = False)    
@@ -77,8 +79,9 @@ class NoHUP(batch.BatchQ):
 
     ## TESTED AND WORKING
     hash_input = batch.Function(verbose=True,cache = 5) \
-        .entrance().chdir(_).directory_hash(input_directory,True,True) \
-        .Qslugify(command).Qjoin(_,"-",_)
+        .Qbool(input_directory).Qdon(2).Qstr("no-input-dir").Qreturn() \
+        .entrance().pushd(_).directory_hash(input_directory,True,True) \
+        .Qslugify(command).Qjoin(_,"-",_).Qstore("input_hash").popd().Qget("input_hash")
 
     ## TESTED AND WORKING
     identifier = batch.Function(cache = 5) \
@@ -97,12 +100,16 @@ class NoHUP(batch.BatchQ):
 
     ## TESTED AND WORKING
     _create_workdir = batch.Function(verbose=True,cache=5) \
-        .entrance().chdir(_) \
+        .Qprint("create dir") \
+        .home().chdir(_) \
         .isdir(working_directory).Qdon(1).mkdir(working_directory, True) \
-        .chdir(working_directory) \
+        .Qbool(input_directory).Qdo(9) \
         .Qcall(get_subdirectory) \
+        .chdir(working_directory) \
+        .Qget("subdir") \
         .isdir(_).Qdon(2).Qget("subdir").mkdir(_, True) \
-        .Qget("subdir").chdir(_).pwd().Qstore("workdir")
+        .Qget("subdir").chdir(_) \
+        .pwd().Qstore("workdir").Qprint(_)
 
     create_workdir = batch.Function(verbose=True) \
         .Qcall(_create_workdir).Qget("workdir").chdir(_) \
@@ -182,8 +189,10 @@ class NoHUP(batch.BatchQ):
         .send_command(prior) \
         .Qget("command_prepend") \
         .Qcall(identifier_filename, 1) \
-        .Qjoin("(touch ",_last, ".submitted ;  touch ",_last,".running ; ", command, " 1> ",_last,".running 2> ",_last,".error  && echo $! > ",_last,".pid  ;  echo $? > ",_last,".finished )") \
-        .send_command(_)
+        .Qjoin("(touch ",_last, ".submitted ;  touch ",_last,".running ; ( ( ", command, " ) 1> ",_last,".running 2> ",_last,".error ;  echo $? > ",_last,".finished ) & echo $! > ",_last,".pid )").Qstore("cmd") \
+        .Qget("workdir").pushd(_) \
+        .Qget("cmd") \
+        .send_command(_).popd()
 
 
     ## TESTED AND WORKING
@@ -224,18 +233,22 @@ class NoHUP(batch.BatchQ):
         .Qcall(submitted).Qdo(2).Qstr("pre-pending").Qreturn() \
         .Qstr("unknown status")
 
+    test = batch.Function(_create_workdir,verbose=True).Qstr("").Qget("workdir").Qprint(_)
 
-    run_job = batch.Function(verbose=True, enduser=True,type=batch.FunctionMessage) \
-        .Qcall(submitted).Qdon(6).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qstr("").Qreturn(1,"Submitting job on ", server) \
-        .Qcall(pending).Qdo(3).Qprint("Job is pending.").Qreturn(3, "Job is pending.") \
-        .Qcall(running).Qdo(3).Qprint("Job is running.").Qreturn(4, "Job is running.") \
+    run_job = batch.Function(verbose=True, enduser=True,type=batch.FunctionMessage, highlevel = True) \
+        .Qprint("RUN JOB CALLED") \
+        .Qcall(submitted).Qdon(5).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qreturn(1,"Submitting job on ", server) \
+        .Qcall(pending).Qdo(2).Qprint("Job is pending.").Qreturn(3, "Job is pending.") \
+        .Qcall(running).Qdo(2).Qprint("Job is running.").Qreturn(4, "Job is running.") \
         .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn(-5, _) \
-        .Qcall(finished).Qdo(8).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qreturn(0) \
-        .Qcall(submitted).Qdo(3).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qreturn(2,"Job is pre-pending (i.e. submitted but not in the batch system).") \
+        .Qcall(finished).Qdo(7).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qreturn(0) \
+        .Qcall(submitted).Qdo(2).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qreturn(2,"Job is pre-pending (i.e. submitted but not in the batch system).") \
         .Qprint("Your job has an unknown status.").Qreturn(-1,"Your job has an unkown status. This is usually a bad thing and you should probably file a bug report.")
 
 
 class NoHUPSSH(NoHUP):
+    __descriptive_name__ = "Remote subshell"
+
     _ = batch.WildCard()
     _r = batch.WildCard(reverse=True)
 
@@ -259,8 +272,8 @@ class NoHUPSSH(NoHUP):
 
     ## TESTED AND WORKING
     hash_input = batch.Function(verbose=True).Qcontroller("local_terminal") \
-        .entrance().chdir(_).directory_hash(NoHUP.input_directory,True,True) \
-        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_)
+        .entrance().pushd(_).directory_hash(NoHUP.input_directory,True,True) \
+        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_).Qstore("input_hash").popd().Qget("input_hash")
 
     ## TESTED AND WORKING
 #    hash_output = batch.Function(verbose=True).Qcontroller("local_terminal") \
@@ -279,7 +292,8 @@ class NoHUPSSH(NoHUP):
         .Qset("sync_cache",False)  \
         .push_entrance().isdir(NoHUP.output_directory).Qdon(1).mkdir(NoHUP.output_directory, True).popd() \
         .entrance().Qpjoin(_,NoHUP.output_directory).Qstore("outdir") \
-        .entrance().Qpjoin(_,NoHUP.input_directory).Qstore("indir")  \
+        .Qstore("indir") \
+        .Qbool(NoHUP.input_directory).Qdo(3).entrance().Qpjoin(_,NoHUP.input_directory).Qstore("indir")  \
         .Qget("outdir").Qget("workdir").Qget("indir")
 
     ## TESTED AND WORKING

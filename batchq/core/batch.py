@@ -94,13 +94,14 @@ class Property(BaseField):
         self.isset = len(args)>0 or 'value' in kwargs.iterkeys()
         self.__set_defaults__(*args, **kwargs)
 
-    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", formatter = None, type = str, invariant = False):
+    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", formatter = None, type = str, invariant = False, generator = None):
         self._formatter = formatter
         self._value = value
 
         if self._formatter:
             self._value = self._formatter(self._value)
 
+        self.generator = generator
         self.password = password
         self.verbose = verbose
         self.display = display
@@ -246,7 +247,7 @@ class FunctionMessage(object):
 
 import time
 class Function(BaseField):
-    def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0, type = str):
+    def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0, type = str, highlevel = False):
         super(Function, self).__init__()
         self._listener = None
         self._verbose_functions = ["Qthrow"]
@@ -262,6 +263,7 @@ class Function(BaseField):
         self._last_run = None
         self._debug = False
         self.type = type
+        self.highlevel = highlevel
 
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
@@ -504,7 +506,8 @@ class Function(BaseField):
         return None
         
     @QCallable
-    def Qreturn(self,code=0, message=None):
+    def Qreturn(self,code=0, *message_parts):
+        message = " ".join(message_parts)
         self._queue_counter = len(self._queue)
         if code == 0: return None
         return FunctionMessage(message, code, self.name)
@@ -843,6 +846,8 @@ class BatchQ(object):
             setattr(self.__class__, alt_n, property( g, s ))
 
     def __init__(self, *args, **kwargs):
+        print "Construction args: ", args
+        print "Construction kwargs: ", kwargs
         self._log = []
         self._debug_call_stack = []
 
@@ -873,6 +878,8 @@ class BatchQ(object):
                 self._settings_kwargs.update(k)
                 kwargs.update({"q_pipelines": object.pipelines})
                 args = args[1:]
+        print "Initial args: ", self._settings_args
+        print "Initial kwargs: ", self._settings_kwargs
 
         if "q_interact" in kwargs:
             interactive = kwargs['q_interact']
@@ -927,6 +934,9 @@ class BatchQ(object):
                 else:
                     raise TypeError("%s got an unexpected keyword argument '%s'" % (self.__class__.__name__, name))
             else:
+                print "Settings"
+                print "ARGS",self._settings_args
+                print "KWARGS",self._settings_kwargs
                 raise TypeError("%s got multiple values for keyword argument '%s'" % (self.__class__.__name__, name))
 
         allset = True
@@ -957,6 +967,8 @@ class BatchQ(object):
             if attr.password and name in self._settings_kwargs:
                 del self._settings_kwargs[name]
                 self._settings_kwargs[name] = "DELETED FOR SECURITY REASONS"
+        print "Final args: ", self._settings_args
+        print "Final kwargs: ", self._settings_kwargs
 
 
     def clear_cache(self):
@@ -974,10 +986,20 @@ class BatchQ(object):
         return [self._settings_args,self._settings_kwargs]
 
     def create_job(self, **kwargs):
+        empty_copy = False
+        if "q_empty_copy" in kwargs:
+            empty_copy = True
+            del kwargs["q_empty_copy"]
+            kwargs['q_interact'] = False
+
         kw = copy.deepcopy(self._settings_kwargs)
 
         kw.update(kwargs)
         kw.update({"q_pipelines": self._pipelines})
+
+        if empty_copy:
+            kw = dict([(key,val) for (key,val) in kw.iteritems() if key in self._properties and self._properties[key].invariant])
+
         ret = self.__class__(**kw)
 #        print "OBJ",ret
 #        print "FNC",ret.submitted
@@ -1090,6 +1112,13 @@ def load_queue(cls,settings):
 
 
 
+class Exportable(object):    
+    def __init__(self, f):
+        self._f = f
+        
+    def __call__(self,*args, **kwargs):
+
+        return self._f(*args, **kwargs)
 
 
 
@@ -1229,15 +1258,17 @@ class Collection(object):
         self._until_finish = finish
         self._split_results = split
 
+    @Exportable
     def wait(self, min = -1, max_retries = -1, finish = False, split= False):
         ret = copy.copy(self)
         ret._collect_parameters(min,max_retries,finish, split)
         return ret
 
+    @Exportable
     def split(self):
         return self.wait(self._min,self._max,self._until_finish, True)
 
-
+    @Exportable
     def any(self):
         return self.wait(1)
 

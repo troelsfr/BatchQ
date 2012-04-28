@@ -167,10 +167,10 @@ class BasePipe(object):
                 if end_time<time.time():
                     if self._debug_level >= 3:
                         print "-"*20, "BUFFER", "-"*20
-                        print self._xterminterpreter.buffer[-200:]
+                        print self._xterminterpreter.buffer[-1000:]
                         print "-"*20, "END OF BUFFER", "-"*20
                         print "-"*20, "READABLE ECHO", "-"*20
-                        print self._xterminterpreter.readable_echo[-200:]
+                        print self._xterminterpreter.readable_echo[-1000:]
                         print "-"*20, "END OF READABLE ECHO", "-"*20
                         print "Expecting: ", consume_until
                         print "Consumed: ", output
@@ -214,10 +214,10 @@ class BasePipe(object):
                 if end_time<time.time():
                     if self._debug_level >= 3:
                         print "-"*20, "BUFFER", "-"*20
-                        print self._xterminterpreter.buffer[-200:]
+                        print self._xterminterpreter.buffer[-1000:]
                         print "-"*20, "END OF BUFFER", "-"*20
                         print "-"*20, "READABLE ECHO", "-"*20
-                        print self._xterminterpreter.readable_echo[-200:]
+                        print self._xterminterpreter.readable_echo[-1000:]
                         print "-"*20, "END OF READABLE ECHO", "-"*20
 
                         print "Expecting: ", consume_until

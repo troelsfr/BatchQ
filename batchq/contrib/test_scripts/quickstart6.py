@@ -1,18 +1,25 @@
 import sys
-import cProfile
-import pstats
-from batchq.queues import  LSFBSub
+#import cProfile
+#import pstats
+from batchq.queues import  NoHUP
 from batchq.core.batch import BatchQ, load_queue, Collection, Function
-print "HELLO WORLD? ?? " 
-from guppy import hpy
-hprof = hpy()
+#from guppy import hpy
+#hprof = hpy()
+
+class ServerDescriptor(NoHUP):
+#  username = "default_user"
+#  server=""
+#  port=22
+  prior = "echo Hello world > from_command.txt"
+  working_directory = "Submission"
+
 
 def generate_job_collection():
     jobs = Collection()
-    q = load_queue(LSFBSub, "brutus,tronnow") 
+    q = ServerDescriptor() #load_queue(LSFBSub, "brutus,tronnow") 
 
     for i in range(0,20):
-        desc = q.create_job(time=3, memory=128, diskspace= 100,mpi=True, command="./sleepy %d" %i, input_directory=".", output_directory=".", subdirectory="mysimulation%d"%i, overwrite_submission_id="simu%d" %i)     
+        desc = q.create_job(time=3, memory=128, diskspace= 100,mpi=False, command="./sleepy %d" %i, input_directory=".", subdirectory="mysimulation%d"%i, overwrite_submission_id="simu%d" %i)     
         if i == 0: print "Generating jobs: ",
         print i,
         jobs += desc   
@@ -58,6 +65,8 @@ print
 print time.time()
 # We submit the onces which was not submitted
 
+print jobs.test()
+# sys.exit(0)
 if ~sub: 
 
     print "Submiting new jobs"
@@ -66,7 +75,14 @@ if ~sub:
     for a in s:
         i+=1
         print time.time()
-        cProfile.run("a.run_job()","../run%d"%i)
+        try:
+          a.run_job()
+        except:
+          f = open("ssh-session.txt", "w")
+          f.write(jobs.objects[0].terminal.buffer)
+          f.close() 
+          raise
+#        cProfile.run("a.run_job()","../run%d"%i)
 #        print "TIME PROFILE:"
 #        p = pstats.Stats('../run%d'%i)
 #        p.sort_stats('cumulative').print_stats(20)
@@ -77,20 +93,13 @@ if ~sub:
 #    print
 
 #jobs.clear_cache()
-print "Status: ", jobs.status()
+#print "Status: ", jobs.status()
 
 f = open("ssh-session.txt", "w")
 f.write(jobs.objects[0].terminal.buffer)
 f.close()
 
-f = open("bash-session.txt", "w")
-f.write(jobs.objects[0].local_terminal.buffer)
-f.close()
-
-f = open("sftp-session.txt", "w")
-f.write(jobs.objects[0].filecommander.buffer)
-f.close()
-print hprof.heap()
+#print hprof.heap()
 print 
 sys.exit(0) 
 # wait() is by default blocking (and consequently greedy)
@@ -123,13 +132,13 @@ f = open("ssh-session.txt", "w")
 f.write(jobs.objects[0].terminal.buffer)
 f.close()
 
-f = open("bash-session.txt", "w")
-f.write(jobs.objects[0].local_terminal.buffer)
-f.close()
+#f = open("bash-session.txt", "w")
+#f.write(jobs.objects[0].local_terminal.buffer)
+#f.close()
 
-f = open("sftp-session.txt", "w")
-f.write(jobs.objects[0].filecommander.buffer)
-f.close()
+#f = open("sftp-session.txt", "w")
+#f.write(jobs.objects[0].filecommander.buffer)
+#f.close()
 
 
 # Chain  
