@@ -1,4 +1,4 @@
-from common_definitions import categories, capitalise, QUEUE_REGISTER, \
+from common_definitions import categories, capitalise, \
     type_conversion, batch_queue_list, remove_underscore, name_formatter, \
     generator_definitions, exporter_definitions
 from core.modules.vistrails_module import Module, ModuleError, \
@@ -143,18 +143,37 @@ _modules += [(PrepareJob, {'namespace':categories['basic_submission']})]
 #######################################
 ## Creating functions 
 #######################################
-class JobOperation(Module,NotCacheable):
+class JobOperation(NotCacheable,Module):
     pass
 
 def joboperation_compute(self):
     job = self.getInputFromPort('job')
     queue = job.queue
+#    print "TERMINAL ID", id(queue.terminal), id(queue.local_terminal)
+    self.anno_counter = 1
+    self.anno_dict = {}
+    def annotate(fncself, *args, **kwargs):
+        if len(args) == 1:
+            self.anno_dict.update( {"note%d"%self.anno_counter: args[0]} )
+        elif len(kwargs) == 0:
+            self.anno_dict.update( {"note%d"%self.anno_counter:" ".join(args)} )
+        else:
+            self.anno_dict.updateself.annotate( kwargs )
+        self.anno_counter +=1
+        return None
+    function = getattr(queue, self.function_name)
+    pnt = function.Qprint
+    function.Qprint = annotate
+    ret = function().val()
+    function.Qprint = pnt 
 
-    ret = getattr(queue, self.function_name)().val()
+    ## TODO: annotate does not seem to work
+    self.annotate(self.anno_dict)
+
     if isinstance(ret, FunctionMessage) and ret.code != 0:
         raise ModuleSuspended(self, ret.message) if ret.code > 0 \
             else ModuleError(self,ret.message)
-#    print dir(self.interpreter.filePool)
+
     self.setResult("job", job)
     self.setResult("result", ret)
     self.setResult("string", str(ret))
@@ -221,7 +240,6 @@ def jobinfo_compute(self):
             exporter = function.exporter
             _, exp = exporter_definitions[exporter.type]
             ret = function.exporter.as_str()
-            print "Setting",name,"=", ret
             self.setResult(name, exp(self,ret))
 
     for prop in self.queue_properties:
@@ -235,7 +253,6 @@ def jobinfo_compute(self):
             _, exp = exporter_definitions[exporter.type]
 
             ret = exporter.as_str()
-            print "Setting",name,"=", ret
             self.setResult(name, exp(self,ret))
 
     self.setResult("job", job)
@@ -248,7 +265,7 @@ dct = {'_input_ports': [('job', '(org.comp-phys.batchq:Job)'),],
        'compute': jobinfo_compute,
        'queue_properties': queue_properties,
        'queue_functions':  queue_functions}
-JobInfo = type(name_formatter("Job Info"), (Job,NotCacheable), dct)
+JobInfo = type(name_formatter("Job Info"), (NotCacheable,Job,), dct)
 
 _modules += [(JobInfo, {'namespace':categories['basic_submission']})] 
 
@@ -260,11 +277,12 @@ def highlevel_compute(self):
 
 for descriptive_name, dct, namespace in high_level_modules:
     dct['compute'] = highlevel_compute
+    dct['is_cacheable'] = lambda self: True
     _modules.append((type(name_formatter(descriptive_name), (JobInfo,),dct), {'namespace': namespace} ))
 
 ######
 ## Creating collective operations
-class CollectiveOperation(Module,NotCacheable):
+class CollectiveOperation(NotCacheable,Module):
     pass
 _modules.append((CollectiveOperation, {'abstract':True}))
 
@@ -285,7 +303,6 @@ namespace = categories['job_collective_operations']
 for name, func in collective.iteritems():
     dct = dict(members)
     _modules.append((type( "".join([capitalise(a) for a in name.split("_")]) , (CollectiveOperation,),dct),{'namespace':namespace} ))
-
 
 
 

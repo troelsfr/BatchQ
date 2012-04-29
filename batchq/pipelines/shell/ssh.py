@@ -42,18 +42,32 @@ class BaseSecureTerminal(BasePipe):
     def __init__(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n"):
         self.connect(server, username, password, port, accept_figerprint, command, port_option, expect_token, submit_token)
 
+    def disconnect(self):
+        if self._pipe.isalive():
+            try:
+                self.send_command("exit")
+            except:
+                pass
+        if self._pipe.isalive():
+            self._pipe.kill()
+
     def connect(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n"):
 
         pop = port_option % int(port)
         cmd = which(command)
         pipe = Process(cmd,[pop, "%s@%s" % (username, server)], terminal_required = True)
 
+
         super(BaseSecureTerminal, self).__init__(pipe,expect_token, submit_token, initiate_pipe = False)       
 
-        self.set_timeout(50) 
+        self.set_timeout(10) 
 
         self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>)"))
-        out = self.expect()
+        try:
+            out = self.expect()
+        except:
+            raise BaseSecureTerminalLoginError(self.buffer)
+
 #        print "END OF EXPECT", out
         newfigerprint = "(yes/no)" in out
 

@@ -7,7 +7,7 @@ from batchq.queues import containers
 from datetime import timedelta
 import re
 
-
+MSG_RUN_LATER = "Please run the script/workflow again later to get the results of the submission."
 str_time_regex = re.compile(r'((?P<days>\d+?)days?, *)?((?P<hours>\d+?)hr *)?((?P<minutes>\d+?)m *)?((?P<seconds>\d+?)s *)?')
 def str_to_timedelta(s):
     m = str_time_regex.search(s)
@@ -94,8 +94,8 @@ class NoHUP(batch.BatchQ):
 
     ## TESTED AND WORKING
     identifier = batch.Function(cache = 5) \
-        .Qslugify(command).Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
-        .Qstr(overwrite_submission_id).Qequal("",_).Qdo(2).Qcall(hash_input).Qstore("id") \
+        .Qslugify(command).Qstore("slugcmd").Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
+        .Qstr(overwrite_submission_id).Qequal("",_).Qdo(4).Qget("slugcmd").Qcall(hash_input,1).Qjoin(_,"-",_).Qstore("id") \
         .Qget("id")
 
     identifier_filename = batch.Function(identifier,cache = 5).Qjoin(".batchq_",_)
@@ -109,7 +109,6 @@ class NoHUP(batch.BatchQ):
 
     ## TESTED AND WORKING
     _create_workdir = batch.Function(verbose=True,cache=5) \
-        .Qprint("create dir") \
         .home().chdir(_) \
         .isdir(working_directory).Qdon(1).mkdir(working_directory, True) \
         .chdir(working_directory) \
@@ -118,7 +117,7 @@ class NoHUP(batch.BatchQ):
         .Qget("subdir") \
         .isdir(_).Qdon(2).Qget("subdir").mkdir(_, True) \
         .Qget("subdir").chdir(_) \
-        .pwd().Qstore("workdir").Qprint(_)
+        .pwd().Qstore("workdir")
 
     create_workdir = batch.Function(verbose=True) \
         .Qcall(_create_workdir).Qget("workdir").chdir(_) \
@@ -142,13 +141,13 @@ class NoHUP(batch.BatchQ):
     send = batch.Function(verbose=True, enduser=True, type=None) \
         .Qbool(input_directory).Qdon(1).Qreturn() \
         .Qcall(prepare_incopy) \
-        .cp(_r, _r, True).Qdon(1).Qthrow("Failed to transfer files.")
+        .cp(_r, _r, True).Qdon(1).Qprint("Failed to transfer files.")
 
     ### TESTED AND WORKING
     recv = batch.Function(verbose=True, enduser=True, type=None) \
         .Qbool(output_directory).Qdon(1).Qreturn() \
         .Qcall(prepare_outcopy) \
-        .cp(_r, _r).Qdon(1).Qthrow("Failed to transfer files.")
+        .cp(_r, _r,True).Qdon(1).Qprint("Failed to transfer files.")
 
     ### TESTED AND WORKING
     pid = batch.Function(create_workdir,verbose=True, enduser=True, cache=5, type=int) \
@@ -247,13 +246,12 @@ class NoHUP(batch.BatchQ):
     test = batch.Function(_create_workdir,verbose=True).Qstr("").Qget("workdir").Qprint(_)
 
     run_job = batch.Function(verbose=True, enduser=True,type=batch.FunctionMessage, highlevel = True) \
-        .Qprint("RUN JOB CALLED") \
-        .Qcall(submitted).Qdon(5).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qreturn(1,"Submitting job on ", server) \
-        .Qcall(pending).Qdo(2).Qprint("Job is pending.").Qreturn(3, "Job is pending.") \
-        .Qcall(running).Qdo(2).Qprint("Job is running.").Qreturn(4, "Job is running.") \
-        .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(log).Qreturn(-5, _) \
+        .Qcall(submitted).Qdon(5).Qprint("Uploading input directory:",input_directory,"->",create_workdir).Qcall(send).Qprint("Submitting job on ",server).Qcall(startjob).Qreturn(1,"Submitted job on ", server, ". "+MSG_RUN_LATER) \
+        .Qcall(pending).Qdo(2).Qprint("Job is pending.").Qreturn(3, "Job is pending. "+MSG_RUN_LATER) \
+        .Qcall(running).Qdo(2).Qprint("Job is running.").Qreturn(4, "Job is running. "+MSG_RUN_LATER) \
+        .Qcall(failed).Qdo(3).Qprint("Job has failed:\n\n").Qcall(stderr).Qreturn(-5, _) \
         .Qcall(finished).Qdo(7).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qreturn(0) \
-        .Qcall(submitted).Qdo(2).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qreturn(2,"Job is pre-pending (i.e. submitted but not in the batch system).") \
+        .Qcall(submitted).Qdo(2).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qreturn(2,"Job is pre-pending (i.e. submitted but not in the batch system). "+MSG_RUN_LATER) \
         .Qprint("Your job has an unknown status.").Qreturn(-1,"Your job has an unkown status. This is usually a bad thing and you should probably file a bug report.")
 
 
@@ -274,23 +272,24 @@ class NoHUPSSH(NoHUP):
     terminal = batch.Controller(BashTerminal,q_instance = filecommander.remote)
 
     reconnect = batch.Function(enduser=True, type=None) \
+        .Qcontroller("terminal") \
         .connection_lost().Qdo(1).connect(server,username, password, port) \
         .Qcontroller("filecommander") \
         .connection_lost().Qdo(1).connect(server,username, password, port) 
 
-#    hash_input_directory = batch.Function(verbose=True) \
-#        .Qcontroller("local_terminal") \
-#        .entrance().chdir(_).directory_hash(NoHUP.input_directory,True,True)
+    disconnect = batch.Function(enduser=True, type=None, verbose= True) \
+        .Qcontroller("terminal") \
+        .disconnect() \
+        .Qcontroller("filecommander") \
+        .disconnect()
+
 
     ## TESTED AND WORKING
     hash_input = batch.Function(verbose=True).Qcontroller("local_terminal") \
+        .Qbool(NoHUP.input_directory).Qdon(2).Qstr("no-input-dir").Qreturn() \
         .entrance().pushd(_).directory_hash(NoHUP.input_directory,True,True) \
         .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_).Qstore("input_hash").popd().Qget("input_hash")
 
-    ## TESTED AND WORKING
-#    hash_output = batch.Function(verbose=True).Qcontroller("local_terminal") \
-#        .entrance().chdir(_).directory_hash(NoHUP.output_directory,True,True) \
-#        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_,"-",_,"-",_)
 
     ## TESTED AND WORKING
     prepare_incopy = batch.Function(NoHUP.create_workdir) \

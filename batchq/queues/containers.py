@@ -39,7 +39,6 @@ class PathName(ContainerType):
             ## Notice, it is on purpose the field function 
             ## is not called. At this point it should have 
             ## been executed by the user
-            print "Fetch value for ", self.field.name, self.field
             ret = self.field.val()
         else:
             raise BaseException("Unkonwn field type '%s'." % self.field)
@@ -70,7 +69,6 @@ class TextFile(ContainerType):
         if isinstance(self.field, batch.Property):
             ret = self.field.get()
         elif isinstance(self.field,batch.Function):
-            print "Fetch value for ", self.field.name, self.field
             ret = self.field.val()
         else:
             raise BaseException("Unkonwn field type '%s'." % self.field)

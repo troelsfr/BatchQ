@@ -207,22 +207,18 @@ class WildCard(BaseField):
         if not self._reverse:
             if self._counter >= 0:
                 ret =  self._results[self._counter]
-#                print "yyy"
                 self._counter -= 1
         else:
             if self._counter < len(self._results):
                 ret =  self._results[self._counter]
-#                print "xxx"
                 self._counter += 1
-#        print self._results
-#        print self._counter, ret 
-#        print self
+
         return ret
 
     def reset(self, wcount):
-#        print "Reseting", self
+
         self._wcount = wcount
-#        print "WCount", wcount
+
         if self._reverse:
             if self._lifo:
                 self._counter = len(self._results) - wcount 
@@ -284,12 +280,12 @@ class Function(BaseField):
         if not self._last_run is None and time.time() < self._last_run+self.cache_timeout :
             if self._debug:
                 self.model._debug_comment("USING CACHE FOR " +self.name + "="+str(self._rets[-1]))
-#            print "Cache hit:: ", self._name
+
             return self            
 
         if self._debug:
             self.model._debug_call_stack_push(self.name)
-#        print "Entering call", self
+
         self._executing = True
         arguments = dict([("arg%d"%i,args[i]) for i in range(0, len(args))])
         arguments.update(kwargs)
@@ -308,7 +304,6 @@ class Function(BaseField):
         self._rets = []
         for w in self._wildcards:
             w.replacement.register(self._rets)
-#        print "Wildcards ", self._wildcards
 
         self._queue_counter = 0
         self._default = self._overall_default
@@ -321,8 +316,6 @@ class Function(BaseField):
 
 
             fnc, args, kwargs, selfcall  = self._queue[self._queue_counter]
-#            print self._queue_counter, "Calling", fnc, args, "on", self._default, bq
-#            print self._rets
 
             self._queue_counter += 1
             nargs = ()
@@ -852,8 +845,8 @@ class BatchQ(object):
         setattr(self.__class__, n, property( g, s ))
 
     def __init__(self, *args, **kwargs):
-        print "Construction args: ", args
-        print "Construction kwargs: ", kwargs
+#        print "Construction args: ", args
+#b        print "Construction kwargs: ", kwargs
         self._log = []
         self._debug_call_stack = []
 
@@ -884,8 +877,8 @@ class BatchQ(object):
                 self._settings_kwargs.update(k)
                 kwargs.update({"q_pipelines": object.pipelines})
                 args = args[1:]
-        print "Initial args: ", self._settings_args
-        print "Initial kwargs: ", self._settings_kwargs
+#        print "Initial args: ", self._settings_args
+#        print "Initial kwargs: ", self._settings_kwargs
 
         if "q_interact" in kwargs:
             interactive = kwargs['q_interact']
@@ -975,8 +968,8 @@ class BatchQ(object):
                 self._settings_kwargs[name] = "DELETED FOR SECURITY REASONS"
             self._createProperty(name)
 
-        print "Final args: ", self._settings_args
-        print "Final kwargs: ", self._settings_kwargs
+#        print "Final args: ", self._settings_args
+#        print "Final kwargs: ", self._settings_kwargs
 
 
     def clear_cache(self):
@@ -1006,9 +999,10 @@ class BatchQ(object):
         kw.update({"q_pipelines": self._pipelines})
 
         if empty_copy:
-            kw = dict([(key,val) for (key,val) in kw.iteritems() if key in self._properties and self._properties[key].invariant])
-
-        ret = self.__class__(**kw)
+            properties = dict(self._properties)
+            kw = dict([(key,val) for (key,val) in kw.iteritems() if key in properties and properties[key].invariant])
+            
+        ret = self.__class__(self,**kw)
 #        print "OBJ",ret
 #        print "FNC",ret.submitted
 #        print "PIPELINES:", ret._pipelines

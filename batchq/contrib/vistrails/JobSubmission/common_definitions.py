@@ -15,14 +15,12 @@ name_formatter = lambda x: x
 capitalise = lambda x: x[0].upper() + x[1:].lower()
 remove_underscore = lambda j, name: j.join([capitalise(a) for a in name.split("_")])
 
-QUEUE_REGISTER = {}
-
 type_conversion = {str:'(edu.utah.sci.vistrails.basic:String)', bool:'(edu.utah.sci.vistrails.basic:Boolean)', int:'(edu.utah.sci.vistrails.basic:Integer)', float:'(edu.utah.sci.vistrails.basic:Float)'}
 
 batch_queue_list = [(a, getattr(queues,a)) for a in dir(queues) if isinstance(getattr(queues,a),type) and issubclass(getattr(queues,a),BatchQ) ]
 
 from core.modules.basic_modules import File, Directory
-### TODO:
+
 def create_directory(self, generator = None):
     x = self.interpreter.filePool.create_directory()
     return x.name
