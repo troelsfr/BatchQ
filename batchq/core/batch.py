@@ -94,14 +94,19 @@ class Property(BaseField):
         self.isset = len(args)>0 or 'value' in kwargs.iterkeys()
         self.__set_defaults__(*args, **kwargs)
 
-    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", formatter = None, type = str, invariant = False, generator = None):
+    def __set_defaults__(self, value = None, password = False, verbose = True, display = "", formatter = None, type = str, invariant = False, generator = None, exporter = None):
         self._formatter = formatter
         self._value = value
 
         if self._formatter:
             self._value = self._formatter(self._value)
 
+        self.exporter = exporter
+        if not self.exporter is None:
+            self.exporter.register_field(self)
         self.generator = generator
+        if not self.generator is None:
+            self.generator.register_field(self)
         self.password = password
         self.verbose = verbose
         self.display = display
@@ -247,7 +252,7 @@ class FunctionMessage(object):
 
 import time
 class Function(BaseField):
-    def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0, type = str, highlevel = False):
+    def __init__(self, inherits = None, verbose = False, enduser=False, cache = 0, type = str, highlevel = False, exporter = None):
         super(Function, self).__init__()
         self._listener = None
         self._verbose_functions = ["Qthrow"]
@@ -264,6 +269,9 @@ class Function(BaseField):
         self._debug = False
         self.type = type
         self.highlevel = highlevel
+        self.exporter = exporter
+        if not self.exporter is None:
+            self.exporter.register_field(self)
 
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
@@ -309,7 +317,7 @@ class Function(BaseField):
             try:
                 bq = self._pipelines[self._default]
             except KeyError:
-                raise BatchQException("Please define a controller before the first function definition.")
+                raise BatchQException("Please define a controller before the first function definition. This error typically occurs if you define a function before a controller.")
 
 
             fnc, args, kwargs, selfcall  = self._queue[self._queue_counter]
@@ -835,15 +843,13 @@ class BatchQ(object):
 
 
 
-    def _createProperty(self,n,alt_n = None):
+    def _createProperty(self,n):
         def s(self,val):
             return self.fields[n].set(val)
         def g(self):            
             return self.fields[n].get() if n in self.fields else None
 
         setattr(self.__class__, n, property( g, s ))
-        if not alt_n is None:
-            setattr(self.__class__, alt_n, property( g, s ))
 
     def __init__(self, *args, **kwargs):
         print "Construction args: ", args
@@ -967,6 +973,8 @@ class BatchQ(object):
             if attr.password and name in self._settings_kwargs:
                 del self._settings_kwargs[name]
                 self._settings_kwargs[name] = "DELETED FOR SECURITY REASONS"
+            self._createProperty(name)
+
         print "Final args: ", self._settings_args
         print "Final kwargs: ", self._settings_kwargs
 

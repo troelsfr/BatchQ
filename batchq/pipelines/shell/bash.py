@@ -139,7 +139,7 @@ class BashTerminal(BasePipe):
         """
         Copies source to dest. If recursive is set to True directories
         are recursively copied. 
-        """        
+        """
         parameters =""
         if recursively:
             parameters +="-R "

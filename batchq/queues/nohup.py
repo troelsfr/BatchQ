@@ -3,7 +3,7 @@ from batchq.pipelines.shell.bash import BashTerminal
 from batchq.pipelines.shell.ssh import SSHTerminal
 from batchq.pipelines.shell.utils import FileCommander
 from batchq.shortcuts.shell import home_create_dir, send_command
-from batchq.queues.generators import Directory
+from batchq.queues import containers
 from datetime import timedelta
 import re
 
@@ -35,10 +35,19 @@ class NoHUP(batch.BatchQ):
     _2 = batch.WildCard()
     _last = batch.WildCard( select = 0, reverse = True)
 
+    terminal = batch.Controller(BashTerminal)
+
+    entrance_directory = batch.Function( verbose=True).entrance() 
+
     command = batch.Property("echo Hello World > execution.txt",display="Command to execute: ")
     working_directory = batch.Property(".", display="Specify a working directory: ", invariant = True)
-    input_directory = batch.Property("", display="Specify an input directory: ")
-    output_directory = batch.Property("", display="Specify an output directory: ", generator=Directory)
+    input_directory = batch.Property("", display="Specify an input directory: ", 
+                                     exporter=containers.DirectoryName(relative_to=entrance_directory, 
+                                                                   temporary=False) 
+                                     )
+    output_directory = batch.Property("", display="Specify an output directory: ", 
+                                      exporter=containers.DirectoryName(), 
+                                      generator=containers.DirectoryName() )
 
     subdirectory = batch.Property(".", verbose = False)
     prior = batch.Property("", verbose = False)    
@@ -55,7 +64,7 @@ class NoHUP(batch.BatchQ):
     overwrite_nodename_with = batch.Property("", verbose = False)
     overwrite_submission_id = batch.Property("", verbose = False)
 
-    terminal = batch.Controller(BashTerminal)
+
 
 
     #### STUFF FOR SYSTEM IDENTIFICATION
@@ -103,9 +112,9 @@ class NoHUP(batch.BatchQ):
         .Qprint("create dir") \
         .home().chdir(_) \
         .isdir(working_directory).Qdon(1).mkdir(working_directory, True) \
-        .Qbool(input_directory).Qdo(9) \
-        .Qcall(get_subdirectory) \
         .chdir(working_directory) \
+        .Qbool(input_directory).Qdo(8) \
+        .Qcall(get_subdirectory) \
         .Qget("subdir") \
         .isdir(_).Qdon(2).Qget("subdir").mkdir(_, True) \
         .Qget("subdir").chdir(_) \
@@ -114,6 +123,8 @@ class NoHUP(batch.BatchQ):
     create_workdir = batch.Function(verbose=True) \
         .Qcall(_create_workdir).Qget("workdir").chdir(_) \
         .Qget("workdir")
+
+
 
     ### TESTED AND WORKING
     prepare_incopy = batch.Function(create_workdir, verbose=True) \
@@ -201,15 +212,15 @@ class NoHUP(batch.BatchQ):
 
 
     ## TESTED AND WORKING
-    stdout = batch.Function(submitted,verbose=True, enduser=True, type=str) \
-        .Qdo(2).Qcall(identifier_filename).cat(_)
+    stdout = batch.Function(submitted,verbose=True, enduser=True, type=str, exporter=containers.TextFile() ) \
+        .Qdo(3).Qcall(identifier_filename).Qjoin(_,".running").cat(_)
 
-    # TODO:
-    stderr = batch.Function(submitted,verbose=True, enduser=True, type=str) \
-        .Qprint("not implemented yet")
 
-    log = batch.Function(submitted,verbose=True, enduser=True, type=str) \
-        .Qprint("No log implemented for SSH. Use stderr and stdout")
+    stderr = batch.Function(submitted,verbose=True, enduser=True, type=str, exporter=containers.TextFile() ) \
+        .Qdo(3).Qcall(identifier_filename).Qjoin(_,".error").cat(_)
+
+    log = batch.Function(submitted,verbose=True, enduser=True, type=str, exporter=containers.TextFile() ) \
+        .Qstr("No log implemented for local and remote subshells. Use stderr and stdout instead.")
 
 
     ## TESTED AND WORKING
@@ -244,6 +255,7 @@ class NoHUP(batch.BatchQ):
         .Qcall(finished).Qdo(7).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qreturn(0) \
         .Qcall(submitted).Qdo(2).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qreturn(2,"Job is pre-pending (i.e. submitted but not in the batch system).") \
         .Qprint("Your job has an unknown status.").Qreturn(-1,"Your job has an unkown status. This is usually a bad thing and you should probably file a bug report.")
+
 
 
 class NoHUPSSH(NoHUP):

@@ -28,7 +28,7 @@ class Machine(Module):
             print "Reusing own queue "
         ## TODO: update properties of machine
             pass
-
+        print ">>>>>>>> 2, Created queue", self.queue
         if not qid in QUEUE_REGISTER:
             print "Copying queue to ", qid
             QUEUE_REGISTER[qid] =  self.queue.create_job(q_empty_copy = True)
