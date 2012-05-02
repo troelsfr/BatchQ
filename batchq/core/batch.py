@@ -1117,10 +1117,11 @@ def load_queue(cls,settings):
 class Exportable(object):    
     def __init__(self, f):
         self._f = f
-        
-    def __call__(self,*args, **kwargs):
-
-        return self._f(*args, **kwargs)
+ 
+    def __get__(self, obj, objtype):
+        if obj is None:
+            return self
+        return self._f.__get__(obj,objtype)
 
 
 
@@ -1200,6 +1201,7 @@ class Collection(object):
         return len(self._set)
 
     def __iadd__(self, other):
+
         if isinstance(other, Collection):
             # Adding objects
             n = len(other.objects)
@@ -1212,7 +1214,8 @@ class Collection(object):
                 self.__append_complementary(other.complementary_objects[i], other.complementary_results[i])
         elif isinstance(other, BatchQ):
             self.__append(other)
-
+        else:
+            raise BaseException("Cannot add type '%s' to %s." % (str(type(other)), self.__class__.__name__ ))
         return self
 
     def __add__(self, other):
@@ -1240,7 +1243,7 @@ class Collection(object):
     def __nonzero__(self):
         return len(self._set) != 0
 
-    def __str__(self):
+    def __not_str__(self):
         if len(self._results) != len(self._set):
             raise BaseException("Something is wrong")
         return ", ".join([str(r) for r in self._results])
@@ -1298,7 +1301,6 @@ class Collection(object):
             if name[0] == "_":
                 return object.__getattribute__(self,name)
 
-
         def foreach(*args, **kwargs):
             ret1 = []
             ret2 = []
@@ -1313,10 +1315,10 @@ class Collection(object):
 
             if not min is None and min < 0: min += 1 + len(self._set)
 
-            notstop = True
             allowbreak = not self._until_finish 
             ret2 = copy.copy(self._set)
             ret1 = []            
+            notstop = len(ret2) >0
 
             results1 = []  
 
