@@ -501,7 +501,7 @@ class Function(BaseField):
         if len(args) == 1:
             print args[0]
         elif len(kwargs) == 0:
-            print " ".join(args)
+            print " ".join([str(a) for a in args])
         else:
             print args, kwargs
         return None
@@ -1243,7 +1243,7 @@ class Collection(object):
     def __nonzero__(self):
         return len(self._set) != 0
 
-    def __not_str__(self):
+    def __str__(self):
         if len(self._results) != len(self._set):
             raise BaseException("Something is wrong")
         return ", ".join([str(r) for r in self._results])

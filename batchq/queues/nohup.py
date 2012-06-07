@@ -27,6 +27,7 @@ def format_time(t):
         return int(t/60)
     return int(t/60+1)
 
+
 class NoHUP(batch.BatchQ):
     __descriptive_name__ = "Local subshell"
 
@@ -63,7 +64,7 @@ class NoHUP(batch.BatchQ):
 
     overwrite_nodename_with = batch.Property("", verbose = False)
     overwrite_submission_id = batch.Property("", verbose = False)
-
+    start_in_home = batch.Property(True, verbose = False)
 
 
 
@@ -106,10 +107,13 @@ class NoHUP(batch.BatchQ):
         .Qequal(_,".").Qdo(3).Qcall(identifier_filename).Qget("id").Qstore("subdir") \
         .Qget("subdir")
 
+    print_pwd = batch.Function(verbose=True, cache = 5) \
+        .pwd().Qprint(_)
 
     ## TESTED AND WORKING
     _create_workdir = batch.Function(verbose=True,cache=5) \
-        .home().chdir(_) \
+        .Qbool(start_in_home).Qdo(2).home().chdir(_) \
+        .Qbool(start_in_home).Qdon(2).entrance().chdir(_) \
         .isdir(working_directory).Qdon(1).mkdir(working_directory, True) \
         .chdir(working_directory) \
         .Qbool(input_directory).Qdo(8) \
@@ -253,6 +257,7 @@ class NoHUP(batch.BatchQ):
         .Qcall(finished).Qdo(7).Qprint("Job has finished.").Qcall(recv).Qdo(1).Qprint("Using cache.").Qdon(1).Qprint("Files retrieved.").Qreturn(0) \
         .Qcall(submitted).Qdo(2).Qprint("Job is pre-pending (i.e. submitted but not in the batch system).").Qreturn(2,"Job is pre-pending (i.e. submitted but not in the batch system). "+MSG_RUN_LATER) \
         .Qprint("Your job has an unknown status.").Qreturn(-1,"Your job has an unkown status. This is usually a bad thing and you should probably file a bug report.")
+
 
 
 

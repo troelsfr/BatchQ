@@ -153,6 +153,7 @@ class BaseProcess(object):
         self._stdin_fd = p.stdin.fileno()
         self._stdout_fd = p.stdout.fileno()
         self._ready = True
+        return True
 
     def flush(self):
         """
@@ -308,9 +309,15 @@ class WindowsProcess(BaseProcess):
     def spawnTTY(self, command, args = [], environment = None):        
         try:
             self._stdin, self._stdout = os.pipe()
-            subprocess.Popen(" ".join([command,]+args), env = environment, startupinfo =  subprocess.CREATE_NEW_CONSOLE, stdin = self._stdin, stdout = self._stdout, stderr=self._stdout)
+            p =subprocess.Popen(" ".join([command,]+args), env = environment, startupinfo =  subprocess.CREATE_NEW_CONSOLE, stdin = self._stdin, stdout = self._stdout, stderr=self._stdout)
         except:
             return False
+        self._pipe = p
+        self.flush()
+
+        self._stdin_fd = p.stdin.fileno()
+        self._stdout_fd = p.stdout.fileno()
+        self._ready = True
         return True
 
 import resource

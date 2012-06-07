@@ -3,12 +3,23 @@ try:
 except:
     raise BaseException("You need ALPS to import this package.")    
 
-from batchq.queues import NoHUPSSH, LSFBSub
-from batchq.core.batch import load_queue, DescriptorQ
-from batchq.core.utils import hash_filelist
+import os
+try:
+    from batchq.queues import LocalShell
+    from batchq.core.batch import load_queue, BatchQ, Collection
+    from batchq.core.utils import hash_filelist
+    __batchq_available = True
+except:
+    __batchq_available = False
+
 import copy
+import simplejson as json
 #from batchq.core.batch import DescriptorQ
-def runApplicationBackground(appname, parmfile, Tmin=None, Tmax=None, writexml=False, MPI=None, mpirun='mpirun', queue=None, descriptor=None, force_resubmit = False):
+
+__runapplication_std_options = {'working_directory':'.','input_directory':None,'output_directory':None, 'start_in_home': False}
+__runapplication_std_queue = None
+
+def runApplicationBackground(appname, parmfile, Tmin=None, Tmax=None, writexml=False, MPI=None, mpirun='mpirun', queue=None,  force_resubmit = False, background=True):
     """ run an ALPS application 
     
         This function runs an ALPS application. The parameers are:
@@ -21,6 +32,9 @@ def runApplicationBackground(appname, parmfile, Tmin=None, Tmax=None, writexml=F
         MPI: optional parameter specifying the number of processes to be used in an MPI simulation. MPI is not used if this parameter is left at ots default value  None.
         mpirun: optional parameter giving the name of the executable used to laucnh MPI applications. The default is 'mpirun'
     """
+    global __runapplication_std_options, __batchq_available, __runapplication_std_queue
+    if not __batchq_available and background:
+        raise BaseException("BatchQ is not available. Please install it.")
     cmdline = []
     if MPI != None:
         cmdline += [mpirun,'-np',str(MPI)]
@@ -37,25 +51,27 @@ def runApplicationBackground(appname, parmfile, Tmin=None, Tmax=None, writexml=F
     if writexml:
       cmdline += ['--write-xml']
 
+    if background and queue is None:
+        if __runapplication_std_queue is None:
+            conf = copy.deepcopy(__runapplication_std_options)
+            conf.update({"working_directory": os.getcwd() })
+            __runapplication_std_queue = LocalShell(**conf)
+        queue = __runapplication_std_queue
 
-    if not queue is None or not descriptor is None:
+    if not queue is None:
         input_hash = hash_filelist([parmfile])
-        if not descriptor is None:
-            desc = copy.copy(descriptor)
-            desc.update_configuration({'input_directory': ".", 'output_directory': ".", 'command': " ".join(cmdline), 'overwrite_submission_id': input_hash})
-        else:
-            desc = DescriptorQ(queue,  {'input_directory': ".", 'output_directory': ".", 'command': " ".join(cmdline), 'overwrite_submission_id': input_hash} )
-
-        if not desc.wasstarted() or desc.failed() or force_resubmit:
-            if desc.failed():
-                print "Your last submission FAILED running: "," ".join(cmdline)
-            desc.clean()
-            desc.submit()
-        elif desc.finished():
-            desc.recv()
-
-
-        return desc
+        conf = copy.deepcopy(__runapplication_std_options)
+        conf.update({'command': " ".join(cmdline), 'overwrite_submission_id': input_hash})
+        queue = queue.create_job( **conf )
+        col = Collection([queue])
+        if not col.submitted() or force_resubmit:
+            col.clean()
+            col.submit()
+        elif col.finished():
+            col.recv()
+        
+        __runapplication_std_queue = queue
+        return col
     
     raise BaseException("Please provide a queue or a descriptor as arugment of runApplicationBackground.")
 

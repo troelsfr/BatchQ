@@ -3,6 +3,8 @@ from batchq.queues.nohup import NoHUP,NoHUPSSH
 from batchq.queues.lsf import LSFBSub
 from batchq.queues.functions import create_configuration,list,help, server, client
 
+LocalShell = NoHUP
+
 Library.queues.register("nohup",NoHUP)
 Library.queues.register("ssh-nohup",NoHUPSSH)
 Library.queues.register("lsf",LSFBSub)
