@@ -271,7 +271,7 @@ class FileCommander(FileTransferTerminal):
                     raise BaseException("Could not copy: '%s'. Issued '%s' and got following output: '%s'" % (file, self.last_input,self.last_output))
 
         if not bash.popd():
-            raise "Could not pop working directory"
+            raise BaseException("Could not pop working directory.")
 
         self.local_chdir(oldlocal)
         self.chdir(oldremote)

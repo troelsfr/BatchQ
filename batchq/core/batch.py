@@ -73,6 +73,8 @@ class BaseField(object):
         self.__field_name__ = name
 
     name = property(get_name, set_name)
+    def __str__(self):
+        return self.__field_name__
 
 
     def get_model(self):
@@ -272,6 +274,7 @@ class Function(BaseField):
         if not inherits is None:
             self._queue += [("Qcall", (inherits,), {},True)]
 
+
     def clear_cache(self):
         self._last_run = None
 
@@ -410,8 +413,20 @@ class Function(BaseField):
                     caller()
                 except:
                     if not fnc in self._verbose_functions:
-                        print "In ", self.name, ": element ", self._queue_counter
-                        print "Was executing ", fnc,c, "on", self._default, bq                        
+                        print
+                        print "In ", self.name, ", element ", self._queue_counter, ", ",
+                        print "executing", fnc, "(", c, ") on", self._default, bq                        
+                        print self.name, "=",
+                        for xx in range(0,len(self._queue)):
+                            pfnc, pargs, pkwargs, pselfcall  = self._queue[xx] 
+                            if xx == self._queue_counter - 1:
+                                print "_%s_(%s)"% (str(pfnc), ", ".join([str(a) for a in pargs])),
+                                
+                            else:
+                                print "%s(%s)"% (str(pfnc), ", ".join([str(a) for a in pargs])),
+                            if xx !=len(self._queue)-1: print ">",
+                        print
+                        print
                         print nargs
                         print nkwargs
                         print args

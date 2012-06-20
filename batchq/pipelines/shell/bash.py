@@ -463,10 +463,10 @@ echo $DIR"""
         if not recursively: append = " -maxdepth 1"
 
         if list_files:
-            file_list = self.send_command("find . -type f%s"%append).split("\n")
+            file_list = self.send_command("find . %s -type f"%append).split("\n")
 
         if list_directories:
-            dir_list = self.send_command("find . -type d%s"%append).split("\n")
+            dir_list = self.send_command("find . %s -type d"%append).split("\n")
 
         files =filter(filt, [formatter(x) for x in file_list])
         dirs = filter(filt, [formatter(x) for x in dir_list])
@@ -479,7 +479,8 @@ echo $DIR"""
 
         return (files, dirs)
 
-
+    def ls(self):
+        return self.list(recursively = False)
 
 
 if __name__ == "__main__":

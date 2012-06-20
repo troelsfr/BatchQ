@@ -90,16 +90,18 @@ class NoHUP(batch.BatchQ):
     ## TESTED AND WORKING
     hash_input = batch.Function(verbose=True,cache = 5) \
         .Qbool(input_directory).Qdon(2).Qstr("no-input-dir").Qreturn() \
-        .entrance().pushd(_).directory_hash(input_directory,True,True) \
+        .entrance().pushd(_) \
+        .directory_hash(input_directory,True,True) \
+        .Qdon(2).Qjoin("Input directory '",input_directory,"' does not exist,").Qthrow(_) \
         .Qslugify(command).Qjoin(_,"-",_).Qstore("input_hash").popd().Qget("input_hash")
 
     ## TESTED AND WORKING
-    identifier = batch.Function(cache = 5) \
+    identifier = batch.Function(cache = 5,verbose= True) \
         .Qslugify(command).Qstore("slugcmd").Qstr(overwrite_submission_id).Qjoin(_,"-",_).Qstore("id") \
         .Qstr(overwrite_submission_id).Qequal("",_).Qdo(4).Qget("slugcmd").Qcall(hash_input,1).Qjoin(_,"-",_).Qstore("id") \
         .Qget("id")
 
-    identifier_filename = batch.Function(identifier,cache = 5).Qjoin(".batchq_",_)
+    identifier_filename = batch.Function(identifier,cache = 5, verbose = True).Qjoin(".batchq_",_)
 
     ## TESTED AND WORKING
     get_subdirectory = batch.Function(verbose=True, cache = 5) \
@@ -292,8 +294,8 @@ class NoHUPSSH(NoHUP):
     ## TESTED AND WORKING
     hash_input = batch.Function(verbose=True).Qcontroller("local_terminal") \
         .Qbool(NoHUP.input_directory).Qdon(2).Qstr("no-input-dir").Qreturn() \
-        .entrance().pushd(_).directory_hash(NoHUP.input_directory,True,True) \
-        .Qdo(2).Qslugify(NoHUP.command).Qjoin(_,"-",_).Qstore("input_hash").popd().Qget("input_hash")
+        .entrance().pushd(_).directory_hash(NoHUP.input_directory,True,True).Qdon(2).Qjoin("Input directory '",NoHUP.input_directory,"' does not exist,").Qthrow(_) \
+        .Qslugify(NoHUP.command).Qjoin(_,"-",_).Qstore("input_hash").popd().Qget("input_hash")
 
 
     ## TESTED AND WORKING

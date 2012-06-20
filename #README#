@@ -21,13 +21,14 @@ with x:
 We have following objects
 ==========================
 Connection type:
-Submission system:
 Terminal: 
+Submission system:
+
 
 ### Following would be easy to implement:
 machine = Brutus()
 
-with LSF(machine):
+LSF(machine) \
      working_directory( )
      input_directory ( )
      jobs += run_job( " " )
