@@ -251,7 +251,7 @@ class BaseInterpreter(object):
         n = len(self._lines)
         ### TODO: Requires heavy optimisation
 
-        buf = ("\n".join(self._lines[line:n])).replace(u"\r\n","")
+        buf = ("\n".join(self._lines[line:n])).replace("\r\n","")
         n = len(buf)
         return buf[char:n]
 
@@ -276,7 +276,8 @@ class BaseInterpreter(object):
         self._buffer_copy += c
         n = self._curchar
         if self._curchar - self._carriage_return >= self._max_cols:
-            self._lines[self._curline] = self._lines[self._curline][0:n] + u"\r" 
+            
+            self._lines[self._curline] = self._lines[self._curline][0:n] + "\r" 
             # TODO: Only if wordwrap enabled
             self._curchar = 0
             self._curline +=1

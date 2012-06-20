@@ -1,9 +1,0 @@
-from batchq.core.library import Library
-from batchq.queues.nohup import NoHUP,NoHUPSSH,LSFBSub,create_configuration,list,help
-Library.queues.register("nohup",NoHUP)
-Library.queues.register("ssh-nohup",NoHUPSSH)
-Library.queues.register("lsf",LSFBSub)
-Library.functions.register("configuration",create_configuration)
-Library.functions.register("list",list)
-Library.functions.register("help",help)
-
