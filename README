@@ -8,3 +8,28 @@ Documentation
 =============
 The documentation can be found at http://batchq.rtfd.org
 
+RENAMING AND MOVING
+===================
+* (V) Shell.status -> shell.state
+* (V) Shell.status: return shell.state.texts[shell.state]
+* batchq.core.Shell -> batchq.core.QueueElement
+* batchq.core.Collection -> batchq.core.JobList
+* FileCommander -> batchq.core.batch.Connection,  batchq.core.batch.Machine or something
+* batchq.core.batch -> batchq.batch.__init__
+
+from batchq.batch import Machine, Jobs
+from batchq.batch.subversion import SVNCheckout, SVNUpdate
+from batchq.batch.shell import Copy, Transfer, Move, Rename, Delete, LSF, Subshell
+from batchq.queues.record import 
+
+brutus = Machine( ... )
+jobs = Jobs()
+for a in params:
+  jobs += LSF( ... )
+
+TODO
+====
+ * There might occur an error when large output are retrieved (len(buf) > 10000 )
+ * Add SHA/MD5 ID generation to the batch modules
+ * Add file caching to submission modules
+ * Move batchq files to a central location

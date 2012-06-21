@@ -14,20 +14,21 @@ class CreateDirectory(Shell):
         super(CreateDirectory,self).__init__(terminal, working_directory = working_directory, dependencies = dependencies,identifier = identifier,**kwargs)
 
 
-    def status(self):
-        super(CreateDirectory, self).status()
-        if self._status == self.STATUS.FINISHED: return self._status
-        if self._status == self.STATUS.QUEUED: return self._status
+    def state(self):
+        super(CreateDirectory, self).state()
+        if self._state == self.STATE.FINISHED: return self._state
+        if self._state == self.STATE.QUEUED: return self._state
 
         if self.terminal.isdir(self.directory):
-            self._status = self.STATUS.FINISHED
+            self._state = self.STATE.FINISHED
         elif self._was_executed:
-            self._status = self.STATUS.FAILED
-        return self._status
+            self._state = self.STATE.FAILED
+        return self._state
 
     def run(self):
+        print "CREATING ", self.directory
         stat = super(CreateDirectory,self).run()
-        if stat != self.STATUS.READY: return stat
+        if stat != self.STATE.READY: return stat
 
         self._pushw()
         try:
@@ -37,4 +38,4 @@ class CreateDirectory(Shell):
             self._popw()
             raise
         self._popw()
-        return self.status()
+        return self.state()

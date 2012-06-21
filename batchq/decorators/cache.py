@@ -1,7 +1,11 @@
 import time
 import hashlib
 
-def cacheable(timeout = -1):
+CACHE_TABLE = {}
+
+def cacheable(element):
+    timeout = 10000000
+    if isinstance(element, int) timeout = element
     def decorator(fnc):
         def newfnc(*args, **kwargs):
             

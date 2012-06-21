@@ -27,29 +27,31 @@ class TransferFiles(Shell):
         if self.whereto == "local": 
             self.mode = self.terminal.MODE_REMOTE_LOCAL        
 
-    def status(self):
-        if self._status == self.STATUS.FINISHED: return self._status
-        if self._status == self.STATUS.FAILED: return self._status
-        super(TransferFiles, self).status()
-        if self._status == self.STATUS.QUEUED: return self._status
+    def state(self):
+        if self._state == self.STATE.FINISHED: return self._state
+        if self._state == self.STATE.FAILED: return self._state
+        super(TransferFiles, self).state()
+        if self._state == self.STATE.QUEUED: return self._state
 
         if self._was_executed: 
             if self._success:
-                self._status = self.STATUS.FINISHED
+                self._state = self.STATE.FINISHED
             else:
-                self._status = self.STATUS.FAILED
-        return self._status
+                self._state = self.STATE.FAILED
+        return self._state
 
     def run(self):
-        if self._status == self.STATUS.FINISHED: return self._status
+        if self._state == self.STATE.FINISHED: return self._state
         stat = super(TransferFiles,self).run()
 
-        if stat != self.STATUS.READY: return stat
+        if stat != self.STATE.READY: return stat
 
         self._was_executed = True
         self._success = False
         ret = self.terminal.sync(self.local_directory, 
                                  self.remote_directory,mode = self.mode )
-        print "RET", ret
+
         if not ret is None:
             self._success = True
+
+        return self.state()

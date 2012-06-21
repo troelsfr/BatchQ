@@ -199,13 +199,10 @@ class BaseProcess(object):
             app = os.read(self._stdout_fd, self._maxread)
             self._buffer += app
 
-
         while len(app) == self._maxread:
-
-            self._buffer += app
             if self.can_read():
                 app = os.read(self._stdout_fd, self._maxread)
-
+                self._buffer += app
             else:
                 break
 
