@@ -91,6 +91,8 @@ class BashTerminal(BasePipe):
 
         self.send_command("unset HISTFILE")
         self._entrance = self.send_command("pwd").strip()
+        self._lazy_pwd = self._entrance
+        self._dir_stack = [self._entrance]
 
     def entrance(self):
         return self._entrance
@@ -181,18 +183,38 @@ class BashTerminal(BasePipe):
         Changes the current working directory into dir.
         """
         cmd = "cd '%s'" % dir
-        return self.send_command(cmd).strip() == ""
+        success = (self.send_command(cmd).strip() == "")
+        if success:
+            self._lazy_pwd = self.path.join(self._lazy_pwd, dir)
+        else:
+            self.pwd()
+        return success
+
 
     def pushd(self, dir):
         """
         Changes the current working directory into dir.
         """
         cmd = "pushd '%s'" % dir
-        return not "no such file or directory" in self.send_command(cmd).strip().lower()
+        ret = self.send_command(cmd).strip()
+        success = not "no such file or directory" in ret.lower()
+        if success:
+            self._dir_stack[-1] = self._lazy_pwd
+            self._lazy_pwd = self.path.join(self._lazy_pwd, dir)
+            self._dir_stack.append(self._lazy_pwd)
+        else:
+            self.pwd()
+        return success
 
     def popd(self):
         cmd = "popd" 
-        return not "directory stack empty" in self.send_command(cmd).strip().lower()
+        success = (not "directory stack empty" in self.send_command(cmd).strip().lower())
+        if success:
+            self._dir_stack = self._dir_stack[:-1]
+            self._lazy_pwd = self._dir_stack[-1]
+        else:
+            self.pwd()
+        return success
 
     def home(self):
         home = self.send_command("echo $HOME").strip()
@@ -230,8 +252,14 @@ echo $DIR"""
             return None
         return ret
 
+    def lazy_pwd(self):
+        return self._lazy_pwd
+
     def pwd(self):
-        return self.send_command("pwd").strip()
+        self._lazy_pwd = self.send_command("pwd").strip()
+        return self._lazy_pwd
+
+
 
     def whoami(self):
         """
@@ -460,7 +488,7 @@ echo $DIR"""
         dir_list = []
         file_list = []
 
-        if not recursively: append = " -maxdepth 1"
+        if not recursively: append += " -maxdepth 1"
 
         if list_files:
             file_list = self.send_command("find . %s -type f"%append).split("\n")
@@ -479,8 +507,10 @@ echo $DIR"""
 
         return (files, dirs)
 
-    def ls(self):
-        return self.list(recursively = False)
+    def ls(self, **kwargs):
+        return self.list(recursively = False, **kwargs)
+
+
 
 
 if __name__ == "__main__":

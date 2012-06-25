@@ -177,7 +177,7 @@ class BasePipe(object):
                         print "Escape mode:", self._xterminterpreter.escape_mode
                         if self._xterminterpreter.escape_mode:
                             print "Last escape:", self._xterminterpreter.last_escape
-                    raise CommunicationTimeout("Consuming output timed out. You can increase the timeout by using set_timeout(t).")
+                    raise CommunicationTimeout("Consuming output timed out (%d > %d, dt = %d, %s). You can increase the timeout by using set_timeout(t)." %(end_time,time.time(),self._timeout, self.__class__.__name__))
                 
                 m = consume_until.search(output)
             
@@ -264,7 +264,7 @@ class BasePipe(object):
 
 
         self._pipe.write(cmd)
-
+#        print "$$ >",cmd
 
         if cmd !="":
             self.consume_output(wait_for_some_output = wait_for_input_response)

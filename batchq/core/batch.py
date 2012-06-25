@@ -1,4 +1,5 @@
 from batchq.core.stack import current_machine
+from profilehooks import profile
 import re
 import unicodedata
 import copy
@@ -53,17 +54,18 @@ class Shell(object):
         self._state = self.STATE.NOJOB
 
         self.dependencies = [] if dependencies is None else dependencies
-        self.identifier = self.generate_identifier() if identifier is None else identifier
-        self.identifier_filename = ".batchq.%s"%self.identifier
+        self._identifier = self.generate_identifier() if identifier is None else identifier
+        self._identifier_filename = ".batchq.%s"%self._identifier
 
         self._ret = ""
         self._exitcode = -1
         self._was_executed = False
         self.exitcode_zero =  exitcode_zero
 
-        self.state()
+#        self.state()
 
-
+    def identifier(self):
+        return self._identifier
         
     def completed(self, count):
         precendor_count = 0
@@ -96,22 +98,35 @@ class Shell(object):
     def pid(self):
         return 0
 
+    def reset(self):
+        self._state = self.STATE.NOJOB
+        self.update_cache_state()
+
+
+    def update_cache_state(self):
+        pass
+
+#    @profile(immediate=True)
     def run(self, force=False):
         if self._state == self.STATE.NOJOB: self._state = self.STATE.QUEUED
         # Waiting for dependencies to finish
+
         if self.state() == self.STATE.QUEUED:
             self._state = self.STATE.READY
             for a in self.dependencies:
-                if a.run() != self.STATE.FINISHED:
+                a.run()
+                if a.state() != self.STATE.FINISHED:
                     self._state = self.STATE.QUEUED
 
-            if self.state() == self.STATE.QUEUED:
-                return self._state
-
+            if self._state == self.STATE.QUEUED:
+                print self, "EXIT QUEUED", self.dependencies
+                return False
         # Executing job
         if not self.command is None:
-            if self._state < self.STATE.SUBMITTED or force:
-                self._pushw()
+   
+            if self._state == self.STATE.READY or force:
+                if not self._pushw():
+                    raise BaseException("Could not enter working directory: '%s' from '%s' ('%s'). The executed class is '%s'." %(self.working_directory, self.terminal.pwd(), self.terminal.lazy_pwd(),self.__class__.__name__) )
                 try:
                     if self.verbose:
                         print "$ ", self.command
@@ -122,17 +137,27 @@ class Shell(object):
                     self._popw()
                     raise
                 self._popw()
-        return self.state()
-
+                self.update_cache_state()        
+            else:
+                return False
+        return True
 
     def _pushw(self):
-        if not self.working_directory is None:
-            self.terminal.pushd(self.working_directory)
+        self._can_pop = False
+        if not self.working_directory is None and \
+                self.working_directory.strip() != "." and \
+                not self.terminal.lazy_pwd().endswith(self.working_directory):
+            self._can_pop = True
+            return self.terminal.pushd(self.working_directory)
+        return True
 
     def _popw(self):
-        if not self.working_directory is None:
-            self.terminal.popd()
-
+        if self._can_pop and \
+                not self.working_directory is None and \
+                self.working_directory.strip() != ".":
+            self.terminal.popd()            
+            return True
+        return False
 
     def queued(self):
         return self.state() == self.STATE.QUEUED
@@ -155,6 +180,14 @@ class Shell(object):
     def finished(self):
         return self.state() == self.STATE.FINISHED
 
+    def standard_error(self):
+        raise BaseException("Standard error and output are not defined for the shell object. It might be in the future, however, until then use Shell.terminal.buffer")
+
+    def standard_output(self):
+        raise BaseException("Standard error and output are not defined for the shell object. It might be in the future, however, until then use Shell.terminal.buffer")
+
+    def log(self):
+        raise BaseException("'log' is not defined for the shell object. It is a place holder for the log in LSF and other submission systems.")
 
 ## TODO: Delete and 
 class Job(object):
@@ -343,6 +376,19 @@ class Collection(object):
     def any(self):
         return self.wait(1)
 
+    def select(self, *identifiers):
+        newset,newret = [],[]
+        comset,comret = [],[]
+        for obj in self._set:
+            q = obj.identifier()
+            if q in identifiers:
+                newset.append(obj)
+                newret.append(q)
+            else:
+                comset.append(obj)
+                comret.append(q)
+        return Collection(newset, newret, comset, comret)
+
     def as_list(self):        
         if self._results is None:
            return [] 
@@ -386,6 +432,7 @@ class Collection(object):
             notstop = len(ret2) >0
 
             results1 = []  
+            results2 = []  
 
             infinity_wait = 10000
             while notstop:

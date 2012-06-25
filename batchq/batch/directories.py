@@ -1,5 +1,5 @@
 from batchq.core.batch import Shell
-
+from profilehooks import profile
 ## CreateTemporaryDirectory( )
 ## DeleteDirectory( )
 
@@ -23,19 +23,21 @@ class CreateDirectory(Shell):
             self._state = self.STATE.FINISHED
         elif self._was_executed:
             self._state = self.STATE.FAILED
+
         return self._state
 
+#    @profile(immediate=True)
     def run(self):
-        print "CREATING ", self.directory
-        stat = super(CreateDirectory,self).run()
-        if stat != self.STATE.READY: return stat
-
+        super(CreateDirectory,self).run()
+        if self.state() != self.STATE.READY: 
+            return False
         self._pushw()
         try:
-            self.terminal.mkdir(self.directory, self.intermediate)
+            if self.terminal.mkdir(self.directory, self.intermediate):
+                self._state = self.STATE.FINISHED
             self._was_executed = True
         except:
             self._popw()
             raise
         self._popw()
-        return self.state()
+        return True

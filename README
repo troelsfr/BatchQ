@@ -16,20 +16,42 @@ RENAMING AND MOVING
 * batchq.core.Collection -> batchq.core.JobList
 * FileCommander -> batchq.core.batch.Connection,  batchq.core.batch.Machine or something
 * batchq.core.batch -> batchq.batch.__init__
-
-from batchq.batch import Machine, Jobs
-from batchq.batch.subversion import SVNCheckout, SVNUpdate
-from batchq.batch.shell import Copy, Transfer, Move, Rename, Delete, LSF, Subshell
-from batchq.queues.record import 
-
-brutus = Machine( ... )
-jobs = Jobs()
-for a in params:
-  jobs += LSF( ... )
+* end_machine -> previous_machine(), deselect_machine()
 
 TODO
 ====
  * There might occur an error when large output are retrieved (len(buf) > 10000 )
  * Add SHA/MD5 ID generation to the batch modules
- * Add file caching to submission modules
+ * Combine objects of the same kind
+ * Add caching on the status call
+ * (V) Add file caching to submission modules
  * Move batchq files to a central location
+
+
+OPTIMISATIONS
+=============
+ * Reduce the amount of calls of read_non_blocking_until
+ * Reduce the amount of calls to writeChar / put
+ * Many calls to  base.py:274(fix_buffer)
+    - Remove len from fix buffer and you will reduce the calls to len by a factor 1/2 and save ~0.5 sec pr. run call.
+    - Last half of the function can be deleted if empty lines are always appended in the size of the line length
+ * Also many calls to patternregister.py:152(parse)
+
+ * Make Shell + Shell, Subshell + Subshell and LSF + LSF reduable to a script
+ * Checkout wether it is possible to introduce additional caching
+
+BUGS
+====
+ * Following input:
+400075#-->if [ -f '.batchq.qa_main-16qubit_975_400paramh5-16qubit_975_400outh5.p then echo "SUCCESS"; fi
+SUCCESS
+   is interpreted as 
+#-->cat .batchq.qa_main-16qubit_950_400paramh5-16qubit_950_400outh5.pid
+400075#-->if [ -f '.batchq.qa_main-16qubit_975_400paramh5-16qubit_975_400outh5.p then echo "SUCCESS"; fi
+SUCCESS
+
+ * In the LSF submission commmand, if no ".batchq.id.finished' exists, if [ $(cat blah ) -ne 0 ] fails. Add a check wether the file exists first. If not create .failed
+
+ * Commands with "find some*" are wrong and should be replaced with their regex equivalents
+
+ * When things are subshelled you may run into problems with output that arrives asyncronously. This means that consume output will fail.

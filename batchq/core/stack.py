@@ -9,6 +9,8 @@ def end_machine():
 
 def current_machine():
     global MACHINE_STACK
+    if len(MACHINE_STACK) == 0:
+        return None
     return MACHINE_STACK[-1]
 
 

@@ -31,7 +31,7 @@ class TransferFiles(Shell):
         if self._state == self.STATE.FINISHED: return self._state
         if self._state == self.STATE.FAILED: return self._state
         super(TransferFiles, self).state()
-        if self._state == self.STATE.QUEUED: return self._state
+        if self._state <= self.STATE.READY: return self._state
 
         if self._was_executed: 
             if self._success:
@@ -40,11 +40,12 @@ class TransferFiles(Shell):
                 self._state = self.STATE.FAILED
         return self._state
 
-    def run(self):
-        if self._state == self.STATE.FINISHED: return self._state
-        stat = super(TransferFiles,self).run()
+    def run(self):        
+        if self._state == self.STATE.FINISHED: 
+            return False
 
-        if stat != self.STATE.READY: return stat
+        super(TransferFiles,self).run()
+        if self.state() != self.STATE.READY: return False
 
         self._was_executed = True
         self._success = False
@@ -52,6 +53,8 @@ class TransferFiles(Shell):
                                  self.remote_directory,mode = self.mode )
 
         if not ret is None:
-            self._success = True
-
-        return self.state()
+            self._success =True
+            self._state = self.STATE.FINISHED
+        else:
+            raise BaseException("Could not syncronise directories '%s' and '%s'. Did you remember to create them?" %(self.local_directory, self.remote_directory))
+        return True
