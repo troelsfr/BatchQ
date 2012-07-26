@@ -40,8 +40,8 @@ class BaseSecureTerminalLoginError(StandardError):
 
 class BaseSecureTerminal(BasePipe):
 
-    def __init__(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
-        self.connect(server, username, password, port, accept_figerprint, command, port_option, expect_token, submit_token, additional_arguments)
+    def __init__(self, server, username, password, port = 22, accept_fingerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
+        self.connect(server, username, password, port, accept_fingerprint, command, port_option, expect_token, submit_token, additional_arguments)
 
     def disconnect(self):
         if self._pipe.isalive():
@@ -52,7 +52,7 @@ class BaseSecureTerminal(BasePipe):
         if self._pipe.isalive():
             self._pipe.kill()
 
-    def connect(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
+    def connect(self, server, username, password, port = 22, accept_fingerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
 
         pop = port_option % int(port)
         cmd = which(command)
@@ -70,11 +70,11 @@ class BaseSecureTerminal(BasePipe):
             raise BaseSecureTerminalLoginError(self.buffer +"\nCommand executed: "+" ".join([cmd, pop, additional_arguments, "%s@%s" % (username, server)]))
 
 #        print "END OF EXPECT", out
-        newfigerprint = "(yes/no)" in out
+        newfingerprint = "(yes/no)" in out
 
-        if not accept_figerprint and newfigerprint:
-            raise BaseSecureTerminalLoginError("Accept figerprint required, but not allowed by user")
-        elif newfigerprint:
+        if not accept_fingerprint and newfingerprint:
+            raise BaseSecureTerminalLoginError("Accept fingerprint required, but not allowed by user")
+        elif newfingerprint:
             self.send_command("yes")
         
 
@@ -149,6 +149,6 @@ class SSHTerminal(BaseSecureTerminal, BashTerminal):
        print "in", pwd
     """
 
-    def __init__(self, server, username, password, port = 22, accept_figerprint = False,additional_arguments =""):
-        super(SSHTerminal,self).__init__(server, username, password, port, accept_figerprint, "ssh", additional_arguments = additional_arguments )
+    def __init__(self, server, username, password, port = 22, accept_fingerprint = False,additional_arguments =""):
+        super(SSHTerminal,self).__init__(server, username, password, port, accept_fingerprint, "ssh", additional_arguments = additional_arguments )
 
