@@ -157,13 +157,13 @@ class ReductionRegister(object):
                 self._cur_reduced_pattern = "" 
                 self._cur_parameters = [""]
                 self._inside_pattern = True
-            if not self._inside_pattern: return self._inside_pattern
+            else: return self._inside_pattern
 
-        if len(self._cur_reduced_pattern) > 200:
-            print "This seems wrong:", 
-            print "PATTERN", self._cur_pattern
-            print "RPATTERN", self._cur_reduced_pattern
-            exit(0)
+#        if len(self._cur_reduced_pattern) > 200:
+#            print "This seems wrong:", 
+#            print "PATTERN", self._cur_pattern
+#            print "RPATTERN", self._cur_reduced_pattern
+#            exit(0)
 
         if char in self.pattern_start:
             add = " "

@@ -165,13 +165,13 @@ class BaseProcess(object):
         """
         Checks wether we can read from the output stream.
         """
-
-        try:
-            r,w,e = select.select([self._stdout_fd],[],[], self._canread_timeout)
-        except:
+        r,w,e = select.select([self._stdout_fd],[],[], self._canread_timeout)
+#        try:
+#            r,w,e = select.select([self._stdout_fd],[],[], self._canread_timeout)
+#        except:
 #            print "This was where it went wrong"
 #            return False
-            self._ready = False
+#            self._ready = False
 
         return self._stdout_fd in r
 
@@ -340,11 +340,12 @@ class LinuxProcess(BaseProcess):
         
         self._stdin_fd = fd
         self._stdout_fd = fd
+
         # Spawning process
         if environment is None:
-            os.execv(command,[command,] + args)
+            os.execv(command,filter(lambda x: x!="", [command,] + args))
         else:
-            os.execvpe(command,[command,] + args, environment)
+            os.execvpe(command,filter(lambda x: x!="", [command,] + args), environment)
 
     @property
     def pid(self):

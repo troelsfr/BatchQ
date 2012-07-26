@@ -1,3 +1,4 @@
+from profilehooks import profile
 import time
 import json
 from batchq.core.batch import Shell
@@ -62,6 +63,7 @@ class Subshell(Shell):
         return files
 
 
+#    @profile(immediate=True)
     def state(self):   
         if self._state == self.STATE.FINISHED: return self._state
         super(Subshell, self).state()
@@ -168,6 +170,7 @@ class LSF(Subshell):
 #        return self._lsf_cache
 
 
+#    @profile(immediate=True)
     def state(self):
         super(LSF, self).state()
         if self._state == self.STATE.FINISHED: return self._state

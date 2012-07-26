@@ -74,7 +74,7 @@ class BashTerminal(BasePipe):
 
         self._hasher = None
         super(BashTerminal, self).__init__(pipe,expect_token, submit_token,initiate_pipe=initiate_pipe)        
-        self.set_timeout(10)
+        self.set_timeout(200)
         self._nodename = None
 
     def initiate_pipe(self):
@@ -361,6 +361,7 @@ echo $DIR"""
         """
         cmd = "if [ -d '%s' ]; then echo \"SUCCESS\"; fi" % dir
         output1 = self.send_command(cmd).strip()
+
         return  output1 == "SUCCESS"
 
     

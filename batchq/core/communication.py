@@ -33,6 +33,7 @@ from batchq.core.terminal import XTermInterpreter
 from batchq.core.errors import CommunicationIOException, BasePipeException, CommunicationTimeout
 from batchq.core.memory import Memory
 
+
 class BasePipe(object):
     def __init__(self, pipe, expect_token, submit_token, mem_scale= 1000., vt100 = None, initiate_pipe = True):
         self._last_output = ""
@@ -128,6 +129,7 @@ class BasePipe(object):
         pass
 
 
+
     def consume_output(self, pipe = None, consume_until = None, wait_for_some_output = False):
         """
         This function consumes output of the pipe which is separated
@@ -144,8 +146,9 @@ class BasePipe(object):
             m = consume_until.search(output)
             while pipe.isalive() and not m:
                 try:
+
                     b = pipe.getchar()
-                except CommunicationIOException, e:
+                except CommunicationIOException, e:                    
                     pass
 
                 if b!="":
@@ -155,7 +158,7 @@ class BasePipe(object):
                     echo = self._xterminterpreter.copy_echo()
                     tot_len = len(output)
                     tot_echo_len = len(echo)
-                
+
 
                     if self._reset_timeout_onoutput and (self._xterminterpreter.monitor_echo !=""):
                         end_time = time.time()+self._timeout 
@@ -166,6 +169,7 @@ class BasePipe(object):
 
                 if end_time<time.time():
                     if self._debug_level >= 3:
+                        print "Timeout: ", self._timeout
                         print "-"*20, "BUFFER", "-"*20
                         print self._xterminterpreter.buffer[-1000:]
                         print "-"*20, "END OF BUFFER", "-"*20
@@ -225,7 +229,8 @@ class BasePipe(object):
                         print "Escape mode:", self._xterminterpreter.escape_mode
                         if self._xterminterpreter.escape_mode:
                             print "Last escape:", self._xterminterpreter.last_escape
-                    raise CommunicationTimeout("Consuming output timed out. You can increase the timeout by using set_timeout(t).")
+                    raise CommunicationTimeout("Consuming output timed out (%d > %d, dt = %d, %s). You can increase the timeout by using set_timeout(t)." %(end_time,time.time(),self._timeout, self.__class__.__name__))
+
 
             if consume_until == output[tot_len -n: tot_len]:
                 output = output[0:tot_len -n]
@@ -254,6 +259,9 @@ class BasePipe(object):
         self._xterminterpreter.move_monitor_cursors()
 
         return output
+
+    def write(self, cmd):
+        self._pipe.write(cmd)
 
     def send_command(self, cmd, wait_for_input_response = True):
         """

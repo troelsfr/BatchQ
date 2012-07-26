@@ -28,7 +28,7 @@
 # http://www.asciitable.com/
 
 from batchq.core.terminal.patternregister import PatternRegister,ReductionRegister
-from batchq.core.terminal.base import BaseInterpreter
+from batchq.core.terminal.newbase import BaseInterpreter
 
 XTermEscapeRegister = PatternRegister()
 XTermKeyRegister = PatternRegister()
@@ -194,7 +194,7 @@ class XTermInterpreter(BaseInterpreter):
     @XTermRegister.hook("CSI Ps B", defaults = (1,) )
     def cursor_down (self,seq="",count=1):
         self._curline += count
-        n = len(self._lines)
+
             
 
     @XTermRegister.hook("CSI Ps C", defaults = (1,) )

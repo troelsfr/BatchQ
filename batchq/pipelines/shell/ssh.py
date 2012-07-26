@@ -28,6 +28,7 @@ from batchq.core.utils import which
 import posixpath
 import re
 import time 
+import os 
 
 class BaseSecureTerminalLoginError(StandardError):
     """
@@ -39,8 +40,8 @@ class BaseSecureTerminalLoginError(StandardError):
 
 class BaseSecureTerminal(BasePipe):
 
-    def __init__(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n"):
-        self.connect(server, username, password, port, accept_figerprint, command, port_option, expect_token, submit_token)
+    def __init__(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
+        self.connect(server, username, password, port, accept_figerprint, command, port_option, expect_token, submit_token, additional_arguments)
 
     def disconnect(self):
         if self._pipe.isalive():
@@ -51,22 +52,22 @@ class BaseSecureTerminal(BasePipe):
         if self._pipe.isalive():
             self._pipe.kill()
 
-    def connect(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n"):
+    def connect(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
 
         pop = port_option % int(port)
         cmd = which(command)
-        pipe = Process(cmd,[pop, "%s@%s" % (username, server)], terminal_required = True)
+        pipe = Process(cmd,[pop, additional_arguments, "%s@%s" % (username, server)], terminal_required = True)
 
 
         super(BaseSecureTerminal, self).__init__(pipe,expect_token, submit_token, initiate_pipe = False)       
 
-        self.set_timeout(10) 
+        self.set_timeout(15) 
 
         self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>)"))
         try:
             out = self.expect()
         except:
-            raise BaseSecureTerminalLoginError(self.buffer)
+            raise BaseSecureTerminalLoginError(self.buffer +"\nCommand executed: "+" ".join([cmd, pop, additional_arguments, "%s@%s" % (username, server)]))
 
 #        print "END OF EXPECT", out
         newfigerprint = "(yes/no)" in out
@@ -148,6 +149,6 @@ class SSHTerminal(BaseSecureTerminal, BashTerminal):
        print "in", pwd
     """
 
-    def __init__(self, server, username, password, port = 22, accept_figerprint = False):
-        super(SSHTerminal,self).__init__(server, username, password, port, accept_figerprint, "ssh")
+    def __init__(self, server, username, password, port = 22, accept_figerprint = False,additional_arguments =""):
+        super(SSHTerminal,self).__init__(server, username, password, port, accept_figerprint, "ssh", additional_arguments = additional_arguments )
 

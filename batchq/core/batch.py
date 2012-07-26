@@ -1,5 +1,5 @@
 from batchq.core.stack import current_machine
-from profilehooks import profile
+# from profilehooks import profile
 import re
 import unicodedata
 import copy
@@ -80,6 +80,7 @@ class Shell(object):
     def status(self):
         return self.STATE.texts[self.state()]
 
+#    @profile
     def state(self):
         if self._state == self.STATE.QUEUED:
             self._state = self.STATE.READY
@@ -106,7 +107,7 @@ class Shell(object):
     def update_cache_state(self):
         pass
 
-#    @profile(immediate=True)
+#    @profile
     def run(self, force=False):
         if self._state == self.STATE.NOJOB: self._state = self.STATE.QUEUED
         # Waiting for dependencies to finish

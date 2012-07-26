@@ -82,7 +82,7 @@ class BaseInterpreter(object):
             return ""
 
         n = len(self._lines)
-        buf = "\r\n".join(self._lines[self._last_monitor_line:(self._curline+1)])
+        buf = "\r\n".join([str(a) for a in self._lines[self._last_monitor_line:(self._curline+1)]])
         lenlastl = len(self._lines[self._curline])
         n = len(buf) - lenlastl + self._curchar
         ret = buf[self._last_monitor_char:n]
@@ -94,11 +94,13 @@ class BaseInterpreter(object):
         
     @property
     def buffer(self):
-        return ("\n".join(self._swapped_lines)).replace("\r\n","") + ("\n".join(self._lines)).replace("\r\n","")
+        sl = ("\n".join(self._swapped_lines)).replace("\r\n","")
+        if sl!="": sl+="\n"
+        return  sl + ("\n".join([str(a).strip() for a in self._lines])).replace("\r\n","")
 
     @property
     def reduced_buffer(self):
-        return  ("\n".join(self._lines)).replace("\r\n","")
+        return  ("\n".join([str(a) for a in self._lines])).replace("\r\n","")
 
     @property
     def last_escape(self):
@@ -116,10 +118,10 @@ class BaseInterpreter(object):
 
 
     def _make_readable(self, echo):
-        pattern_start = {u'\x00':'NUL', u'\x01':'SOH',u'\x02':'STX',u'\x03':'ETX',u'\x04':'EOT',u'\x05':'ENQ',u'\x06':'ACK',u'\x07':'BEL',
-                         u'\x08':'BS',u'\x09':'TAB',u'\x0A':'NL',u'\x0B':'VT',u'\x0C':'NP',u'\x0D':'CR',u'\x0E':'SO',u'\x0F':'SI',u'\x10':'DLF',
-                         u'\x11':'DC1',u'\x12':'DC2',u'\x13':'DC3',u'\x14':'DC4',u'\x15':'NAK',u'\x16':'SYN',u'\x17':'ETB',u'\x18':'CAN',u'\x19':'EM',
-                         u'\x1A':'SUB',u'\x1b': 'ESC',u'\x1C':'FS',u'\x1D':'GS',u'\x1E':'RS',u'\x1F':'US'}
+        pattern_start = {'\x00':'NUL', '\x01':'SOH','\x02':'STX','\x03':'ETX','\x04':'EOT','\x05':'ENQ','\x06':'ACK','\x07':'BEL',
+                         '\x08':'BS','\x09':'TAB','\x0A':'NL','\x0B':'VT','\x0C':'NP','\x0D':'CR','\x0E':'SO','\x0F':'SI','\x10':'DLF',
+                         '\x11':'DC1','\x12':'DC2','\x13':'DC3','\x14':'DC4','\x15':'NAK','\x16':'SYN','\x17':'ETB','\x18':'CAN','\x19':'EM',
+                         '\x1A':'SUB','\x1b': 'ESC','\x1C':'FS','\x1D':'GS','\x1E':'RS','\x1F':'US'}
         basic_reductions = {'ESC [': 'CSI', 'ESC D': 'IND', 'ESC E': 'NEL', 'ESC H': 'HTS', 'ESC M': 'RI', 'ESC N': 'SS2','ESC O': 'SS3',
                             'ESC P': 'DCS', 'ESC V': 'SPA', 'ESC W':'EPA', 'ESC X': 'SOS', 'ESC Z':'CSI c', "ESC \\": 'ST', 'ESC ]':'OSC',
                             'ESC ^': 'PM', 'ESC _':'APC'}
@@ -197,7 +199,7 @@ class BaseInterpreter(object):
 
         if self._mark_line == 0: return
         swap_until = self._mark_line
-        self._swapped_lines += self._lines[0:swap_until]
+        self._swapped_lines += [str(a).strip() for a in self._lines[0:swap_until]]
         del self._lines[0:swap_until]
         self._mark_line -= swap_until
         self._curline  -= swap_until
@@ -236,17 +238,22 @@ class BaseInterpreter(object):
         self._buffer_copy = ""
 
     def append_spaces(self, line, n=1):
-        self._lines[line] += " "*n
+        pass
+#        self._lines[line] += " "*n
 
     def append_empty_lines(self, n=1):
-        self._lines += [""]*n
+        self._lines += [copy.deepcopy(a) for a in [bytearray([' ']*(self._max_cols+1))]*n]
 
     def erase_lines(self, f=None,t=None):
         if f is None and t is None:
-            self._lines = [""]
-        if t is None:
-            del self._lines[f:]
-        del self._lines[f:t]
+            self._lines = [bytearray([' ']*(self._max_cols+1))]
+        elif t is None:
+            for i in range(f, self._max_cols+1):
+                self._lines[i] = [bytearray([' ']*(self._max_cols+1))]
+        else:
+            for i in range(f, t):
+                self._lines[i] = [bytearray([' ']*(self._max_cols+1))]
+
 
     def copy(self):
 
@@ -254,7 +261,7 @@ class BaseInterpreter(object):
             n = len(self._lines)
             m = len(self._lines[self._curline])
             self._reconstruct_copy = False
-            self._buffer_copy = "\n".join(self._lines[self._mark_line:n]).replace(u"\r\n","")[self._mark_char:]
+            self._buffer_copy = "\n".join([str(a).strip() for a in self._lines[self._mark_line:n]]).replace(u"\r\n","")[self._mark_char:]
 
         return self._buffer_copy
 
@@ -262,7 +269,7 @@ class BaseInterpreter(object):
         n = len(self._lines)
         ### TODO: Requires heavy optimisation
 
-        buf = ("\n".join(self._lines[line:n])).replace("\r\n","")
+        buf = ("\n".join([str(a).strip() for a in self._lines[line:n]])).replace("\r\n","")
         n = len(buf)
         return buf[char:n]
 
@@ -277,28 +284,20 @@ class BaseInterpreter(object):
         if self._curline+1 > n: self.append_empty_lines(self._curline - n + 1)
         if self._curline < 0: self._curline = 0
 
-        n = len(self._lines[self._curline])
         if self._curchar<0: self._curchar = 0
-        if self._curchar>n: self.append_spaces(self._curline, self._curchar - n + 1) 
+        if self._curchar>self._max_cols: self._curchar = self._max_cols
 
 
     def put(self,c):
-
         self._buffer_copy += c
-        n = self._curchar
-        if self._curchar - self._carriage_return >= self._max_cols:
-            
-            self._lines[self._curline] = self._lines[self._curline][0:n] + "\r" 
+        if self._curchar >= self._max_cols:
+            self._lines[self._curline][self._max_cols] = "\r" 
             # TODO: Only if wordwrap enabled
             self._curchar = 0
             self._curline +=1
             self.fix_buffer()
 
-        m = len(self._lines[self._curline])
-
-        self._lines[self._curline] = self._lines[self._curline][0:n] + c + self._lines[self._curline][n+1:m]
-
- 
+        self._lines[self._curline][self._curchar] = c
 
         self._curchar+=1
         self.fix_buffer()
