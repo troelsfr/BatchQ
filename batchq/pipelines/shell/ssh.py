@@ -38,10 +38,22 @@ class BaseSecureTerminalLoginError(StandardError):
     """
     pass
 
+class BaseSecureTerminalHostVerification(BaseSecureTerminalLoginError):
+    def __init__(self,msg):
+        pat = re.compile("(?P<filename>(/[\w ]+)+/.ssh/known_hosts):(?P<line>\d+)")
+        s = pat.search(msg)
+        self.ssh_filename = None
+        self.ssh_line = None
+        if not s is None:
+            self.ssh_filename = s.group("filename")
+            self.ssh_line = int(s.group("line"))
+        self.ssh_message = msg
+            
+
 class BaseSecureTerminal(BasePipe):
 
-    def __init__(self, server, username, password, port = 22, accept_fingerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
-        self.connect(server, username, password, port, accept_fingerprint, command, port_option, expect_token, submit_token, additional_arguments)
+    def __init__(self, server, username, password, port = 22, accept_fingerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments ="", debug_level = 3 ):
+        self.connect(server, username, password, port, accept_fingerprint, command, port_option, expect_token, submit_token, additional_arguments, debug_level)
 
     def disconnect(self):
         if self._pipe.isalive():
@@ -52,22 +64,28 @@ class BaseSecureTerminal(BasePipe):
         if self._pipe.isalive():
             self._pipe.kill()
 
-    def connect(self, server, username, password, port = 22, accept_fingerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments =""):
+    def connect(self, server, username, password, port = 22, accept_fingerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", additional_arguments ="",debug_level = 3):
 
         pop = port_option % int(port)
         cmd = which(command)
         pipe = Process(cmd,[pop, additional_arguments, "%s@%s" % (username, server)], terminal_required = True)
 
 
-        super(BaseSecureTerminal, self).__init__(pipe,expect_token, submit_token, initiate_pipe = False)       
+        super(BaseSecureTerminal, self).__init__(pipe,expect_token, submit_token, initiate_pipe = False, debug_level = debug_level)       
 
         self.set_timeout(15) 
 
-        self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>)"))
-        try:
-            out = self.expect()
-        except:
-            raise BaseSecureTerminalLoginError(self.buffer +"\nCommand executed: "+" ".join([cmd, pop, additional_arguments, "%s@%s" % (username, server)]))
+        self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>|(Host key verification failed.))"))
+#        try:
+        out = self.expect()
+#        except:
+#            raise BaseSecureTerminalLoginError(self.buffer +"\nCommand executed: "+" ".join([cmd, pop, additional_arguments, "%s@%s" % (username, server)]))
+
+
+        self.host_verification_message = None
+        if "Host key verification failed." in out:
+            self.host_verification_message = out
+            raise BaseSecureTerminalHostVerification("\n"+out)
 
 #        print "END OF EXPECT", out
         newfingerprint = "(yes/no)" in out
@@ -149,6 +167,6 @@ class SSHTerminal(BaseSecureTerminal, BashTerminal):
        print "in", pwd
     """
 
-    def __init__(self, server, username, password, port = 22, accept_fingerprint = False,additional_arguments =""):
-        super(SSHTerminal,self).__init__(server, username, password, port, accept_fingerprint, "ssh", additional_arguments = additional_arguments )
+    def __init__(self, server, username, password, port = 22, accept_fingerprint = False,additional_arguments ="", debug_level = 3):
+        super(SSHTerminal,self).__init__(server, username, password, port, accept_fingerprint, "ssh", additional_arguments = additional_arguments, debug_level= debug_level )
 

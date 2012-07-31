@@ -180,11 +180,11 @@ class BaseProcess(object):
         Checks wether it is possible to write to the input stream.
         """
 #        return True
-        try:
-            r,w,e = select.select([],[self._stdin_fd],[], self._canwrite_timeout)
-        except:
+#        try:
+        r,w,e = select.select([],[self._stdin_fd],[], self._canwrite_timeout)
+#        except:
 #            print "This was where it went wrong II"
-            self._ready = False
+#            self._ready = False
         return self._stdin_fd in w
             
     def _updateBuffer(self):
@@ -198,6 +198,7 @@ class BaseProcess(object):
         if self.can_read():
             app = os.read(self._stdout_fd, self._maxread)
             self._buffer += app
+
 
         while len(app) == self._maxread:
             if self.can_read():

@@ -62,7 +62,7 @@ class BashTerminal(BasePipe):
     to the pipe after the command has been sent and the command echo has been
     consumed. For a normal bash terminal this is simply ``\\n``.
     """
-    def __init__(self, pipe = None, expect_token ="#-->", submit_token = "\n", path_module = None, initiate_pipe = True):
+    def __init__(self, pipe = None, expect_token ="#-->", submit_token = "\n", path_module = None, initiate_pipe = True, debug_level=3):
         if not pipe:
             cmd = which("bash")
             pipe = Process(cmd, terminal_required = True)
@@ -73,7 +73,7 @@ class BashTerminal(BasePipe):
             self._path = path_module
 
         self._hasher = None
-        super(BashTerminal, self).__init__(pipe,expect_token, submit_token,initiate_pipe=initiate_pipe)        
+        super(BashTerminal, self).__init__(pipe,expect_token, submit_token,initiate_pipe=initiate_pipe, debug_level=debug_level )        
         self.set_timeout(200)
         self._nodename = None
 

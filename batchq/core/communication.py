@@ -32,10 +32,10 @@ from batchq.core.process import Process
 from batchq.core.terminal import XTermInterpreter 
 from batchq.core.errors import CommunicationIOException, BasePipeException, CommunicationTimeout
 from batchq.core.memory import Memory
-
+from profilehooks import profile
 
 class BasePipe(object):
-    def __init__(self, pipe, expect_token, submit_token, mem_scale= 1000., vt100 = None, initiate_pipe = True):
+    def __init__(self, pipe, expect_token, submit_token, mem_scale= 1000., vt100 = None, initiate_pipe = True, debug_level = 3):
         self._last_output = ""
         self._last_input = ""
 
@@ -49,7 +49,7 @@ class BasePipe(object):
         self._submit_stack = [expect_token]
         self._n_expect_stack = 1
         self._n_submit_stack = 1
-        self._debug_level = 3
+        self._debug_level = debug_level
         if vt100 is None:
             self._xterminterpreter = XTermInterpreter()
         else:
@@ -129,6 +129,13 @@ class BasePipe(object):
         pass
 
 
+    @profile
+    def flush_pipe(self):
+        b = self._pipe.read()
+        while b != "":
+            self._xterminterpreter.write(b)
+            b = self._pipe.read()
+            print "[Continuing]",b
 
     def consume_output(self, pipe = None, consume_until = None, wait_for_some_output = False):
         """
@@ -136,6 +143,7 @@ class BasePipe(object):
         with no more than 10 ms and returns it.
         """        
         if not pipe:
+            self._assert_alive()
             pipe = self._pipe
         output = ""
         echo = ""
@@ -152,7 +160,6 @@ class BasePipe(object):
                     pass
 
                 if b!="":
-
                     self._xterminterpreter.write(b)
                     output = self._xterminterpreter.copy()
                     echo = self._xterminterpreter.copy_echo()
@@ -169,6 +176,7 @@ class BasePipe(object):
 
                 if end_time<time.time():
                     if self._debug_level >= 3:
+                        print "Debug level",self._debug_level
                         print "Timeout: ", self._timeout
                         print "-"*20, "BUFFER", "-"*20
                         print self._xterminterpreter.buffer[-1000:]
@@ -182,7 +190,7 @@ class BasePipe(object):
                         if self._xterminterpreter.escape_mode:
                             print "Last escape:", self._xterminterpreter.last_escape
                     raise CommunicationTimeout("Consuming output timed out (%d > %d, dt = %d, %s). You can increase the timeout by using set_timeout(t)." %(end_time,time.time(),self._timeout, self.__class__.__name__))
-                
+
                 m = consume_until.search(output)
             
         elif consume_until:
@@ -217,6 +225,7 @@ class BasePipe(object):
 
                 if end_time<time.time():
                     if self._debug_level >= 3:
+                        print "Debug level",self._debug_level
                         print "-"*20, "BUFFER", "-"*20
                         print self._xterminterpreter.buffer[-1000:]
                         print "-"*20, "END OF BUFFER", "-"*20
@@ -260,6 +269,9 @@ class BasePipe(object):
 
         return output
 
+    def isalive(self):
+        return self._pipe.isalive()
+
     def write(self, cmd):
         self._pipe.write(cmd)
 
@@ -270,13 +282,15 @@ class BasePipe(object):
         """
         self._last_input = cmd
 
-
+        self._assert_alive()
         self._pipe.write(cmd)
 #        print "$$ >",cmd
 
         if cmd !="":
-            self.consume_output(wait_for_some_output = wait_for_input_response)
+            xx= self.consume_output(wait_for_some_output = wait_for_input_response)
+#            print xx,
 
+        self._assert_alive()
         self._pipe.write(self._submit_token)
 
         # Next we consume the result of sending a submit token
@@ -289,6 +303,8 @@ class BasePipe(object):
         # Then we wait for the output        
         ret = self.consume_output(consume_until = self._expect_token)
         self._last_output = ret
+#        print ret,
+#        print self._xterminterpreter.readable_echo
 
         if False and  not cmd[0:2] == "ak" and self.__class__.__name__ == "SSHTerminal":
             print "COMMAND:: ", cmd
@@ -305,8 +321,12 @@ class BasePipe(object):
         return ret
 
 
+    def _assert_alive(self):
+        if not self.isalive():
+            raise CommunicationIOException("Pipe is no longer alive. If you are using a network connection you might try to reconnect.")
 
     def expect(self, val = None):
+        self._assert_alive()
         if val is None:
             return self.consume_output(consume_until = self._expect_token)
         return self.consume_output(consume_until = val)
