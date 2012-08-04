@@ -96,7 +96,7 @@ class BaseInterpreter(object):
     def buffer(self):
         sl = ("\n".join(self._swapped_lines)).replace("\r\n","")
         if sl!="": sl+="\n"
-        return  sl + ("\n".join([str(a).strip() for a in self._lines])).replace("\r\n","")
+        return  sl + ("\n".join([str(a).strip(" ") for a in self._lines])).replace("\r\n","")
 
     @property
     def reduced_buffer(self):
@@ -199,7 +199,7 @@ class BaseInterpreter(object):
 
         if self._mark_line == 0: return
         swap_until = self._mark_line
-        self._swapped_lines += [str(a).strip() for a in self._lines[0:swap_until]]
+        self._swapped_lines += [str(a).strip(" ") for a in self._lines[0:swap_until]]
         del self._lines[0:swap_until]
         self._mark_line -= swap_until
         self._curline  -= swap_until
@@ -261,7 +261,7 @@ class BaseInterpreter(object):
             n = len(self._lines)
             m = len(self._lines[self._curline])
             self._reconstruct_copy = False
-            self._buffer_copy = "\n".join([str(a).strip() for a in self._lines[self._mark_line:n]]).replace(u"\r\n","")[self._mark_char:]
+            self._buffer_copy = "\n".join([str(a).strip(" ") for a in self._lines[self._mark_line:n]]).replace(u"\r\n","")[self._mark_char:]
 
         return self._buffer_copy
 
@@ -269,7 +269,7 @@ class BaseInterpreter(object):
         n = len(self._lines)
         ### TODO: Requires heavy optimisation
 
-        buf = ("\n".join([str(a).strip() for a in self._lines[line:n]])).replace("\r\n","")
+        buf = ("\n".join([str(a).strip(" ") for a in self._lines[line:n]])).replace("\r\n","")
         n = len(buf)
         return buf[char:n]
 
@@ -291,6 +291,7 @@ class BaseInterpreter(object):
     def put(self,c):
         self._buffer_copy += c
         if self._curchar >= self._max_cols:
+
             self._lines[self._curline][self._max_cols] = "\r" 
             # TODO: Only if wordwrap enabled
             self._curchar = 0

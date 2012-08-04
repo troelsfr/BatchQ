@@ -60,6 +60,7 @@ class Subshell(Shell):
                      self.terminal.send_command(cmd).split("\n")]
 
         self._popw()
+
         return files
 
 
@@ -77,7 +78,7 @@ class Subshell(Shell):
         if files is None: 
             clear_simple_call_cache(cid, self._identifier)
             files = {}
-        
+                
         if "%s.failed"%self._identifier_filename in files: 
             self._state = self.STATE.FAILED
         elif "%s.finished"%self._identifier_filename in files: 
@@ -133,7 +134,7 @@ class LSF(Subshell):
         if self.additional_arguments['memory'] !=-1: bsubparams+="".join(["-R \"rusage[mem=",str(self.additional_arguments['memory']), "]\" "])
         if self.additional_arguments['diskspace'] !=-1: bsubparams+="".join(["-R \"rusage[scratch=",str(self.additional_arguments['diskspace']), "]\" "])
 
-        self.command = prepend + "".join(["(touch ",self._identifier_filename, ".submitted ; bsub -oo ", self._identifier_filename, ".log ", bsubparams," \"touch ",self._identifier_filename,".running ; ", prepend , self.original_command, " 1> ",self._identifier_filename,".running 2> ",self._identifier_filename,".error ; echo \\$? > ",self._identifier_filename,".finished ;  if [ $(cat ",self._identifier_filename,".finished) -ne 0 ] ; then mv ",self._identifier_filename,".finished ",self._identifier_filename,".failed  ;  fi\" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > ",self._identifier_filename,".pid )"])
+        self.command = prepend + "".join(["rm -rf ", self._identifier_filename,".* && (touch ",self._identifier_filename, ".submitted ; bsub -oo ", self._identifier_filename, ".log ", bsubparams," \"touch ",self._identifier_filename,".running ; ", prepend , self.original_command, " 1> ",self._identifier_filename,".running 2> ",self._identifier_filename,".error ; echo \\$? > ",self._identifier_filename,".finished ;  if [ \\$(cat ",self._identifier_filename,".finished) -ne 0 ] ; then mv ",self._identifier_filename,".finished ",self._identifier_filename,".failed  ;  fi\" |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > ",self._identifier_filename,".pid )"])
 
     def _lsf_state(self):
 
