@@ -32,7 +32,7 @@ from batchq.core.process import Process
 from batchq.core.terminal import XTermInterpreter 
 from batchq.core.errors import CommunicationIOException, BasePipeException, CommunicationTimeout
 from batchq.core.memory import Memory
-from profilehooks import profile
+#from profilehooks import profile
 
 class BasePipe(object):
     def __init__(self, pipe, expect_token, submit_token, mem_scale= 1000., vt100 = None, initiate_pipe = True, debug_level = 3):
@@ -129,7 +129,7 @@ class BasePipe(object):
         pass
 
 
-    @profile
+#    @profile
     def flush_pipe(self):
         b = self._pipe.read()
         while b != "":
