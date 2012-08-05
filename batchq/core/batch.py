@@ -76,6 +76,8 @@ class Shell(object):
         ## TODO: Extract information from previous dependencies
         ## TODO: maybe make it with MD5 or SHA
         m = hashlib.md5()
+        if self.command is None:
+            return "unkown"
         m.update(self.command)
         return m.hexdigest() #slugify()
 
