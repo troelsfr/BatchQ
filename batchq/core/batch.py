@@ -4,6 +4,7 @@ import re
 import unicodedata
 import copy
 import time
+import hashlib
 _slugify_strip_re = re.compile(r'[^\w\s-]')
 _slugify_hyphenate_re = re.compile(r'[-\s]+')
 def slugify(value):
@@ -74,7 +75,9 @@ class Shell(object):
     def generate_identifier(self):
         ## TODO: Extract information from previous dependencies
         ## TODO: maybe make it with MD5 or SHA
-        return slugify(self.command)
+        m = hashlib.md5()
+        m.update(self.command)
+        return m.hexdigest() #slugify()
 
 
     def status(self):
