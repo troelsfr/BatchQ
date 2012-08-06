@@ -25,8 +25,8 @@ from batchq.pipelines.shell.ssh import BaseSecureTerminal
 from batchq.pipelines.shell.bash import format_path
 class SFTPTerminal(BaseSecureTerminal):
 
-    def __init__(self, server, username, password, port = 22, accept_figerprint = False):
-        super(SFTPTerminal,self).__init__(server, username, password, port, accept_figerprint, "sftp", "-oPort=%d", "sftp>")
+    def __init__(self, server, username, password, port = 22, accept_fingerprint = False,additional_arguments = "",debug_level = 3 ):
+        super(SFTPTerminal,self).__init__(server, username, password, port, accept_fingerprint, "sftp", "-oPort=%d", "sftp>",additional_arguments = additional_arguments,debug_level=debug_level)
 
     def initiate_pipe(self):
         pass

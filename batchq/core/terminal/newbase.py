@@ -14,7 +14,7 @@ class BaseInterpreter(object):
         self._max_buffer_size = 10000
         self._max_cols = max_cols
         self._max_rows = max_rows
-
+        self._min_show = 80
 
         self._mark_line = 0
         self._mark_char = 0
@@ -154,6 +154,7 @@ class BaseInterpreter(object):
 
 
     def write(self, str):
+
         self._full_echo+=str
         self._echo_position += len(str)
 
@@ -242,6 +243,10 @@ class BaseInterpreter(object):
 #        self._lines[line] += " "*n
 
     def append_empty_lines(self, n=1):
+        #        if self._min_show - self._curline < 0:
+#        print "Appending ", n, self._curline, len(self._lines)
+        #self.set_mark(-self._min_show,-self._curchar)
+        ##### TODO: This is a major slow down if the output is large. Fix with constant buffer
         self._lines += [copy.deepcopy(a) for a in [bytearray([' ']*(self._max_cols+1))]*n]
 
     def erase_lines(self, f=None,t=None):

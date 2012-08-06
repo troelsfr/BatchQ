@@ -118,10 +118,12 @@ class ReductionRegister(object):
                             "CSI Ps x", "CSI Ps x", "CSI P c ; Pt ; P l ; P b ; P r $ x", "CSI Ps ; Pu ' z", 
                             "CSI Pt ; Pl ; Pb ; Pr $ z", "CSI Pm ' {", "CSI Pt ; P l ; P b ; P r $ {", "CSI Ps ' |", 
                             "CSI Pm SP }", "CSI Pm SP ~", "OSC Ps ; Pt ST", "OSC Ps ; Pt BEL", "PM Pt ST", "BEL", "BS", "TAB", "LF", "VT", "FF", 
-                            "CR", "ESC ETX", "ESC ENQ", "ESC FF", "ESC SO", "ESC SI", "ESC ETB", "ESC CAN", "ESC SUB", "ESC FS", "ESC 8", "ESC 9", 
-                            "ESC :", "ESC ;", "OSC Ps ; P", "ESC `", "ESC a", "ESC b", "ESC c", "ESC d", "ESC h", "ESC i", "ESC j", "ESC k", "ESC l", 
-                            "ESC p", "ESC q", "ESC r", "ESC s", "ESC t", "FS", "GS", "RS", "US", "ESC A", "ESC B", "ESC C", "ESC D", 
-                            "ESC F", "ESC G", "ESC H", "ESC I", "ESC J", "ESC K", "ESC Y Ps P", "ESC Z", "ESC =", "ESC >", "ESC <"]
+                            "CR"]
+# Tektronix 4014 Mode
+# [ "ESC ETX", "ESC ENQ", "ESC FF", "ESC SO", "ESC SI", "ESC ETB", "ESC CAN", "ESC SUB", "ESC FS", "ESC 8", "ESC 9", 
+#                            "ESC :", "ESC ;", "OSC Ps ; P", "ESC `", "ESC a", "ESC b", "ESC c", "ESC d", "ESC h", "ESC i", "ESC j", "ESC k", "ESC l", 
+#                            "ESC p", "ESC q", "ESC r", "ESC s", "ESC t", "FS", "GS", "RS", "US", "ESC A", "ESC B", "ESC C", "ESC D", 
+#                            "ESC F", "ESC G", "ESC H", "ESC I", "ESC J", "ESC K", "ESC Y Ps P", "ESC Z", "ESC =", "ESC >", "ESC <"]
 
         self._allowed_characters = ["0","A", "B","4", "C","5","R","Q","K","Y","E","Z","H","7","="]
         self.intermediate_stage = ["ESC #", "ESC %", "ESC (", "ESC )"]
@@ -198,9 +200,11 @@ class ReductionRegister(object):
             self._inside_pattern = False
 #            print "FOUND PATTERN", self._cur_pattern, " with ", self._cur_parameters, "(",self._cur_reduced_pattern,")"
             pattern = self.patterns[self._cur_reduced_pattern][0]
+#            print pattern
           
             if pattern in self.rules or "__catch_all__" in self.rules:
                 f = self.rules[pattern] if pattern in self.rules else self.rules["__catch_all__"]
+#                print "Function",f 
 
                 args =[self._cur_pattern,] 
                 defargs = self.defaults[self._cur_pattern] if self._cur_pattern in self.defaults else ()
