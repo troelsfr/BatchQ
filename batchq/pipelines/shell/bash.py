@@ -410,6 +410,7 @@ echo $DIR"""
 #    @profile(immediate=True)
     def sum_files(self, dir=".", ignore_hidden=False):
         searcher_for = re.compile(r"(?P<hash>\d+)\s+(?P<block>\d+)\s+(?P<file>.*)") #(P?<hash>\d+)\s+(P?<block>\d)\s+(?P<file>.*)")
+
         cmd = "find '%s' -type f   -print0 | xargs -0 sum" % (dir)
 
         if ignore_hidden:
@@ -428,6 +429,7 @@ echo $DIR"""
             if m:
                 ret.append((m.group('file'),int(m.group('hash'))))
             else:
+                ## TODO: error if only one file, then the filename is not included
                 print "WARNING: Regex did not match sum line: '%s' (file omitted)"%line
                 print "If this line looks like a sensible sum line to you, something may be wrong. (%s)" % self.__class__.__name__
                 print
