@@ -5,7 +5,7 @@ from batchq.core.batch import Shell
 
 class CreateDirectory(Shell):
     def __init__(self, terminal, directory, working_directory = None, 
-                 intermediate=False, dependencies=None, identifier = None,
+                 intermediate=True, dependencies=None, identifier = None,
                  **kwargs):
         self.directory = directory
         self.intermediate =  intermediate

@@ -263,26 +263,31 @@ class XTermInterpreter(BaseInterpreter):
 
     @XTermRegister.hook("CSI Ps P", defaults = (1, ) )
     def delete_character(self, seq, n):
-        del self._lines[self._curline][self._curchar]
+        self._lines[self._curline][self._curchar] = ' '
 #        del self._lines[(self._curline, self._curchar)]
 
     @XTermRegister.hook("CSI Ps K",defaults = (0, ) )
     def erase_until (self,seq = "", k = 0): 
         if isinstance(k,str) and k[0] == "?": pass # TODO: Handle quenstion marks
         if k == 0:
-#            self._lines.erase(self._curline,self._curchar,self._curline,self._lines.line_length(self._curline) )
-            # TODO: FIX, should use del
-            line = self._lines[self._curline]
-            line = line[0:self._curchar]
-            self._lines[self._curline] = line
+            for i in range(self._curchar+1,len(self._lines)):
+                self._lines[self._curline][i] = ' '
+#            Above two lines replace
+#            line = self._lines[self._curline]
+#            line = line[0:self._curchar]
+#            self._lines[self._curline] = line
         elif k == 1:
-#            self._lines.erase(self._curline,0,self._curline+1,self._curchar )
-            line = self._lines[self._curline]
-            line = line[self._curchar+1:len(line)]
-            self._lines[self._curline] = line
+            for i in range(0,self._curchar):
+                self._lines[self._curline][i] = ' '
+            # Above two lines replace
+#            line = self._lines[self._curline]
+#            line = line[self._curchar+1:len(line)]
+#            self._lines[self._curline] = line
         elif k == 2:
-#            self._lines.erase_lines(self._curline)
-            self._lines[self._curline] = ""
+            for i in range(0,len(self._lines)):
+                self._lines[self._curline][i] = ' '
+            # Above two lines replace
+#            self._lines[self._curline] = ""
 
 
     @XTermRegister.hook("CSI Ps J",defaults = (0, ) )

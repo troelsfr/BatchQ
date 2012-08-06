@@ -154,6 +154,7 @@ class BaseInterpreter(object):
 
 
     def write(self, str):
+        # str = u"%s"%str
 
         self._full_echo+=str
         self._echo_position += len(str)
@@ -302,6 +303,7 @@ class BaseInterpreter(object):
             self._curchar = 0
             self._curline +=1
             self.fix_buffer()
+
 
         self._lines[self._curline][self._curchar] = c
 
