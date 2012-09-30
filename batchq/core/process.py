@@ -92,9 +92,13 @@ class BaseProcess(object):
         if not self._ready:
             return False
 
+        ### For this part I owe a great deal of acknowledgement to 
+        ### the pexpect project, since the following is basically 
+        ### copy and paste
         pid = None
         status = None
         i = 0
+
         while pid == 0 and i<2:  # TODO: Fix this part and test it properly
             try:
                 pid, status = os.waitpid(self.pid, 0)    # TODO: either os.WNOHANG or 0
@@ -113,7 +117,7 @@ class BaseProcess(object):
             self._ready = False
             return False
         return True
-
+        # Copy/past end
 
     def spawnTTY(self, command, args = [], environment = None):   
         """
@@ -245,7 +249,7 @@ class BaseProcess(object):
         return self._buffer[oldp:]
 
 
-    def read_nonblocking_until(self, until, forward = True):
+    def read_nonblocking_until(self, until, forward = True, return_size=1024):
         """
         Returns the next char
         """
@@ -254,23 +258,28 @@ class BaseProcess(object):
         self.flush()
 
         oldp = self._seeker
-        buf = self._buffer[self._seeker:]
+        buf = self._buffer[self._seeker:] 
 
         if not until in buf:
+            if n - self._seeker < return_size:
+                # This ensures that we do not truncate the token we are
+                # looking for
+                m = len(until)
+                if n -  m > self._seeker:
+                    self._seeker=n - m
+                    return self._buffer[oldp:self._seeker]
             return ""
 
-#        print "UNTIL", until
-#        print "BUFFER", self._buffer
-
+        
         if forward:
             before, after = buf.split(until,1)
         else:
             before, after = buf.rsplit(until,1)
 
         m = len(after)
+
         if self._seeker < n - m :
             self._seeker = n-m
-#            print "RETURNING: ", self._buffer[oldp:self._seeker]
             return self._buffer[oldp:self._seeker]
 
         return ""

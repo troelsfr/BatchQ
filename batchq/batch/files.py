@@ -49,6 +49,10 @@ class TransferFiles(Shell):
 
         self._was_executed = True
         self._success = False
+
+        self.local_directory = self.terminal.local.echo(self.local_directory).strip()
+        self.remote_directory = self.terminal.remote.echo(self.remote_directory).strip()
+
         ret = self.terminal.sync(self.local_directory, 
                                  self.remote_directory,mode = self.mode )
 

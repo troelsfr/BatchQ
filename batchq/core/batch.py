@@ -41,11 +41,15 @@ class Shell(object):
         if terminal is None:
             terminal = current_machine()
         elif isinstance(terminal, str):
+            self.terminal_name = terminal
             terminal =getattr(current_machine(), terminal)
 
         self.working_directory = working_directory
         self.terminal = terminal
         self.command = command
+
+        self.has_compression = False
+        self.is_compressed = False
 
         if hasattr(self,"additional_arguments"):
             self.additional_arguments.update( kwargs )
@@ -64,6 +68,10 @@ class Shell(object):
         self.exitcode_zero =  exitcode_zero
 
 #        self.state()
+
+    def compress(self, queue):
+        raise BaseExepction("Object has no compression.")
+
 
     def identifier(self):
         return self._identifier
@@ -113,7 +121,7 @@ class Shell(object):
         pass
 
 #    @profile
-    def run(self, force=False):
+    def run_dependencies(self):
         if self._state == self.STATE.NOJOB: self._state = self.STATE.QUEUED
         # Waiting for dependencies to finish
 
@@ -127,6 +135,11 @@ class Shell(object):
             if self._state == self.STATE.QUEUED:
                 print self, "EXIT QUEUED", self.dependencies
                 return False
+        return True
+
+    def run(self, force=False):
+        if not self.run_dependencies(): return False
+
         # Executing job
         if not self.command is None:
    
@@ -143,7 +156,7 @@ class Shell(object):
                     self._popw()
                     raise
                 self._popw()
-                self.update_cache_state()        
+                self.update_cache_state()
             else:
                 return False
         return True
@@ -195,7 +208,7 @@ class Shell(object):
     def log(self):
         raise BaseException("'log' is not defined for the shell object. It is a place holder for the log in LSF and other submission systems.")
 
-## TODO: Delete and 
+## TODO: Delete, since it is not used
 class Job(object):
     def __init__(self,chain, pull_state_from = None):
         self.chain = chain
@@ -203,6 +216,7 @@ class Job(object):
             self.pull_state = []
         else:
             self.pull_state = pull_state_from
+
 
     def state(self):
         return [a.STATE.texts[a.state()] for a in self.pull_state]
@@ -371,17 +385,7 @@ class Collection(object):
         self._until_finish = finish
         self._split_results = split
 
-    def wait(self, min = -1, max_retries = -1, finish = False, split= False):
-        ret = copy.copy(self)
-        ret._collect_parameters(min,max_retries,finish, split)
-        return ret
-
-    def split(self):
-        return self.wait(self._min,self._max,self._until_finish, True)
-
-    def any(self):
-        return self.wait(1)
-
+ 
     def select(self, *identifiers):
         newset,newret = [],[]
         comset,comret = [],[]
@@ -408,6 +412,72 @@ class Collection(object):
         return self._results
 
 
+    def compressed_invoke(self,name):
+        try:
+            attr = object.__getattribute__(self, name)
+            return attr
+        except AttributeError:
+            if name[0] == "_":
+                return object.__getattribute__(self,name)
+
+
+        def invoke(*args, **kwargs):
+            if len(self._set) ==0:
+                raise BaseException("Cannot operate on empty set.")
+
+            queue = copy.copy(self._set)
+            element = queue[0]
+            queue = queue[1:]
+
+            results1 = []
+            results2 = []
+            while not element is None:
+                former = element
+
+                if not element.run_dependencies():
+                    ret = False
+                else:
+                    # Compressing element if possible                    
+                    if element.has_compression:
+                        queue, element = element.compress(queue)
+
+                    method = getattr(element,name)
+                    ret = method(*args, **kwargs)
+
+                if not element.is_compressed:
+                    rets_elements = [(ret, element)]
+                else:
+                    rets_elements = element.pack(ret)
+
+                for ret, element in rets_elements:
+                    if ret:
+                        results1.append(element)
+                    else:
+                        results2.append(element)
+
+#                print "Clearing cache"
+#                former._pushw()
+                former.update_cache_state()
+#                former._popw()
+                if len(queue)>0: 
+                    element = queue[0]
+                    queue = queue[1:]
+                else:
+                    element = None
+
+        return invoke
+    ### 
+    # deprecated stuff
+    def wait(self, min = -1, max_retries = -1, finish = False, split= False):
+        ret = copy.copy(self)
+        ret._collect_parameters(min,max_retries,finish, split)
+        return ret
+
+    def split(self):
+        return self.wait(self._min,self._max,self._until_finish, True)
+
+    def any(self):
+        return self.wait(1)
 
     def __getattribute__(self,name):
         try:

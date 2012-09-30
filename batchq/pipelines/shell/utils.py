@@ -117,7 +117,7 @@ class FileCommander(FileTransferTerminal):
         return self._remote_bash
 
 
-    def diff(self, local_dir = ".", remote_dir =".", recursive = True, mode = 3, absolute_path = False, ignore_hidden =True):
+    def diff(self, local_dir = ".", remote_dir =".", recursive = True, mode = 3, absolute_path = False, ignore_hidden =True, fast_diff=False):
         """
         Compare local and remote directories, recursively ``recursive =
         True`` (default),  by computing a hash of each file.  
@@ -129,7 +129,7 @@ class FileCommander(FileTransferTerminal):
         False``. By default, paths returned are relative, but if
         ``absolute_path = True`` they are converted into absolute paths.
         """
-
+        ## TODO: recursive is incomplete. It does not apply to the sums
         if not self.local.pushd(local_dir):
             raise BaseException("Local directory does not exist")
         if not self.remote.pushd(remote_dir):
@@ -138,16 +138,56 @@ class FileCommander(FileTransferTerminal):
         lpwd = self.local.pwd()
         rpwd = self.remote.pwd()
 
+#        print "DIFFING: ", lpwd, rpwd
+
         format_lpath = lambda x: x if not absolute_path else self.local.path.join(lpwd,x)
         format_rpath = lambda x: x if not absolute_path else self.remote.path.join(rpwd,x)
        
 
-        (lfiles, ldirs) = self.local.list(".", recursive,list_files = False)
-        (rfiles, rdirs) = self.remote.list(".", recursive,list_files = False)
+        if not fast_diff:
+            (_, ldirs) = self.local.list(".", recursive,list_files = False)
+            (_, rdirs) = self.remote.list(".", recursive,list_files = False)
 
-        lfiles_sum  = self.local.sum_files(".",ignore_hidden)
+            lfiles_sum  = self.local.sum_files(".",ignore_hidden)
 
-        rfiles_sum  = self.remote.sum_files(".",ignore_hidden)        
+            rfiles_sum  = self.remote.sum_files(".",ignore_hidden)        
+        else:
+            # TODO: make signature random
+            tmp_lfile = "difffile"
+            tmp_rfile = tmp_lfile+"_remote"
+            ## TODO: use write, expect to improve performance
+            self.remote.send_command("find . -type d > .%s_dirs ; find '%s' -type f   -print0 | xargs -0 sum > .%s_sum" % (tmp_rfile, tmp_rfile)).split("\n")
+            self.local.send_command("find . -type d > .%s_dirs ; find '%s' -type f   -print0 | xargs -0 sum > .%s_sum" % (tmp_lfile, tmp_lfile)).split("\n")
+            
+            ### Getting files
+            ldirs_file = self.local.path.join(lpwd,tmp_lfile+"_dirs")
+            rdirs_file = self.remote.path.join(rpwd,tmp_rfile+"_dirs")
+            lsum_file = self.local.path.join(lpwd,tmp_lfile+"_sum")
+            rsum_file = self.remote.path.join(rpwd,tmp_rfile+"_sum")
+
+            self.get(rsum_file, lsum_file)
+            self.get(rdir_file, ldir_file)
+            self.remote.rm(rsum_file)
+            self.remote.rm(rdir_file)
+            
+            ## Reading directories
+            f = open(ldir_file)
+            ldirs = f1.read().strip().split("\n")
+            f.close()
+            f = open(rdir_file)
+            rdirs = f1.read().strip().split("\n")
+            f.close()
+
+            ## Reading sums
+            searcher_for = re.compile(r"(?P<hash>\d+)\s+(?P<block>\d+)\s+(?P<file>.*)") 
+            f = open(lsum_file)
+            lfiles = f1.read().strip().split("\n")
+            f.close()
+            f = open(rsum_file)
+            rfiles = f1.read().strip().split("\n")
+            f.close()
+
+            ## TODO: Extract sums
 
         files = []
         dirs = []
@@ -191,6 +231,18 @@ class FileCommander(FileTransferTerminal):
 
         return (files, dirs)
 
+# TODO: Check whether this implementation works and enable
+#    def pushd(self, d):
+#        pwd = self.pwd()
+#        if self.chdir(d):
+#            self.remote_dir_stack.append(pwd)
+#            return True
+#        return False
+#        
+#    def popd(self):
+#        self.chdir(self.remote_dir_stack[-1])
+#        self.remote_dir_stack = self.remote_dir_stack[0:-1]
+
 
     def sync(self, local_dir = ".", remote_dir =".", recursive = True, mode = 3, ignore_hidden =True, diff_local_dir =None, diff_remote_dir =None, use_tar = False):
         """
@@ -210,6 +262,7 @@ class FileCommander(FileTransferTerminal):
             return None
         if diff_local_dir is None: diff_local_dir = local_dir
         if diff_remote_dir is None: diff_remote_dir = remote_dir
+
 
         if mode == self.MODE_LOCAL_REMOTE:
             lfiles, ldirs = self.diff(diff_local_dir, diff_remote_dir, recursive, self.MODE_LOCAL_REMOTE, False, ignore_hidden)            

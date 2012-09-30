@@ -1,0 +1,346 @@
+#!/bin/bash
+JOB_FILE=`mktemp`
+FINISHED=6
+FAILED=5
+RUNNING=4
+PENDING=3
+SUBMITTED=2
+PREPENDING=1
+NOT_SUBMITTED=0
+
+
+session_id=$RANDOM
+update_file=`mktemp`
+_update_section() {
+    grep -v "$1" "$3" > ${update_file}
+    echo "<$1>$2</$1>" >> ${update_file}
+    mv ${update_file} $3
+}
+
+get_lock() {
+    if [ -f .batchq.lock ] ; then
+        touch .batchq.lock
+    fi
+    lock=`cat .batchq.lock | head -n 1`
+    if [ -z lock ] ; then lock=-1; fi
+}
+
+set_lock() {
+    if [ ! -f .batchq.lock ] ; then
+        touch .batchq.lock
+    fi
+    echo ${session_id} >> ".batchq.lock"
+    echo "Setting lock ${session_id}"
+
+}
+
+remove_lock() {
+    get_lock
+    if [ $lock==${session_id} ] ; then
+        n=$((`cat .batchq.lock | wc -l` - 1))
+        cat .batchq.lock | tail -n $n > .batchq.tmp
+        mv .batchq.tmp .batchq.lock
+        lock=-1
+        echo "Removing lock ${session_id}"
+    fi
+}
+
+update_section() {
+    pushd $1 > /dev/null
+    if [ ! -f .batchq.db ] ; then
+        touch .batchq.db
+    fi
+#    count=1
+    set_lock
+    get_lock
+#    echo $[ $RANDOM % 6 ]
+    sleep $[ $RANDOM % 2 ]
+
+    while [ -f ".batchq.lock" ] && [ "$lock" -ne "${session_id}" ] ; do
+        echo "Waiting ${session_id} (locked by ${lock})"
+        sleep 1
+        get_lock
+#        count=$(( $count + 1 ))
+#        if (( $count > 6 )) ; then exit -1 ; fi
+    done
+    echo "Updating ${session_id}"
+    _update_section "$2" "$3" ".batchq.db"
+    remove_lock
+    popd > /dev/null
+}
+
+update_entry() {
+    ( update_section "$@" & )
+}
+
+
+function _update_from_files() {
+    local stat
+    local section
+    local file
+    echo > $2
+    file=$2
+    pushd $1 > /dev/null
+    (
+        for l in `ls $3` ;
+        do
+            stat=`echo $l | awk -F . '{ print $4 }'`
+            section=`echo $l | awk -F . '{ print $3 }'`
+            _update_section "$section" "$stat" "$file"
+        done
+    )
+    popd > /dev/null
+}
+
+
+function create_database() {
+    echo "Updating prepending ... "
+    _update_from_files "$1" "$2" ".batch*.prepending"
+    echo "Updating submitted ... "
+    _update_from_files "$1" "$2" ".batch*.submitted"
+    echo "Updating running ... "
+    _update_from_files "$1" "$2" ".batch*.running"
+    echo "Updating failed ... "
+    _update_from_files "$1" "$2" ".batch*.failed"
+    echo "Updating finished ... "
+    _update_from_files "$1" "$2" ".batch*.finished"
+}
+
+
+function _internal_load_joblist() {
+    ## TODO: check if bjobs is present
+    bjobs > ${JOB_FILE} 2>&1
+    return
+}
+
+function _internal_cleanup() {
+    rm -rf ${JOB_FILE}
+}
+
+function get_pid() {
+    local bid
+    if [ -f "$1/.batchq.$2.pid" ] ; then
+	bid=`cat $1/.batchq.$2.pid`
+	if [ -z $bid ] ; then 
+	    bid=0
+	fi
+	echo $bid
+	return 0
+    fi
+    echo 0
+    return 0
+}
+
+function int_status() {
+
+    local stat
+    local bid
+    if [ ! -d $1 ] ; then
+	echo "batchq: $1: is not a directory"
+	exit -1
+    fi
+    if [ -f $1/.batchq.$2.finished ] ; then 
+	echo $FINISHED
+	return 0
+    elif [ -f $1/.batchq.$2.failed ] ; then 
+	echo $FAILED
+	return 0
+    fi
+    bid=$(get_pid $1 $2)
+
+    if [ $bid -eq 0 ] ; then	
+	stat="NOTFOUND"
+    else
+    ## TODO: This might fail if the bid if contained in another bid
+	stat=`grep -i $bid ${JOB_FILE} | awk '{print $3}' `
+    fi
+
+    if [ "$stat" == "PEND" ] ; then
+	echo $PENDING
+	return 0
+    elif [ "$stat" == "EXIT" ] ; then
+	echo $FAILED
+	return 0
+    elif [ "$stat" == "RUN" ] ; then
+	echo $RUNNING
+	return 0
+    elif [ -f $1/.batchq.$2.log ] ; then 
+	echo $FAILED
+	return 0
+    elif [ -f $1/.batchq.$2.submitted ] ; then 
+	echo $SUBMITTED
+	return 0
+    elif [ -f $1/.batchq.$2.prepending ] ; then 
+	echo $PREPENDING
+	return 0
+    fi
+    echo ${NOT_SUBMITTED}
+    return 0
+}
+
+function status_as_text() {
+
+    ret=$(int_status $1 $2)
+    case $ret in
+	$FINISHED)
+	    echo "$2: finished"
+	    ;;
+	$FAILED)
+	    echo "$2: failed"
+	    ;;
+	$RUNNING)
+	    echo "$2: running"
+	    ;;
+	$PENDING)
+	    echo "$2: pending"
+	    ;;
+	$SUBMITTED)
+	    echo "$2: submitted"
+	    ;;
+	$PREPENDING)
+	    echo "$2: prepending"
+	    ;;
+	$NOT_SUBMITTED)
+	    echo "$2: not submitted"
+	    ;;
+    esac
+}
+
+function list_status() {
+    for f in $1/.batchq.*.pid ;
+    do
+	id=`echo $f | awk -F . '{print $4 }'`
+	status_as_text $1 $id
+    done
+}
+
+function fast_list_status() {
+    FILES=`ls $1/.batch.*`
+    for f in $1/.batchq.*.pid ;
+    do
+	id=`echo $f | awk -F . '{print $4 }'`
+	status_as_text $1 $id
+    done
+}
+
+
+function status() { 
+    for id in "${@:2}" ; do
+	status_as_text "$1" "$id"
+    done
+}
+
+#########################
+# Logs
+function _get_log() {
+    if [ -f $1/.batchq.$2.$3 ] ; then
+	cat $1/.batchq.$2.$3 
+	return
+    fi
+    echo "(no record found)"
+}
+function get_log() {
+    case $3 in
+	log)
+	    _get_log "$1" "$2" "log"
+	    return
+	    ;;
+	stdout)
+	    _get_log "$1" "$2" "running"
+	    return
+	    ;;
+	stderr)
+	    _get_log "$1" "$2" "error"
+	    return
+	    ;;
+    esac
+    echo "(entry is not defined)"
+}
+
+function mark_as_submitted() {
+    pushd $1 > /dev/null
+    batch_id=".batchq.$2"
+    touch ${batch_id}.prepending ;  
+    popd > /dev/null
+}
+
+#########################
+# Shell related functions
+function shell_run_job() {
+    # TODO: add escaping to command
+    pushd $1 > /dev/null
+    batch_id=".batchq.$2"
+    cmd=$3
+    (
+	rm -rf ${batch_id}.* ;
+	touch ${batch_id}.submitted ;  
+	( 
+	    ( 
+		touch ${batch_id}.running ;
+		eval $cmd 
+	    ) 1> ${batch_id}.running 2> ${batch_id}.error ;  
+	    echo $? > ${batch_id}.finished ;  
+	    if [ $(cat ${batch_id}.finished) -ne 0 ] ; then 
+		mv ${batch_id}.finished ${batch_id}.failed  ;  
+	    fi 
+	) & echo $! > ${batch_id}.pid 
+    )
+    popd > /dev/null
+}
+
+function shell_submit_job() {
+    stat=$(int_status $1 $2)
+    echo $stat
+    if (( $stat <= ${PREPENDING} )) ; then
+	shell_run_job "$1" "$2" "$3"
+    fi
+}
+
+
+function shell_submit_from_file() {
+    for job in `cat $1/$2` ; do
+	echo "XX: $job"
+    done
+}
+
+
+##########################3
+# LFS related functions
+function lsf_run_job() {
+    # TODO: add escaping to command
+    pushd $1 > /dev/null
+    batch_id=".batchq.$2"
+    cmd=$3
+    prepend=$4
+    parameters=$5
+    bsub_cmd="touch ${batch_id}.running ; ( ${prepend} ${cmd} ) 1>  ${batch_id}.running 2> ${batch_id}.error ; echo \$? > ${batch_id}.finished ;  if [ \$(cat ${batch_id}.finished) -ne 0 ] ; then mv ${batch_id}.finished ${batch_id}.failed  ;  fi"
+
+    rm -rf ${batch_id}.* && (
+	touch ${batch_id}.submitted ; 
+	(bsub -oo ${batch_id}.log ${parameters} "${bsub_cmd}" ) |  awk '{ if(match($0,/([0-9]+)/)) { printf substr($0, RSTART,RLENGTH) } }' > ${batch_id}.pid ) > /dev/null 2>&1
+
+    popd > /dev/null
+}
+
+
+function lsf_submit_job() {
+    stat=$(int_status $1 $2)
+    echo $stat
+    if (( $stat <= ${PREPENDING} )) ; then
+	lsf_run_job "$@"
+    fi
+}
+
+function reset() {
+    pushd $1 > /dev/null
+    batch_id=".batchq.$2"
+    rm -rf ${batch_id}.* 
+    popd > /dev/null
+}
+
+function help() {
+    echo "There is no such thing as help. Consider it a todo on my list."
+}
+
+
+

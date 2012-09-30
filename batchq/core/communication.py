@@ -208,7 +208,7 @@ class BasePipe(object):
                 except CommunicationIOException, e:
                     pass
                 if b!="":
-
+#                    print b,
                     self._xterminterpreter.write(b)
                     output = self._xterminterpreter.copy()
                     echo = self._xterminterpreter.copy_echo()

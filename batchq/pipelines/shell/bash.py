@@ -130,6 +130,9 @@ class BashTerminal(BasePipe):
         else:
             return self.send_command("echo %s > %s" % (msg,output))
 
+    def mktemp(self):
+        return self.send_command("mktemp").strip()
+
     def cat(self, filename):
         """
         Returns the contents of a file.
@@ -411,10 +414,10 @@ echo $DIR"""
     def sum_files(self, dir=".", ignore_hidden=False):
         searcher_for = re.compile(r"(?P<hash>\d+)\s+(?P<block>\d+)\s+(?P<file>.*)") #(P?<hash>\d+)\s+(P?<block>\d)\s+(?P<file>.*)")
 
-        cmd = "find '%s' -type f   -print0 | xargs -0 sum" % (dir)
+        cmd = "for f in $(find '%s' -type f) ; do echo \"$(sum $f | awk '{ print $1,\" \",$2 }') $f\"; done" % (dir)
 
-        if ignore_hidden:
-            cmd = "find '%s' \( ! -regex '.*/\..*' \) -type f  -print0 | xargs -0 sum" % (dir)
+        if ignore_hidden:            
+            cmd = "for f in $(find '%s' \( ! -regex '.*/\..*' \) -type f) ; do echo \"$(sum $f | awk '{ print $1,\" \",$2 }') $f\"; done" % (dir)
         response = self.send_command(cmd)
         list = response.strip().split("\n")
 
@@ -480,7 +483,8 @@ echo $DIR"""
         command will execute extremely slowly if many levels of
         recursion occur. 
         """
-        self.send_command("pushd '%s'"% dir.replace(r" ", r"\ "))
+        if dir!=".":
+            self.send_command("pushd '%s'"% dir.replace(r" ", r"\ "))
 
         formatter = lambda x: x[2:len(x)].strip() if len(x) >2 and x[0:2] =="./" else x.strip()
 
@@ -506,7 +510,8 @@ echo $DIR"""
             dirs = filter(first_level, dirs)
 
 
-        self.send_command("popd")
+        if dir!=".":
+            self.send_command("popd")
 
         return (files, dirs)
 
