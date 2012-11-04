@@ -77,12 +77,12 @@ class BaseSecureTerminal(BasePipe):
             self.send_command("yes")
         
 
-        out = self.send_command(password, False)
+        if "Password" in out or "password" in out:
+            out = self.send_command(password, False)
 
-
-        if "Password:" in out or "password" in out:
-            print self.buffer
-            raise BaseSecureTerminalLoginError("Wrong username or password.")
+            if "Password:" in out or "password" in out:
+                print self.buffer
+                raise BaseSecureTerminalLoginError("Wrong username or password.")
 
         self._path = posixpath
         self.pop_expect()

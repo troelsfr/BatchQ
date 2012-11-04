@@ -270,7 +270,7 @@ class NoHUPSSH(NoHUP):
     _r = batch.WildCard(reverse=True)
 
     username = batch.Property(display="Username: ", invariant = True)
-    password = batch.Property(password = True, display="Password: ", invariant = True)
+    password = batch.Property("",password = True, display="Password: ", invariant = True)
     server = batch.Property("localhost", display="Server: ", invariant = True)
     port = batch.Property(22, display="Port: ", invariant = True)
 
