@@ -269,7 +269,7 @@ class LSF(Subshell):
         
         if val is None:
             # TODO: apply same trick as in _get_files
-            val = self.terminal.send_command("bjobs -a").strip().lower()
+            val = self.terminal.send_command("bjobs").strip().lower()
             LSF_BJOBS_CACHE[i] = (now, val)
 
         if val == "no unfinished job found": return ""

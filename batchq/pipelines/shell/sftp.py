@@ -66,5 +66,5 @@ class SFTPTerminal(BaseSecureTerminal):
         return True
 
 
-
+    ## TODO: implement get and put
 
