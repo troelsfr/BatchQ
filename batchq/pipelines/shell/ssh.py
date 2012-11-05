@@ -39,8 +39,9 @@ class BaseSecureTerminalLoginError(StandardError):
 
 class BaseSecureTerminal(BasePipe):
 
-    def __init__(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n"):
-        self.connect(server, username, password, port, accept_figerprint, command, port_option, expect_token, submit_token)
+    def __init__(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", login_expect = None):
+
+        self.connect(server, username, password, port, accept_figerprint, command, port_option, expect_token, submit_token, login_expect)
 
     def disconnect(self):
         if self._pipe.isalive():
@@ -51,7 +52,7 @@ class BaseSecureTerminal(BasePipe):
         if self._pipe.isalive():
             self._pipe.kill()
 
-    def connect(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n"):
+    def connect(self, server, username, password, port = 22, accept_figerprint = False, command = "ssh", port_option = "-p %d", expect_token = "#-->", submit_token="\n", login_expect = None):
 
         pop = port_option % int(port)
         cmd = which(command)
@@ -62,7 +63,12 @@ class BaseSecureTerminal(BasePipe):
 
         self.set_timeout(10) 
 
-        self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>)"))
+        if login_expect:
+            self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>|%s)"%login_expect))
+
+        else:
+            self.push_expect(re.compile(r"(password:|Password:|\(yes/no\)\?|\$|sftp\>)"))
+
         try:
             out = self.expect()
         except:
@@ -148,6 +154,7 @@ class SSHTerminal(BaseSecureTerminal, BashTerminal):
        print "in", pwd
     """
 
-    def __init__(self, server, username, password, port = 22, accept_figerprint = False):
-        super(SSHTerminal,self).__init__(server, username, password, port, accept_figerprint, "ssh")
+    def __init__(self, server, username, password, port = 22, accept_figerprint = False, login_expect = None):
+
+        super(SSHTerminal,self).__init__(server, username, password, port, accept_figerprint, "ssh", login_expect = login_expect)
 

@@ -91,12 +91,13 @@ class FileCommander(FileTransferTerminal):
     MODE_LOCAL_REMOTE = 1
     MODE_REMOTE_LOCAL = 2
 
-    def __init__(self, server = None, username = "", password = "", port = 22, accept_figerprint = False):
+    def __init__(self, server = None, username = "", password = "", port = 22, login_expect = None, accept_figerprint = False):
         super(FileCommander,self).__init__(server, username, password, port, accept_figerprint)
+
         self._local_bash = BashTerminal()
         self._syncroisation_cache = {}
         if server:
-            self._remote_bash = SSHTerminal(server, username, password, port, accept_figerprint) 
+            self._remote_bash = SSHTerminal(server, username, password, port, accept_figerprint, login_expect = login_expect) 
         else:
             self._remote_bash = BashTerminal()
 

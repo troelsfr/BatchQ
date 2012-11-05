@@ -273,8 +273,9 @@ class NoHUPSSH(NoHUP):
     password = batch.Property("",password = True, display="Password: ", invariant = True)
     server = batch.Property("localhost", display="Server: ", invariant = True)
     port = batch.Property(22, display="Port: ", invariant = True)
+    login_expect = batch.Property(None, display="Login expect: ", invariant = True)
 
-    filecommander = batch.Controller(FileCommander,server,username, password, port)
+    filecommander = batch.Controller(FileCommander,server,username, password, port, login_expect)
     local_terminal = batch.Controller(BashTerminal,q_instance = filecommander.local)
     terminal = batch.Controller(BashTerminal,q_instance = filecommander.remote)
 
