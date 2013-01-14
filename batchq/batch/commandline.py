@@ -12,7 +12,7 @@ LSF_BJOBS_CACHE = {}
 class Subshell(Shell):
     def __init__(self, terminal= None, command=None, working_directory=None, dependencies=None,identifier = None, **kwargs):
 
-        self.cache_timeout = 1
+        self.cache_timeout = 600
 
         self.machine = current_machine()
         if not hasattr(self,"original_command"):
@@ -45,7 +45,7 @@ class Subshell(Shell):
 
         filename = self._identifier_filename +".pid"
         cid = "fetchpids_%d_%s"%(id(self.terminal),self.terminal.lazy_pwd())
-        pid_dict = simple_call_cache(cid, self._identifier, 20, self._fetch_pids)        
+        pid_dict = simple_call_cache(cid, self._identifier, self.cache_timeout, self._fetch_pids)        
         if filename in pid_dict:
             return int(pid_dict[filename])
         return 0
@@ -86,10 +86,16 @@ class Subshell(Shell):
 
 #    @profile(immediate=True)
     def state(self):   
+
         if self._state == self.STATE.FINISHED: return self._state
         super(Subshell, self).state()
         if self._state == self.STATE.FAILED: return self._state
-        if self._state < self.STATE.READY: return self._state
+#        if self._state < self.STATE.READY: 
+#            print "State not ready"
+#            print self._state
+#            sys.exit(0)
+#            return self._state
+
         path = self.terminal.path
         cid = "getfiles_%d_%s"%(id(self.terminal),self.terminal.lazy_pwd())
         
@@ -214,6 +220,14 @@ echo
 
         return [True]*len(self.objects)
 
+
+
+
+
+
+
+
+
 class LSF(Subshell):
     def __init__(self, terminal, command, working_directory=None, dependencies=None,identifier = None, **kwargs):
 
@@ -254,32 +268,61 @@ class LSF(Subshell):
         return [], c
 
 
-    def _lsf_state(self):
+    def _get_lsf_as_file(self):
+        ## TODO: Clean up this implementation
+        if not self._pushw():
+            return {}
 
+        ## Getting the output
+        filename = ".batchq.tmp.%d" % random.randint(0, 1<< 32)
+        path = self.terminal.path.join(self.working_directory, filename)
+
+        cmd = "bjobs > %s" % filename
+        self.terminal.send_command(cmd)
+        _,lfilename  = tempfile.mkstemp()
+        self.machine.getfile(lfilename, path)
+
+        # Getting value
+        f = open(lfilename)
+        buffer = f.readlines()
+        f.close()
+        
+        # Cleaining up
+        self.machine.remote.rm(filename)
+        self.machine.local.rm(lfilename)
+
+        dct = {}
+        if len(buffer) == 1:
+            return  {}
+
+        for line in buffer[1:]:
+            x = line.strip()
+            if x == "": continue
+            blocks = filter(lambda q: q!="", [q.strip() for q in x.split(" ")])
+            id = blocks[0]
+            state = blocks[2].lower()
+            dct[id] = state
+        return dct
+
+
+    def _lsf_state(self):
         global LSF_BJOBS_CACHE
         i = id(self.terminal) 
  
-        val = None
+        states = None
         now = time.time()
 
         if i in LSF_BJOBS_CACHE: 
-            to, pval = LSF_BJOBS_CACHE[i]
+            to, pstates = LSF_BJOBS_CACHE[i]
             if to+self.cache_timeout >= now:
-                val =pval
+                states =pstates
         
-        if val is None:
-            # TODO: apply same trick as in _get_files
-            val = self.terminal.send_command("bjobs").strip().lower()
-            LSF_BJOBS_CACHE[i] = (now, val)
+        if states is None:
+            states = self._get_lsf_as_file()
+            LSF_BJOBS_CACHE[i] = (now, states)
 
-        if val == "no unfinished job found": return ""
-        lines = val.split("\n")
-        spid = str(self.pid())
-        line = filter(lambda x: x.startswith(spid), lines)
-        if len(line)<1: return ""
-        blocks = filter(lambda x: x.strip() !="", line[0].split(" "))
-        
-        return blocks[2].strip()
+        spid = str(self.pid())       
+        return states[spid] if spid in states else ""
 
     def _get_state(self):
         ## TODO: Delete this function
