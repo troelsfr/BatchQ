@@ -56,7 +56,7 @@ class BasePipe(object):
             self._xterminterpreter = vt100
         self._reset_timeout_onoutput = True
         self._memory = Memory(mem_scale)
-
+        self.last_expect_token = None
         if initiate_pipe: self.initiate_pipe()
 
 
@@ -145,6 +145,7 @@ class BasePipe(object):
         if not pipe:
             self._assert_alive()
             pipe = self._pipe
+        expect_token = None
         output = ""
         echo = ""
         self._xterminterpreter.set_mark()
@@ -192,7 +193,8 @@ class BasePipe(object):
                     raise CommunicationTimeout("Consuming output timed out (%d > %d, dt = %d, %s). You can increase the timeout by using set_timeout(t)." %(end_time,time.time(),self._timeout, self.__class__.__name__))
 
                 m = consume_until.search(output)
-            
+            if m:
+                expect_token = m.group(0)
         elif consume_until:
 
             n = len(consume_until)
@@ -239,10 +241,11 @@ class BasePipe(object):
                         if self._xterminterpreter.escape_mode:
                             print "Last escape:", self._xterminterpreter.last_escape
                     raise CommunicationTimeout("Consuming output timed out (%d > %d, dt = %d, %s). You can increase the timeout by using set_timeout(t)." %(end_time,time.time(),self._timeout, self.__class__.__name__))
-
+            
 
             if consume_until == output[tot_len -n: tot_len]:
                 output = output[0:tot_len -n]
+                expect_token = consume_until
             # TODO: figure out what to do when the match is in the echo
 
         else:
@@ -259,6 +262,7 @@ class BasePipe(object):
 
             if self._debug_level == 2:
                 sys.stdout.write(self._xterminterpreter.monitor)
+            expect_token = ""
 
         if self._debug_level == 1:
             sys.stdout.write(output)
@@ -266,7 +270,7 @@ class BasePipe(object):
             sys.stdout.write(self._xterminterpreter.monitor)
         
         self._xterminterpreter.move_monitor_cursors()
-
+        self.last_expect_token = expect_token
         return output
 
     def isalive(self):
@@ -275,7 +279,7 @@ class BasePipe(object):
     def write(self, cmd):
         self._pipe.write(cmd)
 
-    def send_command(self, cmd, wait_for_input_response = True):
+    def send_command(self, cmd, wait_for_input_response = True, consume_until = None):
         """
         This function sends a command to the pipe, wait for the prompt
         to appear and return the output.
@@ -285,6 +289,7 @@ class BasePipe(object):
         self._assert_alive()
         self._pipe.write(cmd)
 #        print "$$ >",cmd
+
 
         if cmd !="":
             xx= self.consume_output(wait_for_some_output = wait_for_input_response)
@@ -296,7 +301,7 @@ class BasePipe(object):
         # Next we consume the result of sending a submit token
         # This is done as bash sometimes send additional escape codes 
         # to manipulate the echo.
-        self.consume_output(consume_until = self._submit_token)
+        self.consume_output(consume_until = consume_until if consume_until else self._submit_token)
 
 
 

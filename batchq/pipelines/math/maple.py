@@ -46,7 +46,7 @@ class MaplePipeline(BasePipe):
         encountered. Hopefully a workaround for this will be found.
         """
         if not pipe:
-            cmd = which("maple",["/Library/Frameworks/Maple.framework/Versions/Current/bin/"])
+            cmd = which("maple",["/Library/Frameworks/Maple.framework/Versions/17/bin/"])
             pipe = Process(cmd,["-t"], terminal_required = True)
 #            pipe = Process(cmd,["-t"], terminal_preferred = terminal_preferred)
 
@@ -102,7 +102,7 @@ class MaplePipeline(BasePipe):
         list = re.split(self._submit_split, command)
         for cmd in list:
             if not cmd == "":
-                result = super(MaplePipeline,self).send_command(cmd.strip())
+                result = super(MaplePipeline,self).send_command(cmd.strip(), consume_until = ';')
                 if not result.strip() == "":
                     self._result_list += [result,]
 

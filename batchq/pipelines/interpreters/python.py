@@ -58,14 +58,13 @@ class PythonTerminal(BasePipe):
         
     def send_command(self, command):
         """
-        Sends a command to the Maple command line.
+        Sends a command to the Python command line.
         """
         list = re.split(self._submit_split, command)
         result = ""
         for cmd in list:
-            if not cmd == "":
-                result += super(PythonTerminal,self).send_command(cmd)
-                self._result_list += [result,]
+            result += super(PythonTerminal,self).send_command(cmd)
+            self._result_list += [result,]
 
         n = len(self._result_list)
         if self._number_of_outlines > n:
