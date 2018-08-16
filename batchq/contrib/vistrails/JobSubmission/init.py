@@ -123,14 +123,14 @@ def compute_jobpreparation(self):
     queue, cls = mac.queue, mac.queue_cls
     kwargs = self.get_kwargs(cls)
 
-    for f, t, generator in auto_job_properties.itervalues():
+    for f, t, generator in auto_job_properties.values():
         kwargs[f] = generator(self)
 
     self.queue = cls(queue, **kwargs) 
 
     self.setResult("job", self)
 
-dct = {'_input_ports'   : [b for b in in_job_properties.itervalues()] \
+dct = {'_input_ports'   : [b for b in in_job_properties.values()] \
            + [('machine', '(org.comp-phys.batchq:Machine)'),],
        '_output_ports'  : [('job', '(org.comp-phys.batchq:Job)'),],
        'compute'        : compute_jobpreparation
@@ -187,7 +187,7 @@ members = [ ('_input_ports', [('job', '(org.comp-phys.batchq:Job)'),] ),
 low_level_functions = {}
 high_level_functions = {}
 high_level_modules = []
-for name in operations.iterkeys():
+for name in operations.keys():
     for t in operations_types[name]:
         dct = dict(copy.deepcopy(members)+[('function_name',name)])
         if not t is None and not t in [FunctionMessage]:
@@ -258,8 +258,8 @@ def jobinfo_compute(self):
     self.setResult("job", job)
 
 
-queue_properties = [b for b in exp_job_properties.itervalues()]
-queue_functions = [b for b in low_level_functions.itervalues()]
+queue_properties = [b for b in exp_job_properties.values()]
+queue_functions = [b for b in low_level_functions.values()]
 dct = {'_input_ports': [('job', '(org.comp-phys.batchq:Job)'),],
        '_output_ports': queue_properties  + queue_functions,
        'compute': jobinfo_compute,
@@ -300,7 +300,7 @@ members = [ ('_input_ports', [('operation', '(org.comp-phys.batchq:JobOperation)
             ('compute', collective_compute ),
             ('collection_name', name)]
 namespace = categories['job_collective_operations']
-for name, func in collective.iteritems():
+for name, func in collective.items():
     dct = dict(members)
     _modules.append((type( "".join([capitalise(a) for a in name.split("_")]) , (CollectiveOperation,),dct),{'namespace':namespace} ))
 

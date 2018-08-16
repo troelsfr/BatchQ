@@ -123,13 +123,13 @@ class BaseInterpreter(object):
         basic_reductions = {'ESC [': 'CSI', 'ESC D': 'IND', 'ESC E': 'NEL', 'ESC H': 'HTS', 'ESC M': 'RI', 'ESC N': 'SS2','ESC O': 'SS3',
                             'ESC P': 'DCS', 'ESC V': 'SPA', 'ESC W':'EPA', 'ESC X': 'SOS', 'ESC Z':'CSI c', "ESC \\": 'ST', 'ESC ]':'OSC',
                             'ESC ^': 'PM', 'ESC _':'APC'}
-        for a,b in pattern_start.iteritems():
+        for a,b in pattern_start.items():
             echo = echo.replace(a,b+" ")
 
-        for a,b in basic_reductions.iteritems():
+        for a,b in basic_reductions.items():
             echo = echo.replace(a,"<"+b+">")
 
-        for a,b in pattern_start.iteritems():
+        for a,b in pattern_start.items():
             echo = echo.replace(b+" ","<"+b+">")
         
         return echo.replace("<NL>", "\n")
@@ -152,10 +152,11 @@ class BaseInterpreter(object):
 
 
     def write(self, str):
+
         self._full_echo+=str
         self._echo_position += len(str)
-
         for c in str:
+
             self.writeChar(c,False)
 
 

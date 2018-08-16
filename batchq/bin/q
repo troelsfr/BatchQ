@@ -82,9 +82,9 @@ class Main(object):
         if which == -1:
             print inspect.getdoc(self.update)
             print
-            print "Available functions:", ", ".join([a for a in Library.functions.dict.iterkeys()])
-            print "Available queues:", ", ".join([a for a in Library.queues.dict.iterkeys()])
-            print "Available templates:", ", ".join([a for a in Library.templates.dict.iterkeys()])
+            print "Available functions:", ", ".join([a for a in Library.functions.dict.keys()])
+            print "Available queues:", ", ".join([a for a in Library.queues.dict.keys()])
+            print "Available templates:", ", ".join([a for a in Library.templates.dict.keys()])
             print
             return -1
 

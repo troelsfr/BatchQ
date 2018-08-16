@@ -433,9 +433,9 @@ echo $DIR"""
                 ret.append((m.group('file'),int(m.group('hash'))))
             else:
                 ## TODO: error if only one file, then the filename is not included
-                print "WARNING: Regex did not match sum line: '%s' (file omitted)"%line
-                print "If this line looks like a sensible sum line to you, something may be wrong. (%s)" % self.__class__.__name__
-                print
+                print("WARNING: Regex did not match sum line: '%s' (file omitted)"%line)
+                print("If this line looks like a sensible sum line to you, something may be wrong. (%s)" % self.__class__.__name__)
+                print("")
         return ret
         
 
@@ -503,11 +503,11 @@ echo $DIR"""
         if list_directories:
             dir_list = self.send_command("find . %s -type d"%append).split("\n")
 
-        files =filter(filt, [formatter(x) for x in file_list])
-        dirs = filter(filt, [formatter(x) for x in dir_list])
+        files = [y for y in filter(filt, [formatter(x) for x in file_list])]
+        dirs = [y for y in filter(filt, [formatter(x) for x in dir_list])]
         if not recursively:
-            files =filter(first_level, files)
-            dirs = filter(first_level, dirs)
+            files = [y for y in filter(first_level, files)]
+            dirs = [y for y in filter(first_level, dirs)]
 
 
         if dir!=".":
@@ -528,10 +528,10 @@ if __name__ == "__main__":
     files, dirs = x.list(recursively = False)
     pwd = x.pwd()
 
-    print "On", server, "is following files "
+    print("On", server, "is following files ")
     for file in files:
-        print "     -", file
-    print "and following directories"
+        print("     -", file)
+    print("and following directories")
     for d in dirs:
-        print "     -", d,"."
-    print "in", pwd
+        print("     -", d,".")
+    print("in", pwd)

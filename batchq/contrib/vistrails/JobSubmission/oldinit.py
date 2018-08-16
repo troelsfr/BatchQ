@@ -81,7 +81,7 @@ class Job(Machine):
 _modules.append((Job, {'abstract':True}))
 
 class PrepareJob(Job):
-    _input_ports = [b for b in job_properties.itervalues()]+[('machine', '(org.comp-phys.batchq:Machine)'),]
+    _input_ports = [b for b in job_properties.values()]+[('machine', '(org.comp-phys.batchq:Machine)'),]
     _output_ports = [('job', '(org.comp-phys.batchq:Job)'),]
 
     def compute(self):  
@@ -124,7 +124,7 @@ members = [ ('_input_ports', [('job', '(org.comp-phys.batchq:Job)'),] ),
             ('compute', function_compute ),]
 
 low_level_functions = {}
-for name in operations.iterkeys():
+for name in operations.keys():
     for t in operations_types[name]:
         print "Setting function name:",name, t, typeconversion[t] if t in typeconversion else "Not supported"
         dct = dict(copy.deepcopy(members)+[('function_name',name)])
@@ -150,7 +150,7 @@ for name in operations.iterkeys():
 
 class JobInfo(Job):
     _input_ports = [('job', '(org.comp-phys.batchq:Job)'),]
-    _output_ports = [b for b in job_properties.itervalues()] + [b for b in low_level_functions.itervalues()]
+    _output_ports = [b for b in job_properties.values()] + [b for b in low_level_functions.values()]
     def compute(self):
         self.setResult("job", self)        
         ## TODO: fix me, set outputs
@@ -176,7 +176,7 @@ members = [ ('_input_ports', [('operation', '(org.comp-phys.batchq:JobOperation)
             ('compute', collective_compute ),
             ('collection_name', name)]
 namespace = "Job operations"
-for name, func in collective.iteritems():
+for name, func in collective.items():
     dct = dict(members)
     _modules.append((type( "".join([capitalise(a) for a in name.split("_")]) , (CollectiveOperation,),dct),{'namespace':namespace} ))
 

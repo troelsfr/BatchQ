@@ -118,54 +118,18 @@ class MaplePipeline(BasePipe):
 
 if __name__ == "__main__":
     x = MaplePipeline()
-    print "TESTING"
+#    print "TESTING"
     x.send_command("restart;")
     a = x.send_command("y := x*x;")
     b = x.send_command("diff(y,x,x);")
     c = x.send_command("x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x;")
-    print "RESTARTING KERNEL"
+#    print "RESTARTING KERNEL"
     x.restart_kernel();
     x.send_command("restart;")
     a = x.send_command("y := x*x;")
     b = x.send_command("diff(y,x,x);")
     c = x.send_command("x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x;")
-    print "="*30, "WITH TERMINAL", "="*30
-    print "Direct pipe buffer (with ESC codes):"
-    print
-    print x.pipe_buffer
-    print
-    print "VT100 Interpreted"
-    print
-    print x.buffer  
-    print "="*100
-    print "Is alive?", x.isalive()
-    print "GOT FOLLOWING RESULTS"
-    print "a =", a
-    print "b =", b
-    print "c =", c
-    print "Overall results:"
-    print x.results
-    print "-"*100
-    print "Is alive?", x.isalive()
-    print "PID: ", x.pid
-    print "Process usage: ", x.child_memory_usage
-    print "Total (system) usage: ", x.total_memory_usage
-# TODO: This provokes a bug    x.send_command("quit();")
-    import time
-
-#    time.sleep(20)
-    x.send_command("quit;")
-    print "Is alive?", x.isalive()
-    x.kill()
-    print "Is alive?", x.isalive()
-    print x.remaining()
-    
-#    x = MaplePipeline(terminal_preferred= False)
-#    x.send_command("restart;")
-#    x.send_command("y := x*x;")
-#    x.send_command("diff(y,x,x);")
-#    x.send_command("x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x;")
-#    print "="*30, "NO TERMINAL", "="*30
+#    print "="*30, "WITH TERMINAL", "="*30
 #    print "Direct pipe buffer (with ESC codes):"
 #    print
 #    print x.pipe_buffer
@@ -174,6 +138,42 @@ if __name__ == "__main__":
 #    print
 #    print x.buffer  
 #    print "="*100
+#    print "Is alive?", x.isalive()
+#    print "GOT FOLLOWING RESULTS"
+#    print "a =", a
+#    print "b =", b
+#    print "c =", c
+#    print "Overall results:"
+#    print x.results
+#    print "-"*100
+#    print "Is alive?", x.isalive()
+#    print "PID: ", x.pid
+#    print "Process usage: ", x.child_memory_usage
+#    print "Total (system) usage: ", x.total_memory_usage
+# TODO: This provokes a bug    x.send_command("quit();")
+    import time
+
+#    time.sleep(20)
+    x.send_command("quit;")
+#    print "Is alive?", x.isalive()
+    x.kill()
+#    print "Is alive?", x.isalive()
+#    print x.remaining()
+    
+#    x = MaplePipeline(terminal_preferred= False)
+#    x.send_command("restart;")
+#    x.send_command("y := x*x;")
+#    x.send_command("diff(y,x,x);")
+#    x.send_command("x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x*x;")
+##    print "="*30, "NO TERMINAL", "="*30
+##    print "Direct pipe buffer (with ESC codes):"
+##    print
+##    print x.pipe_buffer
+##    print
+##    print "VT100 Interpreted"
+##    print
+##    print x.buffer  
+##    print "="*100
 #    x.kill()
 
 

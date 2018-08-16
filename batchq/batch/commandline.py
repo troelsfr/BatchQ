@@ -34,7 +34,7 @@ class Subshell(Shell):
             try:
                 ret = json.loads(json_in)
             except:
-                print json_in
+                print(json_in)
                 raise
             return  ret
         return {}
@@ -298,7 +298,7 @@ class LSF(Subshell):
         for line in buffer[1:]:
             x = line.strip()
             if x == "": continue
-            blocks = filter(lambda q: q!="", [q.strip() for q in x.split(" ")])
+            blocks = [x for x in filter(lambda q: q!="", [q.strip() for q in x.split(" ")])]
             id = blocks[0]
             state = blocks[2].lower()
             dct[id] = state
@@ -329,7 +329,7 @@ class LSF(Subshell):
         # TODO: generalise remote/local stuff
 
         filename = self.machine.remote.mktemp()
-        print "Running:","batchq list_status %s > %s" %(self.working_directory, filename)
+        print("Running:","batchq list_status %s > %s" %(self.working_directory, filename))
         self.machine.remote.send_command("batchq list_status %s > %s" %(self.working_directory, filename))
         
         _,lfilename  = tempfile.mkstemp()
@@ -338,7 +338,7 @@ class LSF(Subshell):
         f = open(lfilename)
         contents = f.read()
         f.close()
-        print contents
+        print(contents)
         self.machine.local.rm(lfilename)
 
     def state(self):

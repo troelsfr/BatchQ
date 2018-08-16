@@ -194,7 +194,7 @@ class VT100Interpreter(BaseInterpreter):
 
     @VT100Register.register(r"\x1b\[(?P<count>\d+)D",r"\x1b\[D")
     def cursor_back (self,count=1): # <ESC>[{COUNT}D (not confused with down)
-        print "Cursor back"
+#        print "Cursor back"
         self._curchar -= count
         if self._curchar<0: self._curchar = 0
 

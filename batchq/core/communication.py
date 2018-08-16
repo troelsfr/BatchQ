@@ -135,7 +135,7 @@ class BasePipe(object):
         while b != "":
             self._xterminterpreter.write(b)
             b = self._pipe.read()
-            print "[Continuing]",b
+            print("[Continuing]",b)
 
     def consume_output(self, pipe = None, consume_until = None, wait_for_some_output = False):
         """
@@ -157,7 +157,7 @@ class BasePipe(object):
                 try:
 
                     b = pipe.getchar()
-                except CommunicationIOException, e:                    
+                except CommunicationIOException as e:                    
                     pass
 
                 if b!="":
@@ -177,19 +177,19 @@ class BasePipe(object):
 
                 if end_time<time.time():
                     if self._debug_level >= 3:
-                        print "Debug level",self._debug_level
-                        print "Timeout: ", self._timeout
-                        print "-"*20, "BUFFER", "-"*20
-                        print self._xterminterpreter.buffer[-1000:]
-                        print "-"*20, "END OF BUFFER", "-"*20
-                        print "-"*20, "READABLE ECHO", "-"*20
-                        print self._xterminterpreter.readable_echo[-1000:]
-                        print "-"*20, "END OF READABLE ECHO", "-"*20
-                        print "Expecting: ", consume_until
-                        print "Consumed: ", output
-                        print "Escape mode:", self._xterminterpreter.escape_mode
+                        print("Debug level",self._debug_level)
+                        print("Timeout: ", self._timeout)
+                        print("-"*20, "BUFFER", "-"*20)
+                        print(self._xterminterpreter.buffer[-1000:])
+                        print("-"*20, "END OF BUFFER", "-"*20)
+                        print("-"*20, "READABLE ECHO", "-"*20)
+                        print(self._xterminterpreter.readable_echo[-1000:])
+                        print("-"*20, "END OF READABLE ECHO", "-"*20)
+                        print("Expecting: ", consume_until)
+                        print("Consumed: ", output)
+                        print("Escape mode:", self._xterminterpreter.escape_mode)
                         if self._xterminterpreter.escape_mode:
-                            print "Last escape:", self._xterminterpreter.last_escape
+                            print("Last escape:", self._xterminterpreter.last_escape)
                     raise CommunicationTimeout("Consuming output timed out (%d > %d, dt = %d, %s). You can increase the timeout by using set_timeout(t)." %(end_time,time.time(),self._timeout, self.__class__.__name__))
 
                 m = consume_until.search(output)
@@ -207,16 +207,16 @@ class BasePipe(object):
 
                 try:
                     b = pipe.read_nonblocking_until(consume_until, True)
-                except CommunicationIOException, e:
+                except CommunicationIOException as e:
                     pass
                 if b!="":
 #                    print b,
                     self._xterminterpreter.write(b)
+
                     output = self._xterminterpreter.copy()
                     echo = self._xterminterpreter.copy_echo()
                     tot_len = len(output)
                     tot_echo_len = len(echo)
-                
 
                     if self._reset_timeout_onoutput and (self._xterminterpreter.monitor_echo !=""):
                         end_time = time.time()+self._timeout 
@@ -227,19 +227,19 @@ class BasePipe(object):
 
                 if end_time<time.time():
                     if self._debug_level >= 3:
-                        print "Debug level",self._debug_level
-                        print "-"*20, "BUFFER", "-"*20
-                        print self._xterminterpreter.buffer[-1000:]
-                        print "-"*20, "END OF BUFFER", "-"*20
-                        print "-"*20, "READABLE ECHO", "-"*20
-                        print self._xterminterpreter.readable_echo[-1000:]
-                        print "-"*20, "END OF READABLE ECHO", "-"*20
+                        print("Debug level",self._debug_level)
+                        print("-"*20, "BUFFER", "-"*20)
+                        print(self._xterminterpreter.buffer[-1000:])
+                        print("-"*20, "END OF BUFFER", "-"*20)
+                        print("-"*20, "READABLE ECHO", "-"*20)
+                        print(self._xterminterpreter.readable_echo[-1000:])
+                        print("-"*20, "END OF READABLE ECHO", "-"*20)
 
-                        print "Expecting: ", consume_until
-                        print "Consumed: ", output
-                        print "Escape mode:", self._xterminterpreter.escape_mode
+                        print("Expecting: ", consume_until)
+                        print("Consumed: ", output)
+                        print("Escape mode:", self._xterminterpreter.escape_mode)
                         if self._xterminterpreter.escape_mode:
-                            print "Last escape:", self._xterminterpreter.last_escape
+                            print("Last escape:", self._xterminterpreter.last_escape)
                     raise CommunicationTimeout("Consuming output timed out (%d > %d, dt = %d, %s). You can increase the timeout by using set_timeout(t)." %(end_time,time.time(),self._timeout, self.__class__.__name__))
             
 
@@ -312,12 +312,12 @@ class BasePipe(object):
 #        print self._xterminterpreter.readable_echo
 
         if False and  not cmd[0:2] == "ak" and self.__class__.__name__ == "SSHTerminal":
-            print "COMMAND:: ", cmd
-            print "EXPECT::  ", self._expect_token
-            print "RETURN::  ", ret
-            print "="*40, self.__class__.__name__, "="*40
-            print self._xterminterpreter.readable_echo
-            print "="*38, "END",self.__class__.__name__, "="*38
+            print("COMMAND:: ", cmd)
+            print("EXPECT::  ", self._expect_token)
+            print("RETURN::  ", ret)
+            print("="*40, self.__class__.__name__, "="*40)
+            print(self._xterminterpreter.readable_echo)
+            print("="*38, "END",self.__class__.__name__, "="*38)
             if not hasattr(self, "i"):
                 self.i = 0
             else:

@@ -37,7 +37,7 @@ class TestModule(object):
         file.close()
         lines = script.split("\n")
         lines = [(i, lines[i-1].strip()) for i in range(1,len(lines)+1)]
-        self._lines = filter(lambda x: x[1]!="" and ( x[1].startswith("#:") or not x[1].startswith("#")),  lines)
+        self._lines = [y for y in filter(lambda x: x[1]!="" and ( x[1].startswith("#:") or not x[1].startswith("#")),  lines)]
 
 
         ## Defining the running environment
@@ -257,7 +257,7 @@ class TestModule(object):
                 for environ in self._exports:
                     if len(environ) > 1:
                         self._logger.info("Setting environment.")
-                        for name, val in environ.iteritems():
+                        for name, val in environ.items():
                             out = self._sshconnection.send_command("export %s=\"%s\""%(name, val))
 
                     if self._expect_token==self._bash_token:

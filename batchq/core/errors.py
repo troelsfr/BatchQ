@@ -21,7 +21,7 @@
 # SOFTWARE.
 ####################################################################################
 
-class BatchQException(StandardError):
+class BatchQException(Exception):
     def __init__(self, *args, **kwargs):
         super(BatchQException,self).__init__(*args, **kwargs)
 
@@ -46,13 +46,13 @@ class CommunicationEOF(EOFError):
     def __init__(self, *args, **kwargs):
         super(CommunicationEOF,self).__init__(*args, **kwargs)
 
-class CommunicationTimeout(StandardError):
+class CommunicationTimeout(Exception):
     def __init__(self, *args, **kwargs):
         super(CommunicationTimeout,self).__init__(*args, **kwargs)
 
 
 
-class BasePipeException(StandardError):
+class BasePipeException(Exception):
     def __init__(self, *args, **kwargs):
         super(BasePipeException,self).__init__(*args, **kwargs)
 

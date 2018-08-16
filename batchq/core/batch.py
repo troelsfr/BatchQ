@@ -133,7 +133,7 @@ class Shell(object):
                     self._state = self.STATE.QUEUED
 
             if self._state == self.STATE.QUEUED:
-                print self, "EXIT QUEUED", self.dependencies
+                print(self, "EXIT QUEUED", self.dependencies)
                 return False
         return True
 
@@ -148,7 +148,7 @@ class Shell(object):
                     raise BaseException("Could not enter working directory: '%s' from '%s' ('%s'). The executed class is '%s'." %(self.working_directory, self.terminal.pwd(), self.terminal.lazy_pwd(),self.__class__.__name__) )
                 try:
                     if self.verbose:
-                        print "$ ", self.command
+                        print("$ ", self.command)
                     self._ret = self.terminal.send_command(self.command)
                     self._exitcode = self.terminal.last_exitcode()
                     self._was_executed = True

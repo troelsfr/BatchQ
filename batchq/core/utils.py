@@ -134,7 +134,7 @@ def bash_hash_directory(dir):
     """
     Gives the equivalent bash command to directory_hash(dir).
     """
-    print "DEPRECATED !!!!!!"
+    print("DEPRECATED !!!!!!")
     global cmdhasher
 #    return "find '%s' -type f -print0 | sort -z" % (dir)
     return "find '%s' -type f -print0 | sort -z | xargs -0 cat | %s" % (dir, cmdhasher)
@@ -143,16 +143,16 @@ def bash_hash_file(file):
     """
     Gives the equivalent bash command to file_hash(dir).
     """
-    print "DEPRECATED !!!!!!"
+    print("DEPRECATED !!!!!!")
     global cmdhasher
     return "%s '%s'" % (cmdhasher, file)
 
 def bash_hash_pattern():
-    print "DEPRECATED !!!!!!"
+    print("DEPRECATED !!!!!!")
     return r"(?P<hash>[a-fA-F\d]{32})"
 
 def bash_extract_hash(response):
-    print "DEPRECATED !!!!!!"
+    print("DEPRECATED !!!!!!")
 #    return response
     searcher_for = re.compile(bash_hash_pattern())
     match = searcher_for.search(response)

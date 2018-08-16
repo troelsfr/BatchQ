@@ -82,7 +82,7 @@ class XTermInterpreter(BaseInterpreter):
 
     @XTermRegister.hook("BEL")
     def bell(self,sequence):
-        print "RING RING RING ---- "*4
+        print("RING RING RING ---- "*4)
 
 
 
@@ -310,7 +310,7 @@ class XTermInterpreter(BaseInterpreter):
             self._curchar = 0
             self._curline = 0
         elif p == 3:
-            print "TODO: feature not implemented"
+            print("TODO: feature not implemented")
 
     @XTermRegister.hook("CSI Ps G", defaults = (1,))
     def move_to_column (self, seq, n): 

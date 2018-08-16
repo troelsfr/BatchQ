@@ -32,7 +32,7 @@ class PatternRegister(object):
 #                print "Hello world", f.__name__
                 #                pass
                 #                if verbose:
-                print "Invoking ", f.__name__, f, args, kwargs
+#                print("Invoking ", f.__name__, f, args, kwargs)
                 return f(*args, **kwargs)
                 #                print "Pattern for ", f.__name__, newf
 
@@ -128,7 +128,7 @@ class ReductionRegister(object):
         self._allowed_characters = ["0","A", "B","4", "C","5","R","Q","K","Y","E","Z","H","7","="]
         self.intermediate_stage = ["ESC #", "ESC %", "ESC (", "ESC )"]
 
-        for a in self.pattern_start.itervalues():
+        for a in self.pattern_start.values():
             if a != "ESC" and not a in self.pattern_end: self.pattern_end.append(a)
 
         self.patterns = {}
@@ -180,7 +180,7 @@ class ReductionRegister(object):
             self._cur_pattern += " " + char
             self._last_was_command = False
 
-        for i, o  in self.basic_reductions.iteritems():
+        for i, o  in self.basic_reductions.items():
             n = len(i)
             while self._cur_pattern[-n:] == i:
                 self._cur_pattern = self._cur_pattern[:-n]+o

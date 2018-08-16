@@ -30,7 +30,7 @@ import re
 import time 
 import os 
 
-class BaseSecureTerminalLoginError(StandardError):
+class BaseSecureTerminalLoginError(Exception):
     """
     This exception is thrown by secure terminals whenever login attempts
     has failed or when acceptence of fingerprints is required but not
@@ -100,7 +100,7 @@ class BaseSecureTerminal(BasePipe):
 
 
         if "Password:" in out or "password" in out:
-            print self.buffer
+            print(self.buffer)
             raise BaseSecureTerminalLoginError("Wrong username or password.")
 
         self._path = posixpath

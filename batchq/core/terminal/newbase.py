@@ -125,13 +125,13 @@ class BaseInterpreter(object):
         basic_reductions = {'ESC [': 'CSI', 'ESC D': 'IND', 'ESC E': 'NEL', 'ESC H': 'HTS', 'ESC M': 'RI', 'ESC N': 'SS2','ESC O': 'SS3',
                             'ESC P': 'DCS', 'ESC V': 'SPA', 'ESC W':'EPA', 'ESC X': 'SOS', 'ESC Z':'CSI c', "ESC \\": 'ST', 'ESC ]':'OSC',
                             'ESC ^': 'PM', 'ESC _':'APC'}
-        for a,b in pattern_start.iteritems():
+        for a,b in pattern_start.items():
             echo = echo.replace(a,b+" ")
 
-        for a,b in basic_reductions.iteritems():
+        for a,b in basic_reductions.items():
             echo = echo.replace(a,"<"+b+">")
 
-        for a,b in pattern_start.iteritems():
+        for a,b in pattern_start.items():
             echo = echo.replace(b+" ","<"+b+">")
         
         return echo.replace("<NL>", "\n")
@@ -155,7 +155,6 @@ class BaseInterpreter(object):
 
     def write(self, str):
         # str = u"%s"%str
-
         self._full_echo+=str
         self._echo_position += len(str)
 
@@ -248,17 +247,17 @@ class BaseInterpreter(object):
 #        print "Appending ", n, self._curline, len(self._lines)
         #self.set_mark(-self._min_show,-self._curchar)
         ##### TODO: This is a major slow down if the output is large. Fix with constant buffer
-        self._lines += [copy.deepcopy(a) for a in [bytearray([' ']*(self._max_cols+1))]*n]
+        self._lines += [copy.deepcopy(a) for a in [list([' ']*(self._max_cols+1))]*n]
 
     def erase_lines(self, f=None,t=None):
         if f is None and t is None:
-            self._lines = [bytearray([' ']*(self._max_cols+1))]
+            self._lines = [list([' ']*(self._max_cols+1))]
         elif t is None:
             for i in range(f, self._max_cols+1):
-                self._lines[i] = [bytearray([' ']*(self._max_cols+1))]
+                self._lines[i] = [list([' ']*(self._max_cols+1))]
         else:
             for i in range(f, t):
-                self._lines[i] = [bytearray([' ']*(self._max_cols+1))]
+                self._lines[i] = [list([' ']*(self._max_cols+1))]
 
 
     def copy(self):

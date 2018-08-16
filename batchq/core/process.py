@@ -102,7 +102,7 @@ class BaseProcess(object):
         while pid == 0 and i<2:  # TODO: Fix this part and test it properly
             try:
                 pid, status = os.waitpid(self.pid, 0)    # TODO: either os.WNOHANG or 0
-            except OSError, e: # No child processes
+            except OSError as e: # No child processes
                 if e[0] == errno.ECHILD:
                     raise ExceptionPexpect ('isalive() encountered condition where "terminated" is 0, but there was no child process. Did someone else call waitpid() on our process?')
                 else:
@@ -127,7 +127,7 @@ class BaseProcess(object):
         return False
 
     def _thread(self,p): 
-        print p.stdout.read()
+        print(p.stdout.read())
 
     def spawn(self, command, args = [], environment = None):  
         """
@@ -201,17 +201,17 @@ class BaseProcess(object):
         app = ""
         if self.can_read():
             app = os.read(self._stdout_fd, self._maxread)
-            self._buffer += app
+            self._buffer += app.decode('utf-8')
 
 
-        while len(app) == self._maxread:
+        while len(app) == self._maxread:            
             if self.can_read():
                 app = os.read(self._stdout_fd, self._maxread)
-                self._buffer += app
+                self._buffer += app.decode('utf-8')
             else:
                 break
 
-    def write(self, str):
+    def write(self, s):
         """
         This function writes str to the pipe.
         """
@@ -220,14 +220,14 @@ class BaseProcess(object):
             raise CommunicationIOException("No proccess has been spawned yet or process dead.")
         
         if self.can_write():
-            for i in range(0,int(len(str)/self._maxwrite)+1):
+            for i in range(0,int(len(s)/self._maxwrite)+1):
 
-                os.write(self._stdin_fd, str[i*self._maxwrite:(i+1)*self._maxwrite]   )
+                os.write(self._stdin_fd, s[i*self._maxwrite:(i+1)*self._maxwrite].encode()   )
                 self.flush() 
                 self._updateBuffer()
 
         else:
-            print "Error, could not write"
+            print("Error, could not write")
 
     def read(self):
         """
@@ -270,7 +270,7 @@ class BaseProcess(object):
                     return self._buffer[oldp:self._seeker]
             return ""
 
-        
+
         if forward:
             before, after = buf.split(until,1)
         else:
@@ -333,7 +333,7 @@ class LinuxProcess(BaseProcess):
                 self._stdout_fd = self._child_fd
                 self._stdin_fd = self._child_fd
                 return True
-        except OSError, e:
+        except OSError as e:
             raise CommunicationOSException("Unable to fork a PTY.")
 
 
@@ -353,9 +353,9 @@ class LinuxProcess(BaseProcess):
 
         # Spawning process
         if environment is None:
-            os.execv(command,filter(lambda x: x!="", [command,] + args))
+            os.execv(command,[y for y in filter(lambda x: x!="", [command,] + args)])
         else:
-            os.execvpe(command,filter(lambda x: x!="", [command,] + args), environment)
+            os.execvpe(command,[y for y in filter(lambda x: x!="", [command,] + args)], environment)
 
     @property
     def pid(self):
